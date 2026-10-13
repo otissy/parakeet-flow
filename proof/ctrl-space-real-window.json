@@ -1,0 +1,95 @@
+{
+ "steps": {
+  "A": {
+   "value": " ",
+   "log": [
+    "d: :0",
+    "u: :0",
+    "d:Control:1",
+    "u:Control:0"
+   ],
+   "keys": []
+  },
+  "B": {
+   "log": [
+    "d: :0",
+    "d:Control:1",
+    "u:Control:0",
+    "u: :0"
+   ],
+   "keys": []
+  },
+  "C0": {
+   "keysAfterChord": [
+    "down"
+   ]
+  },
+  "C1": {
+   "typed": "hello world foo"
+  },
+  "C2": {
+   "afterBackspace2": "hello world f"
+  },
+  "C3": {
+   "final": "hello world fX"
+  },
+  "C4": {
+   "keys": [
+    "down",
+    "up"
+   ],
+   "log": [
+    "d:Control:1",
+    "u:Control:0",
+    "d:h:0",
+    "u:Unidentified:0",
+    "d:e:0",
+    "u:Unidentified:0",
+    "d:l:0",
+    "u:Unidentified:0",
+    "d:l:0",
+    "u:Unidentified:0",
+    "d:o:0",
+    "u:Unidentified:0",
+    "d: :0",
+    "u:Unidentified:0",
+    "d:w:0",
+    "u:Unidentified:0",
+    "d:o:0",
+    "u:Unidentified:0",
+    "d:r:0",
+    "u:Unidentified:0",
+    "d:l:0",
+    "u:Unidentified:0",
+    "d:d:0",
+    "u:Unidentified:0",
+    "d: :0",
+    "u:Unidentified:0",
+    "d:f:0",
+    "u:Unidentified:0",
+    "d:o:0",
+    "u:Unidentified:0",
+    "d:o:0",
+    "u:Unidentified:0",
+    "d:Control:1",
+    "u:Control:0",
+    "d:Backspace:0",
+    "u:Backspace:0",
+    "d:Backspace:0",
+    "u:Backspace:0",
+    "d:Control:1",
+    "u:Control:0",
+    "d:X:0",
+    "u:Unidentified:0",
+    "d:Control:1",
+    "u:Control:0"
+   ]
+  },
+  "D": {
+   "afterBackspace2_noRelease": ""
+  },
+  "E": {
+   "value": "ok"
+  }
+ }
+}

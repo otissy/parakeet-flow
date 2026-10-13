@@ -58,8 +58,8 @@ function settingsPage() {
   const gpuOk = !!i.gpuAvailable;
   return `<div class="wrap"><h1>Settings</h1><div class="sub">Hold-to-talk, microphone, speech engine and privacy.</div>
   <h2>Dictation</h2><div class="card" style="padding:4px 18px">
-    <div class="srow"><div class="l"><b>Hotkey</b><div>${S.capturing ? 'Press the key or combination, then let go. Esc cancels.' : 'Held to talk. Avoid keys OBS or your games use.'}</div>${S.hkError ? `<div style="color:var(--bad)">${L.esc(S.hkError)}</div>` : ''}</div>
-      <div class="c">${S.capturing ? `<span class="chip" id="cap">${S.capturing.length ? keys(S.capturing) : 'Listening…'}</span>` : keys(s.hotkey.vks)}<button class="btn" id="hk-change">${S.capturing ? 'Cancel' : 'Change'}</button></div></div>
+    <div class="srow"><div class="l"><b>Hotkey</b><div>${S.capturing ? 'Press the key or combination, then let go. Esc cancels.' : 'Default Ctrl+Space. Hold to talk, double-tap for hands-free. While it is used for dictation the chord is swallowed; Ctrl or Space alone still work. Avoid keys OBS or your games use.'}</div>${S.hkError ? `<div style="color:var(--bad)">${L.esc(S.hkError)}</div>` : ''}</div>
+      <div class="c">${S.capturing ? `<span class="chip" id="cap">${S.capturing.length ? keys(S.capturing) : 'Listening…'}</span>` : keys(s.hotkey.vks)}<button class="btn" id="hk-change">${S.capturing ? 'Cancel' : 'Change'}</button>${S.capturing ? '' : '<button class="btn" id="hk-reset">Reset</button>'}</div></div>
     <div class="srow"><div class="l"><b>Mode</b><div>Double-tap always starts hands-free.</div></div><div class="c">${seg('mode', [['hold', 'Hold to talk'], ['toggle', 'Press to toggle']], s.mode)}</div></div>
     <div class="srow"><div class="l"><b>Live typing</b><div>Aggressive types every partial and corrects in place. Stable types only words that held for two passes.</div></div><div class="c">${seg('live', [['aggressive', 'Aggressive'], ['stable', 'Stable']], s.liveMode)}</div></div>
     <div class="srow"><div class="l"><b>Language</b><div>Parakeet v3 detects the language itself: English, Dutch and 23 more.</div></div><div class="c"><select disabled><option>Auto-detect</option></select></div></div>
@@ -122,8 +122,13 @@ function bind() {
   });
   on('dl', () => window.pf.invoke('models:download'));
   bindExtra();
+  on('hk-reset', () => { S.hkError = ''; save({ hotkey: { vks: [0x11, 0x20], label: 'Ctrl+Space' } }); });
   on('hk-change', () => { S.capturing = S.capturing ? null : []; S.hkError = ''; render(); });
 }
+
+// the helper swallows Ctrl+Space for dictation; while the picker listens it must reach this page instead
+let lastCap = false;
+function notifyCapture() { const on = !!S.capturing; if (on !== lastCap) { lastCap = on; window.pf.send('hotkey:capture', on); } }
 
 function render() {
   const pages = { home, dictionary: () => pairsPage({ title: 'Dictionary', blurb: 'Replace a word or name every time it is dictated. Case-insensitive, whole words only.', listKey: 'dictionary', a: 'from', b: 'to', phA: 'Heard as', phB: 'Replace with' }),
@@ -132,6 +137,7 @@ function render() {
   const y = main.scrollTop;
   main.innerHTML = S.settings ? pages[S.page]() : '';
   main.scrollTop = y;
+  notifyCapture();
   document.querySelectorAll('.nav').forEach((n) => n.classList.toggle('on', n.dataset.page === S.page));
   bind();
 }
@@ -140,6 +146,7 @@ document.querySelectorAll('.nav').forEach((n) => n.onclick = () => { S.page = n.
 
 // hotkey capture: collect every key pressed, commit when all are released
 const held = new Set(); let combo = [];
+window.addEventListener('blur', () => { if (S.capturing) { S.capturing = null; combo = []; held.clear(); render(); } });   // never leave Ctrl+Space released to apps
 window.addEventListener('keydown', (e) => {
   if (!S.capturing) return;
   e.preventDefault();

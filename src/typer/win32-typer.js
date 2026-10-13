@@ -53,12 +53,17 @@ class Win32Typer extends EventEmitter {
                     title: a[4] ? Buffer.from(a[4], 'base64').toString('utf8') : '' };
         this.emit('foreground', this.fg);
       } else if (a[0] === 'REFUSED') this.emit('refused', { id: a[1] });
+      else if (a[0] === 'SENT' || a[0] === 'SIM' || a[0] === 'DUMP') this.emit('line', a);   // test-mode replies
     }
   }
   _send(s) { if (this.proc.stdin.writable) this.proc.stdin.write(s + '\n'); }
   setHotkey(vks) { this._send('HOTKEY ' + vks.join('+')); }
-  /** tests only (helper started with test:true): synthesize a key event */
-  press(vk, down) { this._send(`PRESS ${vk} ${down ? 'down' : 'up'}`); }
+  /** swallow the chord's non-modifier key (Ctrl+Space) while its modifiers are held; never for a lone-key hotkey */
+  setClaim(on) { this._send('CLAIM ' + (on ? 1 : 0)); }
+  /** tests only (helper started with test:true): inject a key event; with hwnd it is refused unless that window is foreground */
+  press(vk, down, hwnd) { this._send(`PRESS ${vk} ${down ? 'down' : 'up'}${hwnd ? ' ' + hwnd : ''}`); }
+  /** tests only: raw helper command (SIM, CAPTURE, SIMMID, NORELEASE, DUMP) */
+  raw(line) { this._send(line); }
   queryForeground() { this._send('FG'); }
   foreground() { return this.fg; }
   type(text, { hwnd } = {}) {

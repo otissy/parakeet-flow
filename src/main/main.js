@@ -208,6 +208,7 @@ function wireIpc() {
     if (!process.env.PF_NO_LOGIN_ITEM) app.setLoginItemSettings({ openAtLogin: !!on });
     return store.set({ launchAtLogin: !!on });
   });
+  ipcMain.on('hotkey:capture', (_e, on) => { if (controller) controller.setCapturing(!!on); });   // picker open: pass Ctrl+Space through, never start dictation
   ipcMain.on('pill:mouse', (_e, over) => { if (pillWin) pillWin.setIgnoreMouseEvents(!over, { forward: true }); });
   ipcMain.on('pill:action', (_e, a) => { if (a === 'cancel') controller.fsm.esc(); else if (a === 'stop') controller.fsm.down(Date.now()); });
 }

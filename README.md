@@ -13,10 +13,26 @@ the settings. The design follows the layout and feel of Wispr Flow without using
 If `npm install` leaves `node_modules/electron/dist` nearly empty (it did here), unzip the cached
 `electron-v31.7.7-win32-x64.zip` into it and write `electron.exe` to `node_modules/electron/path.txt`.
 
-Default hotkey: **Pause** (hold to talk). It is a lone key on purpose: Ctrl, Alt or Win held down would turn a
-correction Backspace into a word-delete. Change it in Settings. Double-tap starts hands-free, any press or the
-stop button ends it, Esc cancels and removes the live segment's text. Launch-at-login is off and is only
-registered when you switch it on.
+Default hotkey: **Ctrl+Space** (either Ctrl). Hold it to talk, double-tap it for hands-free, press it again (or the
+stop button) to end hands-free, Esc cancels and removes the live segment's text. Change it in Settings (the picker
+shows Ctrl+Space as the default and has a Reset button). Launch-at-login is off and is only registered when you
+switch it on. Upgrading: a saved lone Pause from before this default is moved to Ctrl+Space once; a key you pick
+afterwards is kept.
+
+How the chord behaves (all in `src/typer/helper/PfHelper.cs`):
+
+- It is a real chord: it starts only when Space goes down while Ctrl is already down. A lone Ctrl, a lone Space,
+  or Space then Ctrl never starts dictation.
+- While dictation can use it, the helper swallows the chord's Space (down, auto-repeat and up) with a low-level
+  keyboard hook, so the focused app never sees Ctrl+Space (Windows IME toggle, VS Code completion). Ctrl alone and
+  Space alone always pass through. The chord is not swallowed when dictation is paused in the tray, while the
+  Settings hotkey picker is listening, or for a lone-key hotkey such as Pause.
+- Corrections while Ctrl is held: Ctrl + Backspace deletes a word, so around every typing burst the helper sends a
+  logical Ctrl-up, the keystrokes, and a Ctrl-down again only if you still hold Ctrl, all in one SendInput call. If
+  you let go mid-burst the real key-up is swallowed (the app already saw one) and no down is sent; if the down had
+  already gone out a matching up follows. Apps never see a stuck or unmatched Ctrl. Rejected alternatives:
+  Shift+Left select-and-overtype (Ctrl+Shift+Left selects a word, same problem, and a typed letter with Ctrl down is a
+  shortcut) and deferring corrections until Ctrl is released (no live correction at all in hold mode).
 
 ## How it works
 
@@ -29,8 +45,8 @@ registered when you switch it on.
   stops when the foreground window changes or is on the deny-list; never into its own windows.
   `aggressive` types every partial, `stable` only words that survived two passes.
 - `src/typer/helper/PfHelper.cs`: the only native code, compiled from source at first run with the csc that
-  ships with Windows. One persistent process: GetAsyncKeyState polling every 30 ms (hotkey, Esc, foreground
-  window) and SendInput with KEYEVENTF_UNICODE. It refuses to type if the foreground window is not the
+  ships with Windows. One persistent process: a low-level keyboard hook tracks the hotkey chord (it ignores the keys the helper injects
+  itself), GetAsyncKeyState polling every 30 ms reports it plus Esc and the foreground window, and SendInput with KEYEVENTF_UNICODE. It refuses to type if the foreground window is not the
   one the session started in.
 - Finals only: filler removal, dictionary, snippets, casual style (`src/core/postprocess.js`).
 - Logs hold counts and timings, never dictated text. Audio is never written to disk. History is off by default.

@@ -9,7 +9,7 @@ const { ACTIONS, DEFAULT_COMMANDS, DEFAULT_NOTE_TRIGGERS } = require('../core/co
 const { PROFILES } = require('../core/tone');
 
 const DEFAULTS = {
-  hotkey: { vks: [0x13], label: 'Pause' },   // lone key: no modifier changes what Backspace does; not an OBS / Rocket League default
+  hotkey: { vks: [0x11, 0x20], label: 'Ctrl+Space' },   // either Ctrl + Space; the helper releases Ctrl around corrections (see PfHelper.cs)
   mode: 'hold',                  // 'hold' | 'toggle' (double-tap always starts hands-free)
   liveMode: 'aggressive',        // 'aggressive' | 'stable'
   provider: 'cpu', threads: 2,
@@ -67,6 +67,7 @@ function normalize(s) {
   const d = DEFAULTS;
   const vks = Array.isArray(s?.hotkey?.vks) ? s.hotkey.vks.map(Number).filter((n) => n > 0 && n < 256).slice(0, 4) : d.hotkey.vks;
   return {
+    hotkeyV: 2,                  // 2 = Ctrl+Space is the default (1 = the old lone Pause key); see Store
     hotkey: vks.length ? { vks, label: String(s?.hotkey?.label || '').slice(0, 40) || d.hotkey.label } : d.hotkey,
     mode: oneOf(s?.mode, ['hold', 'toggle'], d.mode),
     liveMode: oneOf(s?.liveMode, ['aggressive', 'stable'], d.liveMode),
@@ -97,7 +98,12 @@ class Store {
   constructor(dir) {
     this.dir = dir;
     this.files = { settings: path.join(dir, 'settings.json'), stats: path.join(dir, 'stats.json'), history: path.join(dir, 'history.json') };
-    this.settings = normalize(readJson(this.files.settings, {}));
+    const raw = readJson(this.files.settings, {});
+    // one-time move off the old default: a saved lone Pause from before hotkeyV 2 was the default, not a choice
+    const oldDefault = raw && raw.hotkeyV !== 2 && Array.isArray(raw.hotkey?.vks) && raw.hotkey.vks.length === 1 && Number(raw.hotkey.vks[0]) === 0x13;
+    if (oldDefault) delete raw.hotkey;
+    this.settings = normalize(raw);
+    if (oldDefault) writeJson(this.files.settings, this.settings);
     this.stats = readJson(this.files.stats, { days: {} });       // { days: { 'YYYY-MM-DD': { words, speechSec, sessions } } }
     this.history = readJson(this.files.history, []);
   }

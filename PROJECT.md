@@ -25,7 +25,8 @@ Tray + click-through floating pill. Everything local. Built and tested 2026-10-1
 | RTX 3050 shared with Rocket League + OBS | default CPU int8; keep CPU use modest |
 | no key-up in `globalShortcut` | a C# helper (compiled from our own source with .NET Framework csc) polls GetAsyncKeyState |
 | PowerShell tool is broken in this agent shell | use Bash; Norton flags `powershell.exe` (approved once), so the app never spawns it |
-| Backspace + held Ctrl/Alt/Win = word-delete etc. | default hotkey is a lone key (Pause); modifier combos are released around corrections |
+| Backspace + held Ctrl/Alt/Win = word-delete etc. | default hotkey is Ctrl+Space (decided 2026-10-13, hotkeyV 2); the helper sends a logical Ctrl-up / keystrokes / Ctrl-down (only if still held) in ONE SendInput call around every burst. Rejected: Shift+Left select-and-overtype, deferring corrections until release. Proof: `.tests/ctrlspace/` (L1-L4 simulated) and `real-ctrl-space.js` (own window, real keys) |
+| Ctrl+Space is the Windows IME toggle / VS Code completion | the helper's WH_KEYBOARD_LL hook swallows the chord's Space only while dictation can use it (claim off when paused, in the hotkey picker, or for a lone-key hotkey); Ctrl alone / Space alone always pass. Hook events tagged SELF (our own SendInput) are ignored; other injected input (remappers, remote desktop) counts as physical |
 | Never log dictated text | logs carry counts and timings only |
 | Helper process spawned before the windows loaded | on this machine Chromium never reached dom-ready for the pill; main.js starts the helper only after the pages loaded |
 | Offscreen capture | tests set PF_OFFSCREEN (windows at x=-6000) plus disable-features=CalculateNativeWinOcclusion, else capturePage is blank |
@@ -49,6 +50,7 @@ Settings and new keys: commands, tone, translate, whisper, cleanup, notes (no to
 - **2026-10-13** Norton deleted llama-server.exe (llama.cpp b11583 launcher) from %APPDATA% after a few runs; node-llama-cpp is used instead.
 
 - **2026-10-13** � sherpa-onnx npm build has no GPU support; provider `cuda` falls back to CPU. Dutch accuracy untested (no Dutch TTS voice). The microphone path (getUserMedia + AudioWorklet) was not run: no mic exercised, tests use a wav fed through the same pipeline.
+- **2026-10-13** Ctrl+Space chord, not verifiable here: real hardware key events through the hook (only injected events were exercised), the Windows IME toggle itself, VS Code completion, and Alt/Win held as chord modifiers (releasing Alt or Win alone can pop the menu bar / Start menu; Ctrl is safe). A chosen lone Pause from before hotkeyV 2 cannot be told from the old default and is moved once. Auto-repeat of a held modifier during the sub-millisecond SendInput burst cannot interleave (one call), but the system-wide 300 ms hook timeout is the limit if the helper stalls.
 - **2026-10-13** � final correction may exceed the 40-backspace live cap (bounded 400) so a mangled partial cannot stay.
 
 ## Dropped approaches

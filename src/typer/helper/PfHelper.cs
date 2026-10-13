@@ -7,9 +7,28 @@
 //   TYPE <id> <hwnd> <base64 UTF-16LE text>   (a '\n' in the text is Shift+Enter; '\r' is dropped)
 //   BS   <id> <hwnd> <count>
 //   FG                           report the foreground window now
-//   PRESS <vk> down|up           only with --test: synthesize a physical-looking key event (used by the tests)
+//   CLAIM 0|1                    1 = swallow the hotkey's non-modifier key while its modifiers are held (Ctrl+Space);
+//                                0 = never swallow anything. Lone-key hotkeys (Pause) are never swallowed.
+//   PRESS <vk> down|up [hwnd]    only with --test: inject a key event; with hwnd, refused unless that window is foreground
+//   SIM <vk> down|up             only with --test: feed a PHYSICAL key event to the hook logic, no OS event at all
+//   CAPTURE 0|1                  only with --test: Send() reports the key sequence it would send (SENT ...) instead of sending
+//   SIMMID <vk>                  only with --test: the next Send() sees the physical key-up of <vk> after it decided, before it sent
+//   SIMLATE <vk>                 only with --test: same, but after the list of keys to restore is fixed (exercises the final check)
+//   NORELEASE 0|1                only with --test: do not release modifiers around typing (the control experiment)
+//   DUMP                         only with --test: DUMP hook=<0|1> claim=<0|1> chord=<0|1> released=<n>
 //   QUIT
-// stdout: READY | KEY down|up | ESC | FG <hwnd> <pid> <proc> <base64 title> | OK <id> | REFUSED <id>
+// stdout: READY | KEY down|up | ESC | FG <hwnd> <pid> <proc> <base64 title> | OK <id> | REFUSED <id> | SENT ... | SIM swallow|pass | DUMP ...
+//
+// Hotkey = a chord. With a non-modifier key in it (Ctrl+Space) the chord starts only when that key goes down while
+// every modifier is ALREADY down (a lone Ctrl, a lone Space, or Space then Ctrl never start it). It is tracked by a
+// low-level keyboard hook that ignores the events this process injects itself (tagged SELF). With CLAIM 1 the hook
+// swallows the chord's key (down, auto-repeat and up) so the focused app never sees Ctrl+Space (IME toggle, VS Code
+// completion); Ctrl alone and Space alone always pass. Without the hook (install failed) it polls GetAsyncKeyState.
+//
+// Ctrl held + Backspace = delete a word. So around every TYPE/BS the held chord modifiers get a LOGICAL key-up
+// (injected, in the same SendInput call as the keystrokes) and afterwards a key-down again only if the user still
+// holds them. If the user lets go mid-burst the hook swallows that physical key-up (the app already saw one), and a
+// final check sends an up if a down went out after the physical release. Apps never see a stuck or unmatched modifier.
 // TYPE/BS are refused when the foreground window is not <hwnd> at the moment of sending.
 // Dictated text is never written anywhere by this process.
 using System;
@@ -24,6 +43,9 @@ static class PfHelper
 {
     const uint INPUT_KEYBOARD = 1, KEYEVENTF_KEYUP = 2, KEYEVENTF_UNICODE = 4;
     const ushort VK_BACK = 0x08, VK_ESCAPE = 0x1B;
+    const uint KEYEVENTF_EXTENDEDKEY = 1;
+    static readonly IntPtr SELF = new IntPtr(0x50464C57);     // dwExtraInfo on every event this process injects
+    const int WH_KEYBOARD_LL = 13, WM_KEYDOWN = 0x100, WM_KEYUP = 0x101, WM_SYSKEYDOWN = 0x104, WM_SYSKEYUP = 0x105;
 
     [StructLayout(LayoutKind.Sequential)] struct MOUSEINPUT { public int dx, dy; public uint mouseData, dwFlags, time; public IntPtr dwExtraInfo; }
     [StructLayout(LayoutKind.Sequential)] struct KEYBDINPUT { public ushort wVk, wScan; public uint dwFlags, time; public IntPtr dwExtraInfo; }
@@ -32,6 +54,14 @@ static class PfHelper
 
     [DllImport("user32.dll", SetLastError = true)] static extern uint SendInput(uint n, INPUT[] inputs, int size);
     [DllImport("user32.dll")] static extern short GetAsyncKeyState(int vk);
+    delegate IntPtr LowLevelProc(int code, IntPtr wParam, IntPtr lParam);
+    [StructLayout(LayoutKind.Sequential)] struct KBDLLHOOKSTRUCT { public uint vkCode, scanCode, flags, time; public IntPtr dwExtraInfo; }
+    [StructLayout(LayoutKind.Sequential)] struct POINT { public int x, y; }
+    [StructLayout(LayoutKind.Sequential)] struct MSG { public IntPtr hwnd; public uint message; public IntPtr wParam, lParam; public uint time; public POINT pt; }
+    [DllImport("user32.dll", SetLastError = true)] static extern IntPtr SetWindowsHookEx(int id, LowLevelProc proc, IntPtr mod, uint thread);
+    [DllImport("user32.dll")] static extern IntPtr CallNextHookEx(IntPtr hook, int code, IntPtr wParam, IntPtr lParam);
+    [DllImport("user32.dll")] static extern int GetMessage(out MSG msg, IntPtr hwnd, uint min, uint max);
+    [DllImport("kernel32.dll", CharSet = CharSet.Unicode)] static extern IntPtr GetModuleHandle(string name);
     [DllImport("user32.dll")] static extern IntPtr GetForegroundWindow();
     [DllImport("user32.dll")] static extern uint GetWindowThreadProcessId(IntPtr h, out uint pid);
     [DllImport("user32.dll", CharSet = CharSet.Unicode)] static extern int GetWindowText(IntPtr h, StringBuilder sb, int max);
@@ -39,7 +69,18 @@ static class PfHelper
     static readonly object outLock = new object();
     static volatile int[] hotkey = new int[0];
     static IntPtr lastFg = IntPtr.Zero;
-    static bool testMode = false;
+    static bool testMode = false, capture = false, noRelease = false;
+    static int simMid = 0, simLate = 0;
+
+    // ---- hotkey / hook state, all guarded by st ----
+    static readonly object st = new object();
+    static readonly bool[] phys = new bool[256];                   // physical key state as the hook saw it (never our own events)
+    static readonly HashSet<int> swallowed = new HashSet<int>();   // chord keys whose down we swallowed: swallow repeats and the up too
+    static readonly HashSet<int> released = new HashSet<int>();    // modifiers we logically released and have not restored yet
+    static int trigger = 0;                                        // the one non-modifier key of the hotkey, 0 if none
+    static bool claim = false, chordHeld = false, hookOk = false;
+    static IntPtr hookHandle = IntPtr.Zero;
+    static LowLevelProc hookProc;                                  // kept in a static so the GC never frees the delegate
 
     static void Out(string s) { lock (outLock) { Console.Out.WriteLine(s); Console.Out.Flush(); } }
 
@@ -52,24 +93,142 @@ static class PfHelper
 
     static bool IsModifier(int vk) { return vk == 0x10 || vk == 0x11 || vk == 0x12 || (vk >= 0xA0 && vk <= 0xA5) || vk == 0x5B || vk == 0x5C; }
 
-    static List<INPUT> WithModifiersReleased(List<INPUT> body)
+    // the physical keys a hotkey modifier stands for (generic Ctrl = either Ctrl)
+    static int[] Specific(int vk)
     {
-        // a held Ctrl/Alt/Win turns Backspace into word-delete etc.: release them around the batch, then press again
-        List<ushort> held = new List<ushort>();
-        foreach (int vk in hotkey) if (IsModifier(vk) && (GetAsyncKeyState(vk) & 0x8000) != 0) held.Add((ushort)vk);
-        if (held.Count == 0) return body;
-        List<INPUT> all = new List<INPUT>();
-        foreach (ushort vk in held) all.Add(Key(vk, 0, KEYEVENTF_KEYUP));
-        all.AddRange(body);
-        foreach (ushort vk in held) all.Add(Key(vk, 0, 0));
-        return all;
+        if (vk == 0x10) return new int[] { 0xA0, 0xA1 };
+        if (vk == 0x11) return new int[] { 0xA2, 0xA3 };
+        if (vk == 0x12) return new int[] { 0xA4, 0xA5 };
+        return new int[] { vk };
+    }
+    static bool IsDownLocked(int vk) { foreach (int k in Specific(vk)) if (phys[k]) return true; return phys[vk]; }
+    static bool ModsDownLocked()
+    {
+        foreach (int vk in hotkey) if (IsModifier(vk) && !IsDownLocked(vk)) return false;
+        return true;
+    }
+    static bool IsChordModifierLocked(int vk)
+    {
+        foreach (int h in hotkey) if (IsModifier(h) && (h == vk || Array.IndexOf(Specific(h), vk) >= 0)) return true;
+        return false;
     }
 
-    static void Send(List<INPUT> list)
+    // What happens to one PHYSICAL key event: true = swallow it. Must stay fast (the OS gives a hook 300 ms).
+    static bool OnKey(int vk, bool down)
     {
-        List<INPUT> all = WithModifiersReleased(list);
-        INPUT[] arr = all.ToArray();
+        lock (st)
+        {
+            bool was = phys[vk];
+            phys[vk] = down;
+            bool ours = !down && released.Remove(vk);                 // a modifier whose up we already sent: swallow the real one
+            if (trigger != 0)
+            {
+                if (down)
+                {
+                    if (swallowed.Contains(vk)) return true;           // auto-repeat of a swallowed chord key
+                    if (vk == trigger && !was && !chordHeld && ModsDownLocked())
+                    {
+                        chordHeld = true;
+                        if (claim) { swallowed.Add(vk); return true; }
+                    }
+                }
+                else
+                {
+                    if (vk == trigger) chordHeld = false;
+                    else if (chordHeld && IsChordModifierLocked(vk) && !ModsDownLocked()) chordHeld = false;
+                    if (swallowed.Remove(vk)) return true;
+                }
+            }
+            else if (hotkey.Length > 0)
+            {
+                bool all = true;
+                foreach (int h in hotkey) if (!IsDownLocked(h)) { all = false; break; }
+                chordHeld = all;
+            }
+            return ours;
+        }
+    }
+
+    static IntPtr HookCb(int code, IntPtr wParam, IntPtr lParam)
+    {
+        if (code >= 0 && !capture)      // capture = a simulated test: real keys on this machine are never tracked or swallowed
+        {
+            KBDLLHOOKSTRUCT k = (KBDLLHOOKSTRUCT)Marshal.PtrToStructure(lParam, typeof(KBDLLHOOKSTRUCT));
+            if (k.dwExtraInfo != SELF && k.vkCode < 256)
+            {
+                int m = wParam.ToInt32();
+                bool down = m == WM_KEYDOWN || m == WM_SYSKEYDOWN;
+                bool up = m == WM_KEYUP || m == WM_SYSKEYUP;
+                if ((down || up) && OnKey((int)k.vkCode, down)) return new IntPtr(1);
+            }
+        }
+        return CallNextHookEx(hookHandle, code, wParam, lParam);
+    }
+
+    static void HookThread()
+    {
+        hookProc = HookCb;
+        hookHandle = SetWindowsHookEx(WH_KEYBOARD_LL, hookProc, GetModuleHandle(null), 0);
+        hookOk = hookHandle != IntPtr.Zero;
+        MSG msg;
+        if (hookOk) while (GetMessage(out msg, IntPtr.Zero, 0, 0) > 0) { }
+    }
+
+    static INPUT Mod(int vk, bool up)
+    {
+        return Key((ushort)vk, 0, (up ? KEYEVENTF_KEYUP : 0) | ((vk == 0xA3 || vk == 0xA5 || vk == 0x5B || vk == 0x5C) ? KEYEVENTF_EXTENDEDKEY : 0));
+    }
+
+    static void Emit(List<INPUT> list)
+    {
+        INPUT[] arr = list.ToArray();
+        for (int i = 0; i < arr.Length; i++) arr[i].u.ki.dwExtraInfo = SELF;
+        if (capture)
+        {
+            StringBuilder sb = new StringBuilder("SENT");
+            foreach (INPUT i in arr)
+                sb.Append(' ').Append(i.u.ki.wVk != 0 ? i.u.ki.wVk.ToString("X2") : "c" + i.u.ki.wScan.ToString("X")).Append((i.u.ki.dwFlags & KEYEVENTF_KEYUP) != 0 ? ":U" : ":D");
+            Out(sb.ToString());
+            return;
+        }
         SendInput((uint)arr.Length, arr, Marshal.SizeOf(typeof(INPUT)));
+    }
+
+    static void Send(List<INPUT> body)
+    {
+        List<int> held = new List<int>(), restore = new List<int>();
+        if (!noRelease)
+            lock (st)
+            {
+                foreach (int h in hotkey)
+                {
+                    if (!IsModifier(h)) continue;
+                    foreach (int k in Specific(h))
+                    {
+                        bool down = hookOk ? phys[k] : (GetAsyncKeyState(k) & 0x8000) != 0;
+                        if (down && !held.Contains(k)) { held.Add(k); released.Add(k); phys[k] = true; }
+                    }
+                }
+            }
+        if (simMid != 0) { int m = simMid; simMid = 0; OnKey(m, false); }      // test hook: the user lets go after the decision
+        lock (st) { foreach (int k in held) if (phys[k]) restore.Add(k); }
+        if (simLate != 0) { int m = simLate; simLate = 0; OnKey(m, false); }   // test hook: ... or after the restore list is fixed
+        // ONE SendInput call, so nothing can interleave: the app sees  up, keystrokes, down  and never Ctrl+Backspace.
+        // The down is only sent for keys still physically held.
+        List<INPUT> all = new List<INPUT>();
+        foreach (int k in held) all.Add(Mod(k, true));
+        all.AddRange(body);
+        foreach (int k in restore) all.Add(Mod(k, false));
+        Emit(all);
+        if (held.Count > 0)
+            lock (st)
+            {
+                // released during the burst but the down already went out: send the matching up
+                List<INPUT> fix = new List<INPUT>();
+                foreach (int k in restore) if (!phys[k]) fix.Add(Mod(k, true));
+                if (fix.Count > 0) Emit(fix);
+                foreach (int k in held) released.Remove(k);
+            }
     }
 
     static string FgLine()
@@ -90,8 +249,13 @@ static class PfHelper
         while (true)
         {
             int[] hk = hotkey;
-            bool now = hk.Length > 0;
-            foreach (int vk in hk) if ((GetAsyncKeyState(vk) & 0x8000) == 0) { now = false; break; }
+            bool now;
+            if (hookOk) lock (st) { now = hk.Length > 0 && chordHeld; }
+            else
+            {
+                now = hk.Length > 0;
+                foreach (int vk in hk) if ((GetAsyncKeyState(vk) & 0x8000) == 0) { now = false; break; }
+            }
             if (now != down) { down = now; Out(down ? "KEY down" : "KEY up"); }
             bool e = (GetAsyncKeyState(VK_ESCAPE) & 0x8000) != 0;
             if (e && !esc) Out("ESC");
@@ -110,13 +274,29 @@ static class PfHelper
             string t = p.Trim();
             try { vks.Add(t.StartsWith("0x") ? Convert.ToInt32(t.Substring(2), 16) : Convert.ToInt32(t)); } catch { }
         }
-        hotkey = vks.ToArray();
+        lock (st)
+        {
+            int plain = 0, which = 0;
+            foreach (int v in vks) if (!IsModifier(v)) { plain++; which = v; }
+            hotkey = vks.ToArray();
+            // swallowing only makes sense for "modifier(s) + one key"; a lone key (Pause) or a modifiers-only combo is never swallowed
+            trigger = (plain == 1 && vks.Count > 1) ? which : 0;
+            chordHeld = false; swallowed.Clear();
+        }
+    }
+
+    static void TestSim(int vk, bool down)
+    {
+        bool sw = OnKey(vk, down);
+        Out("SIM " + (sw ? "swallow" : "pass"));
     }
 
     static void Main(string[] args)
     {
         foreach (string x in args) if (x == "--test") testMode = true;
         Console.InputEncoding = Encoding.UTF8;
+        Thread hook = new Thread(HookThread); hook.IsBackground = true; hook.Start();
+        for (int w = 0; w < 100 && hookHandle == IntPtr.Zero && hook.IsAlive; w++) Thread.Sleep(10);
         Thread poll = new Thread(Poll); poll.IsBackground = true; poll.Start();
         Out("READY");
         string line;
@@ -129,9 +309,24 @@ static class PfHelper
                 {
                     case "HOTKEY": SetHotkey(a.Length > 1 ? a[1] : ""); break;
                     case "FG": Out(FgLine()); break;
+                    case "CLAIM": lock (st) { claim = a.Length > 1 && a[1] == "1"; if (!claim) swallowed.Clear(); } break;
+                    case "CAPTURE": if (testMode) capture = a.Length > 1 && a[1] == "1"; break;
+                    case "NORELEASE": if (testMode) noRelease = a.Length > 1 && a[1] == "1"; break;
+                    case "SIMMID": if (testMode && a.Length > 1) simMid = int.Parse(a[1]); break;
+                    case "SIMLATE": if (testMode && a.Length > 1) simLate = int.Parse(a[1]); break;
+                    case "SIM": if (testMode && a.Length > 2) TestSim(int.Parse(a[1]), a[2] == "down"); break;
+                    case "DUMP":
+                        if (testMode) lock (st) { Out("DUMP hook=" + (hookOk ? 1 : 0) + " claim=" + (claim ? 1 : 0) + " chord=" + (chordHeld ? 1 : 0) + " released=" + released.Count + " swallowed=" + swallowed.Count); }
+                        break;
                     case "QUIT": return;
                     case "PRESS":
-                        if (testMode && a.Length > 2) { List<INPUT> k = new List<INPUT>(); k.Add(Key((ushort)int.Parse(a[1]), 0, a[2] == "up" ? KEYEVENTF_KEYUP : 0)); SendInput(1, k.ToArray(), Marshal.SizeOf(typeof(INPUT))); }
+                        if (testMode && a.Length > 2)
+                        {
+                            // refuse unless the named window is foreground: a test never presses keys into anything else
+                            if (a.Length > 3 && GetForegroundWindow().ToInt64() != long.Parse(a[3])) { Out("REFUSED press"); break; }
+                            List<INPUT> k = new List<INPUT>(); k.Add(Key((ushort)int.Parse(a[1]), 0, a[2] == "up" ? KEYEVENTF_KEYUP : 0));
+                            SendInput(1, k.ToArray(), Marshal.SizeOf(typeof(INPUT)));
+                        }
                         break;
                     case "TYPE":
                     case "BS":

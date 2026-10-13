@@ -24,14 +24,19 @@ class Controller extends EventEmitter {
     super();
     Object.assign(this, { getAsr, typer, store, mic, ownPid, now, doneFlashMs, llm, notes });
     this.carry = null; this.gain = 1; this.flash = '';
-    this.enabled = true; this.session = null; this.lastLevelAt = 0; this.level = 0; this.pillState = 'idle';
+    this.enabled = true; this.capturing = false; this.session = null; this.lastLevelAt = 0; this.level = 0; this.pillState = 'idle';
     this.fsm = new HotkeyFsm({ mode: store.get().mode, onAction: (a) => this._action(a) });
   }
 
   attach() {
-    this.typer.on('key', (e) => (this.enabled ? (e.down ? this.fsm.down(this.now()) : this.fsm.up(this.now())) : null));
+    this.typer.on('key', (e) => (this.enabled && !this.capturing ? (e.down ? this.fsm.down(this.now()) : this.fsm.up(this.now())) : null));
     this.typer.on('esc', () => this.fsm.esc());
+    this._claim();
   }
+  /** the helper swallows the chord (Ctrl+Space) only while dictation can actually use it: not paused, not in the hotkey picker */
+  _claim() { if (this.typer.setClaim) this.typer.setClaim(this.enabled && !this.capturing); }
+  /** the Settings hotkey picker is listening: the chord must reach the page, and must not start dictation */
+  setCapturing(on) { this.capturing = !!on; if (on && this.session) this._action({ type: 'cancel' }); this._claim(); }
   applySettings() { this.fsm.mode = this.store.get().mode; this.emit('flags', this.flags()); }
   /** what the pill shows as always-on chips */
   flags() {
@@ -49,7 +54,7 @@ class Controller extends EventEmitter {
       tone: s.tone, translate: s.translate, cleanup: s.cleanup,
     };
   }
-  setEnabled(on) { this.enabled = !!on; if (!on && this.session) this._action({ type: 'cancel' }); this._pill('idle'); }
+  setEnabled(on) { this.enabled = !!on; if (!on && this.session) this._action({ type: 'cancel' }); this._claim(); this._pill('idle'); }
 
   _pill(state, extra = {}) {
     this.pillState = state;
