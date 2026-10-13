@@ -2,6 +2,7 @@
 const pill = document.getElementById('pill');
 const textEl = document.getElementById('text');
 const noteEl = document.getElementById('note');
+const flagsEl = document.getElementById('flags');
 const canvas = document.getElementById('wave');
 const g = canvas.getContext('2d');
 const BARS = 15;
@@ -49,6 +50,16 @@ function draw(now) {
   if (!idleish) raf = requestAnimationFrame(draw);
 }
 
+const TARGET = { swap: 'NL \u21C4 EN', en: '\u2192 EN', nl: '\u2192 NL' };
+/** always-on chips under the bar: whisper mode, translate (experimental), local cleanup */
+function setFlags(f) {
+  const chips = [];
+  if (f && f.whisper) chips.push('<span class="chip whisper"><i></i>Whisper</span>');
+  if (f && f.translate) chips.push('<span class="chip translate">Translate ' + (TARGET[f.translate] || '') + ' \u00b7 experimental</span>');
+  if (f && f.cleanup) chips.push('<span class="chip">AI cleanup</span>');
+  flagsEl.innerHTML = chips.join('');
+}
+window.pf.on('pill:flags', setFlags);
 window.pf.on('pill:state', setState);
 window.pf.on('pill:level', (v) => { target = v; });
 

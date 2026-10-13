@@ -79,6 +79,7 @@ function settingsPage() {
     <div class="srow col"><div class="l"><b>Filler words to remove</b><div>Comma separated. Removed from finished text only.</div></div><div class="c"><input type="text" id="fillers" value="${L.esc(s.fillers.join(', '))}"></div></div>
     <div class="srow col"><div class="l"><b>Never type into</b><div>Comma separated. Matches process or window title. Your own windows are always excluded.</div></div><div class="c"><input type="text" id="deny" value="${L.esc(s.deny.join(', '))}"></div></div>
   </div>
+  ${extraSettings()}
   <h2>Privacy</h2><div class="card" style="padding:4px 18px">
     <div class="srow"><div class="l"><b>Keep transcript history</b><div>Off by default. Stored only on this computer.</div></div><div class="c">${s.historyEnabled ? '<button class="btn danger" id="hist-clear">Clear</button>' : ''}${toggle('hist', s.historyEnabled)}</div></div>
     <div class="srow"><div class="l"><b>Start with Windows</b><div>Off. Turning it on adds a login item for this app.</div></div><div class="c">${toggle('login', s.launchAtLogin)}</div></div>
@@ -120,13 +121,14 @@ function bind() {
     await loadDevices(); render();
   });
   on('dl', () => window.pf.invoke('models:download'));
+  bindExtra();
   on('hk-change', () => { S.capturing = S.capturing ? null : []; S.hkError = ''; render(); });
 }
 
 function render() {
   const pages = { home, dictionary: () => pairsPage({ title: 'Dictionary', blurb: 'Replace a word or name every time it is dictated. Case-insensitive, whole words only.', listKey: 'dictionary', a: 'from', b: 'to', phA: 'Heard as', phB: 'Replace with' }),
     snippets: () => pairsPage({ title: 'Snippets', blurb: 'Say a short phrase, get a longer text. Say only the phrase to replace the whole line.', listKey: 'snippets', a: 'trigger', b: 'expansion', phA: 'When I say', phB: 'Type this', multi: false }),
-    style, settings: settingsPage };
+    style, settings: settingsPage, notes: notesPage };
   const y = main.scrollTop;
   main.innerHTML = S.settings ? pages[S.page]() : '';
   main.scrollTop = y;
@@ -166,6 +168,7 @@ function engineBadge() {
 }
 
 async function refresh() {
+  await loadExtra();
   [S.settings, S.stats, S.history, S.info] = await Promise.all([window.pf.invoke('settings:get'), window.pf.invoke('stats:get'), window.pf.invoke('history:get'), window.pf.invoke('app:info')]);
   engineBadge(); render();
 }
@@ -174,5 +177,8 @@ window.pf.on('app:stats', (s) => { S.stats = s; if (S.page === 'home') render();
 window.pf.on('settings:changed', (s) => { S.settings = s; render(); });
 window.pf.on('engine:state', async () => { S.info = await window.pf.invoke('app:info'); engineBadge(); if (S.page === 'settings') render(); });
 window.pf.on('models:progress', (p) => { S.dl = p.done ? null : { pct: Math.round(p.pct) }; engineBadge(); if (S.page === 'settings') render(); });
-window.pf.on('test:set', (t) => { if (t.page) { S.page = t.page; } if (t.state) Object.assign(S, t.state); render(); });
+window.pf.on('test:set', (t) => {
+  if (t.page) { S.page = t.page; } if (t.state) Object.assign(S, t.state); if (t.x) Object.assign(X, t.x); render();
+  if (t.scrollTo) { const el = document.querySelector(t.scrollTo); if (el) { if (t.center) el.scrollIntoView({ block: 'center' }); else main.scrollTop = el.offsetTop - 12; } }
+});
 loadDevices().then(refresh);

@@ -6,7 +6,9 @@ const { Segmenter } = require('./segmenter');
 
 const o = workerData;
 const engine = createSherpaEngine({ modelDir: o.modelDir, numThreads: o.numThreads, provider: o.provider });
-const vad = createSileroVad({ modelPath: o.vadPath, minSilence: (o.endpointMs || 500) / 1000 });
+let vadThreshold = o.vadThreshold || 0.5;
+const makeVad = () => createSileroVad({ modelPath: o.vadPath, minSilence: (o.endpointMs || 500) / 1000, threshold: vadThreshold });
+const vad = makeVad();
 const seg = new Segmenter({ engine, vad, partialIntervalMs: o.partialIntervalMs, capSec: o.capSec });
 let curSid = 0;
 for (const ev of ['segment-start', 'partial', 'final', 'endpoint', 'done']) {
@@ -17,6 +19,7 @@ parentPort.on('message', (m) => {
   else if (m.cmd === 'push') seg.pushAudio(m.samples);
   else if (m.cmd === 'release') seg.release();
   else if (m.cmd === 'cancel') seg.cancel();
+  else if (m.cmd === 'vad') { if (m.threshold && m.threshold !== vadThreshold) { vadThreshold = m.threshold; seg.vad = makeVad(); } }
   else if (m.cmd === 'close') { engine.close(); process.exit(0); }
 });
 parentPort.postMessage({ ev: 'ready', engine: engine.name, provider: o.provider });

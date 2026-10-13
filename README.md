@@ -35,6 +35,51 @@ registered when you switch it on.
 - Finals only: filler removal, dictionary, snippets, casual style (`src/core/postprocess.js`).
 - Logs hold counts and timings, never dictated text. Audio is never written to disk. History is off by default.
 
+## Voice commands, tone, notes, local model (added 2026-10-13)
+
+All of it is local and optional. Defaults: voice commands, per-app tone and "note to self" on; translate, whisper and AI cleanup off.
+
+- **Voice commands** (`src/core/commands.js`): a segment that says only a command phrase is never typed. English and Dutch:
+  delete that / scratch that / verwijder dat, new line / nieuwe regel, new paragraph / nieuwe alinea, undo that / maak dat ongedaan,
+  capitalize that (each word), all caps that, make that formal / casual (maak dat formeel / informeel). Matched on finals, whole segment
+  only; say the command after a short pause. The phrase list is editable in Settings. They edit only the last typed segment, only while the
+  same window has focus, bounded by 400 backspaces, also from the next hold (up to 2 minutes later). A partial that might become a command
+  ("note to the first" can be a misheard "note to self") is held back instead of typed; the cost is that a sentence starting with "note to"
+  or "new line ..." appears when final instead of live. "New line" types Shift+Enter (never a bare Enter, so no chat message or terminal
+  command is sent; a terminal may still treat Shift+Enter as Enter). Dutch commands are tested on text only: the only Dutch voice here is an
+  English voice, which Parakeet hears as "Vervader", so Dutch commands are not verified on real audio.
+- **Per-app tone** (`src/core/tone.js`): the foreground process or window title (from the existing Win32 helper) picks casual, formal,
+  code/terminal or default. Built-ins: Discord/WhatsApp/Telegram/Signal casual; Outlook/Gmail/Thunderbird formal; VS Code, Cursor,
+  Windows Terminal, cmd, PowerShell, mintty code (no capital, no final stop, no trailing space). Your rows in Settings win over built-ins; the
+  never-type-into list wins over everything. Applied to finals only: the live preview stays as the model writes it.
+- **Translate (experimental)**: speak Dutch or English, get the other. Parakeet cannot translate, so the 0.6B local model is used with a
+  translate-only prompt. Be realistic: it is weak. Measured here it produced "We moeten het tomorrow om tien" and "Bekijk de rapport eerst
+  bij de vergelijking" for correct Dutch/English sentences, and good output for easy ones. A guard rejects empty, wrong-language, CJK or
+  prompt-echo answers and types the original, but it cannot judge quality. Quality is NOT verified.
+- **Whisper mode**: input gain (default 3x) plus a lower VAD threshold (0.3 instead of 0.5), a Whisper chip under the bar, tray toggle. On
+  synthesised speech scaled to -56 dBFS rms, normal mode lost "I would like to" (14 words heard of 23), whisper mode heard all 23. A real
+  whisper through a real microphone was not tested.
+- **AI cleanup (off by default)**: Qwen3 0.6B Q8_0 from Qwen/Qwen3-0.6B-GGUF, run by node-llama-cpp 3.22.1 (prebuilt CPU binary,
+  `llm-runtime/`) in a worker thread, CPU only, 2 threads by default. Finals only, never partials; fixed few-shot prompt, thinking disabled,
+  temperature 0, 1.5 s hard limit (start-up included), then the original text is typed. The reply must keep the words (word-level
+  Levenshtein <= 0.34, char similarity >= 0.8, Jaccard >= 0.6, length 0.7-1.4x) or the original is typed. It starts when you press the key
+  and is freed after 5 idle minutes (setting). Measured on this PC (Ryzen 7 7800X3D, 8 cores, 6 sentences, warm): median 475 ms, max 645 ms
+  at 2 threads, 1.87 cores busy = 23% of the machine while generating; 4 threads: median 471 ms, 43% of the machine, so 2 is the default.
+  Cold start 1.2 s. Quality is modest: it adds capitals and stops, but does not fix "their going" -> "they're going". Without the model
+  files or runtime every call falls back to the original text.
+  First runtime tried was llama.cpp's llama-server b11583 (official release, hash-verified); Norton deleted its 9 KB launcher after a few
+  runs and blocked re-creating it, so it was dropped for node-llama-cpp, which loads in-process.
+- **Notes**: "note to self, <text>" / "notitie aan mezelf, <text>" (or the trigger alone, then the note as the next sentence) saves the note
+  instead of typing it, shows "Saved note" in the bar, and appends a JSON line to `<userData>/notes.jsonl`
+  (`{id, ts, text, sync, attempts, nextAt, error?, pageId?}`). The Notes page lists them with Copy, Resend and Delete. Optional Notion
+  sync (Settings): POST https://api.notion.com/v1/pages with `Notion-Version: 2022-06-28`, your integration token (encrypted with Electron
+  safeStorage in secrets.json, never logged, never read from .env) and a database or page id. Failures stay in the outbox and retry after
+  30 s, 1 min, 2 min ... up to 1 h (Retry-After honoured). Developed against a local mock server only: **real Notion is unverified**. A
+  timeout after Notion accepted a page can create a duplicate on retry (the API has no idempotency key).
+
+Install the model runtime once: `npm --prefix llm-runtime install --omit=optional --ignore-scripts` (82 MB; integrity pinned by its lock file),
+then Settings > AI cleanup > Download fetches the 639 MB model (SHA-256 checked).
+
 ## Measured (this PC, 8 cores, Rocket League + OBS not running, synthesised speech, real-time pacing)
 
 | utterance | audio | onset to first char | release to final | decode RTF | CPU (2 thr / 4 thr, % of machine) |
@@ -65,6 +110,8 @@ an English voice: it proves the pipeline, not Dutch word accuracy.
 | joiner.int8.onnx | 6,355,277 | 3164c13fc2821009440d20fcb5fdc78bff28b4db2f8d0f0b329101719c0948b3 |
 | tokens.txt | 93,939 | d58544679ea4bc6ac563d1f545eb7d474bd6cfa467f0a6e2c1dc1c7d37e3c35d |
 | silero_vad.onnx (k2-fsa/sherpa-onnx release asr-models) | 643,854 | 9e2449e1087496d8d4caba907f23e0bd3f78d91fa552479bb9c23ac09cbb1fd6 |
+| Qwen3-0.6B-Q8_0.gguf (huggingface.co/Qwen/Qwen3-0.6B-GGUF, Apache-2.0) | 639,446,688 | 9465e63a22add5354d9bb4b99e90117043c7124007664907259bd16d043bb031 |
+| llama-addon.node (@node-llama-cpp/win-x64 3.22.1) | | e0c2ccf0433a9b0a382334b332dc900728a0e293c00e6f21429e44e3d3cbdc5f |
 | electron-v31.7.7-win32-x64.zip | 110,740,332 | e91986dd243d55947e6c5d3fad21795562ec21fa0eec5e95f7e28c830571467f |
 
 npm: electron 31.7.7, sherpa-onnx-node 1.13.8, sherpa-onnx-win-x64 1.13.8 (23 MB, sha512 in package-lock.json).

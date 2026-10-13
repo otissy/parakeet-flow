@@ -52,4 +52,4 @@ function clean(text, o = {}) {
   return t;
 }
 
-module.exports = { clean, removeFillers, applyPairs, DEFAULT_FILLERS };
+module.exports = { clean, removeFillers, applyPairs, tidy, casual, DEFAULT_FILLERS };

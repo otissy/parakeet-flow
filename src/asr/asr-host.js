@@ -24,6 +24,8 @@ class AsrHost extends EventEmitter {
   start() { const sid = (this._sid = (this._sid || 0) + 1); this.worker.postMessage({ cmd: 'start', sid }); return sid; }
   pushAudio(f32) { const c = f32.slice(); this.worker.postMessage({ cmd: 'push', samples: c }, [c.buffer]); }
   release() { this.worker.postMessage({ cmd: 'release' }); }
+  /** Silero VAD speech threshold for the next session (whisper mode lowers it); ordered before the next start() */
+  setVad(threshold) { this.worker.postMessage({ cmd: 'vad', threshold }); }
   cancel() { this.worker.postMessage({ cmd: 'cancel' }); }
   async close() { await this.worker.terminate(); }
 }

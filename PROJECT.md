@@ -36,11 +36,21 @@ Tray + click-through floating pill. Everything local. Built and tested 2026-10-1
 - model URLs, sizes, SHA-256 -> `src/asr/model-store.js`
 - settings defaults -> `src/main/settings.js`
 
+## Added 2026-10-13: commands, tone, translate, whisper, local-model cleanup, notes
+Tests: .tests/{commands,tone,cleanup,notes,whisper,offparity}; .tests/features-e2e holds the shared Electron hook and the manual
+real-newline.js. offparity compares today's typing with commit 185c72c (git show) on 2400 random scripts and on 4 real speech streams.
+New limits: llm-runtime/ has its own package.json (install with --omit=optional, else CUDA/Vulkan packages add 600 MB); the model runs in a
+worker thread, CPU only; commands match whole segments only; the pill window is 110 px high and now also holds the flag chips.
+Settings and new keys: commands, tone, translate, whisper, cleanup, notes (no token in settings; token in secrets.json via safeStorage).
+
 ## Known problems
 
-- **2026-10-13** — sherpa-onnx npm build has no GPU support; provider `cuda` falls back to CPU. Dutch accuracy untested (no Dutch TTS voice). The microphone path (getUserMedia + AudioWorklet) was not run: no mic exercised, tests use a wav fed through the same pipeline.
-- **2026-10-13** — final correction may exceed the 40-backspace live cap (bounded 400) so a mangled partial cannot stay.
+- **2026-10-13** Real Notion sync, Dutch voice commands on real audio, translation quality and a real microphone in whisper mode are unverified.
+- **2026-10-13** Norton deleted llama-server.exe (llama.cpp b11583 launcher) from %APPDATA% after a few runs; node-llama-cpp is used instead.
+
+- **2026-10-13** ï¿½ sherpa-onnx npm build has no GPU support; provider `cuda` falls back to CPU. Dutch accuracy untested (no Dutch TTS voice). The microphone path (getUserMedia + AudioWorklet) was not run: no mic exercised, tests use a wav fed through the same pipeline.
+- **2026-10-13** ï¿½ final correction may exceed the 40-backspace live cap (bounded 400) so a mangled partial cannot stay.
 
 ## Dropped approaches
 
-none yet.
+- **2026-10-13** llama.cpp llama-server as a child process: antivirus removed the launcher stub; replaced by node-llama-cpp in a worker thread.

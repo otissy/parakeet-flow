@@ -1,0 +1,10 @@
+{
+  "name": "parakeet-flow-llm-runtime",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Local LLM runtime for optional cleanup/translate: node-llama-cpp with the prebuilt CPU binary only. Install with: npm --prefix llm-runtime install --omit=optional --ignore-scripts",
+  "dependencies": {
+    "node-llama-cpp": "3.22.1",
+    "@node-llama-cpp/win-x64": "3.22.1"
+  }
+}

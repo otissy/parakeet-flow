@@ -4,7 +4,7 @@
 //   and types with SendInput(KEYEVENTF_UNICODE) on request.
 // stdin  (one command per line):
 //   HOTKEY <vk>[+<vk>...]        set the hold-to-talk combo (decimal or 0xHEX); empty line disables
-//   TYPE <id> <hwnd> <base64 UTF-16LE text>
+//   TYPE <id> <hwnd> <base64 UTF-16LE text>   (a '\n' in the text is Shift+Enter; '\r' is dropped)
 //   BS   <id> <hwnd> <count>
 //   FG                           report the foreground window now
 //   PRESS <vk> down|up           only with --test: synthesize a physical-looking key event (used by the tests)
@@ -144,7 +144,9 @@ static class PfHelper
                             string text = Encoding.Unicode.GetString(Convert.FromBase64String(a[3]));
                             foreach (char c in text)
                             {
-                                if (c == '\r' || c == '\n') continue;
+                                if (c == '\r') continue;
+                                // "new line" voice command: Shift+Enter, a soft break that never sends a chat message
+                                if (c == '\n') { l.Add(Key(0x10, 0, 0)); l.Add(Key(0x0D, 0, 0)); l.Add(Key(0x0D, 0, KEYEVENTF_KEYUP)); l.Add(Key(0x10, 0, KEYEVENTF_KEYUP)); continue; }
                                 l.Add(Key(0, c, KEYEVENTF_UNICODE));
                                 l.Add(Key(0, c, KEYEVENTF_UNICODE | KEYEVENTF_KEYUP));
                             }
