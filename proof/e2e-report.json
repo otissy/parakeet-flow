@@ -1,0 +1,145 @@
+{
+ "errors": [],
+ "shots": {
+  "pill-idle": {
+   "file": "C:\\Users\\lilsh\\Projects\\.wargame-sandboxes\\pf-proof\\pill-idle.png",
+   "w": 480,
+   "h": 110,
+   "litPixels": 52800
+  },
+  "pill-listening-partial": {
+   "file": "C:\\Users\\lilsh\\Projects\\.wargame-sandboxes\\pf-proof\\pill-listening-partial.png",
+   "w": 480,
+   "h": 110,
+   "litPixels": 52800
+  },
+  "pill-listening-later": {
+   "file": "C:\\Users\\lilsh\\Projects\\.wargame-sandboxes\\pf-proof\\pill-listening-later.png",
+   "w": 480,
+   "h": 110,
+   "litPixels": 52800
+  },
+  "pill-processing": {
+   "file": "C:\\Users\\lilsh\\Projects\\.wargame-sandboxes\\pf-proof\\pill-processing.png",
+   "w": 480,
+   "h": 110,
+   "litPixels": 52800
+  },
+  "pill-done": {
+   "file": "C:\\Users\\lilsh\\Projects\\.wargame-sandboxes\\pf-proof\\pill-done.png",
+   "w": 480,
+   "h": 110,
+   "litPixels": 52800
+  },
+  "pill-handsfree": {
+   "file": "C:\\Users\\lilsh\\Projects\\.wargame-sandboxes\\pf-proof\\pill-handsfree.png",
+   "w": 480,
+   "h": 110,
+   "litPixels": 52800
+  },
+  "main-home": {
+   "file": "C:\\Users\\lilsh\\Projects\\.wargame-sandboxes\\pf-proof\\main-home.png",
+   "w": 1000,
+   "h": 680,
+   "litPixels": 680000
+  },
+  "main-dictionary": {
+   "file": "C:\\Users\\lilsh\\Projects\\.wargame-sandboxes\\pf-proof\\main-dictionary.png",
+   "w": 1000,
+   "h": 680,
+   "litPixels": 680000
+  },
+  "main-snippets": {
+   "file": "C:\\Users\\lilsh\\Projects\\.wargame-sandboxes\\pf-proof\\main-snippets.png",
+   "w": 1000,
+   "h": 680,
+   "litPixels": 680000
+  },
+  "main-style": {
+   "file": "C:\\Users\\lilsh\\Projects\\.wargame-sandboxes\\pf-proof\\main-style.png",
+   "w": 1000,
+   "h": 680,
+   "litPixels": 680000
+  },
+  "main-settings": {
+   "file": "C:\\Users\\lilsh\\Projects\\.wargame-sandboxes\\pf-proof\\main-settings.png",
+   "w": 1000,
+   "h": 680,
+   "litPixels": 680000
+  }
+ },
+ "pills": [
+  "listening",
+  "listening",
+  "listening",
+  "cancelled",
+  "idle"
+ ],
+ "notes": [],
+ "step": "shot main-settings",
+ "engine": {
+  "state": "ready",
+  "error": ""
+ },
+ "loading": false,
+ "visible": true,
+ "bounds": {
+  "x": -6000,
+  "y": 0,
+  "width": 1000,
+  "height": 680
+ },
+ "typedWhileTalking": "I would like to schedule the",
+ "finalText": "I would like to schedule the meeting for next Tuesday afternoon. And please remind everyone to bring the printed reports with them.",
+ "states1": [
+  "listening",
+  "listening",
+  "listening",
+  "listening",
+  "listening",
+  "listening",
+  "listening",
+  "listening",
+  "listening",
+  "listening",
+  "listening",
+  "listening",
+  "listening",
+  "listening",
+  "processing",
+  "processing",
+  "processing",
+  "done",
+  "idle"
+ ],
+ "handsFreeState": "handsfree",
+ "states2": [
+  "listening",
+  "idle",
+  "handsfree",
+  "handsfree",
+  "handsfree",
+  "handsfree",
+  "processing",
+  "processing",
+  "done"
+ ],
+ "handsFreeText": "I would like to schedule the meeting for next time.",
+ "beforeEsc": "I would like to schedule the",
+ "afterEsc": "",
+ "states3": [
+  "listening",
+  "listening",
+  "listening",
+  "cancelled"
+ ],
+ "mainSize": [
+  1000,
+  680
+ ],
+ "summary": {
+  "words": 5882,
+  "wpm": 145,
+  "streak": 4
+ }
+}

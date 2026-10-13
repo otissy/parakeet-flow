@@ -1,0 +1,19 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Flow bar</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'">
+<link rel="stylesheet" href="pill.css">
+</head><body>
+<div id="stage">
+  <div id="pill" class="idle">
+    <button id="cancel" class="btn" title="Cancel (Esc)" aria-label="Cancel"><svg viewBox="0 0 12 12"><path d="M2.5 2.5l7 7M9.5 2.5l-7 7"/></svg></button>
+    <div id="body">
+      <canvas id="wave" width="120" height="28"></canvas>
+      <div id="mark" aria-hidden="true"></div>
+      <div id="text"></div>
+    </div>
+    <button id="stop" class="btn" title="Stop" aria-label="Stop"><svg viewBox="0 0 12 12"><rect x="2.5" y="2.5" width="7" height="7" rx="1.5"/></svg></button>
+  </div>
+  <div id="note"></div>
+</div>
+<script src="pill.js"></script>
+</body></html>

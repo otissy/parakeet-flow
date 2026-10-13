@@ -3,3 +3,4 @@ node_modules/
 .wargame-sandboxes/
 models/
 proof/*.wav
+.tests/fixtures/*.wav
