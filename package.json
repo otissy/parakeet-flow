@@ -1,0 +1,17 @@
+{
+  "name": "parakeet-flow",
+  "version": "0.1.0",
+  "description": "Local push-to-talk dictation with live partials (Parakeet TDT v3, sherpa-onnx)",
+  "main": "src/main/main.js",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "test": "node .claude/skills/plan/ladder.js .tests"
+  },
+  "dependencies": {
+    "sherpa-onnx-node": "1.13.8"
+  },
+  "devDependencies": {
+    "electron": "31.7.7"
+  }
+}
