@@ -16,6 +16,7 @@ class EvTyper extends MemoryTyper {
   constructor(o) { super(o); this.ee = new EventEmitter(); }
   on(...a) { return this.ee.on(...a); }
   key(down) { this.ee.emit('key', { down }); }
+  toggle() { this.ee.emit('toggle', {}); }
   esc() { this.ee.emit('esc'); }
 }
 class FakeMic { constructor() { this.running = false; } start(cb) { this.running = true; this.cb = cb; } stop() { this.running = false; } }
@@ -57,14 +58,20 @@ test('a lone quick tap dictates nothing', async () => {
   assert.equal(typer.text, ''); assert.equal(pills.at(-1), 'idle'); assert.equal(store.summary().words, 0);
 });
 
-test('double-tap = hands-free; next press stops it; typing continues while no key is held', async () => {
-  const { typer, host, pills, mic, tick } = rig();
+test('a double tap of the hold key is NOT hands-free any more: two taps dictate nothing', async () => {
+  const { typer, pills, mic } = rig();
   typer.key(true); typer.key(false); typer.key(true); typer.key(false);
+  assert.equal(mic.running, false); assert.equal(pills.at(-1), 'idle');
+});
+
+test('CapsLock toggle: one press starts hands-free (stop and cancel buttons state), typing continues, next press stops', async () => {
+  const { typer, host, pills, mic, tick } = rig();
+  typer.toggle();
   assert.equal(pills.at(-1), 'handsfree'); assert.equal(mic.running, true);
   await tick(50);
   host.emitEv('partial', { segId: 1, text: 'still talking' });
   assert.equal(typer.text, 'still talking');
-  typer.key(true);                                   // stop
+  typer.toggle();                                    // stop
   assert.equal(pills.at(-1), 'processing');
   host.emitEv('final', { segId: 1, text: 'Still talking.', audioSec: 1 }); host.emitEv('done', {});
   assert.equal(typer.text, 'Still talking.');
@@ -101,14 +108,14 @@ test('disabled from the tray: keys ignored', () => {
   assert.equal(mic.running, false);
 });
 
-test('toggle mode: press, press', async () => {
-  const { typer, mic, tick, host } = rig({ mode: 'toggle' });
-  // the Controller reads the mode at construction; applySettings picks up later changes
-  typer.key(true); typer.key(false);
-  assert.equal(mic.running, true, 'release does not stop in toggle mode');
-  await tick(10); typer.key(true);
-  assert.equal(mic.running, false);
-  host.emitEv('done', {});
+test('toggle switch off: CapsLock presses are ignored', () => {
+  const { typer, mic } = rig({ toggleOn: false });
+  typer.toggle(); assert.equal(mic.running, false);
+});
+
+test('toggle ignored while paused in the tray', () => {
+  const { c, typer, mic } = rig();
+  c.setEnabled(false); typer.toggle(); assert.equal(mic.running, false);
 });
 
 test('deny-listed window: pill says typing is off, nothing typed', () => {

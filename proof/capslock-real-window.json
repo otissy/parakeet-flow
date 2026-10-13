@@ -1,0 +1,33 @@
+{
+ "steps": {
+  "A": {
+   "capsAfter": 0,
+   "toggleEvents": 3,
+   "pageSaw": []
+  },
+  "B": {
+   "capsAfterOnePress": 1,
+   "toggleEvents": 0,
+   "pageSaw": [
+    "d:CapsLock:caps=1",
+    "u:CapsLock:caps=1"
+   ],
+   "capsAfterRestore": 0
+  },
+  "C1": {
+   "capsWhileClaimed": 0,
+   "pageSaw": []
+  },
+  "C2": {
+   "capsAfterPressWithOldHelperDead": 1,
+   "pageSaw": [
+    "d:CapsLock:caps=1",
+    "u:CapsLock:caps=1"
+   ],
+   "capsAfterRestore": 0
+  }
+ },
+ "initialCapsState": 0,
+ "finalCapsState": 0,
+ "unchanged": true
+}

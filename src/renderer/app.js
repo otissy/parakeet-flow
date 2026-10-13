@@ -16,8 +16,7 @@ function keys(vks) { return vks.map((v) => `<kbd>${L.esc(L.vkLabel(v))}</kbd>`).
 /* ---------- pages ---------- */
 function home() {
   const s = S.settings, st = S.stats;
-  const hk = keys(s.hotkey.vks);
-  const how = s.mode === 'toggle' ? 'Press' : 'Hold';
+  const hint = `Hold ${s.hotkey.label} to dictate${s.toggleOn ? `, or press ${s.toggleKey.label} to start and stop` : ''}`;
   let hist;
   if (!s.historyEnabled) hist = `<div class="card empty">History is off, so nothing you dictate is kept.<br><br><button class="btn" id="hist-on">Turn on history</button></div>`;
   else if (!S.history.length) hist = `<div class="card empty">Nothing here yet. Dictate something and it shows up here.</div>`;
@@ -26,7 +25,7 @@ function home() {
   return `<div class="wrap">
     <h1>${L.esc(L.greeting(new Date().getHours(), s.userName))}</h1>
     <div class="sub">Everything runs on this computer. Nothing is sent anywhere.</div>
-    <div class="card hint"><div><div class="t">${how} ${hk} to dictate</div><div class="s">Double-tap for hands-free. Press Esc to cancel.</div></div></div>
+    <div class="card hint"><div><div class="t">${L.esc(hint)}</div><div class="s">Press Esc to cancel.</div></div></div>
     <div class="stats">
       <div class="card stat"><div class="n">${st.words.toLocaleString('en')}</div><div class="l">Words dictated</div></div>
       <div class="card stat"><div class="n">${st.wpm || '–'}<span class="u">${st.wpm ? 'wpm' : ''}</span></div><div class="l">Average speed</div></div>
@@ -58,9 +57,11 @@ function settingsPage() {
   const gpuOk = !!i.gpuAvailable;
   return `<div class="wrap"><h1>Settings</h1><div class="sub">Hold-to-talk, microphone, speech engine and privacy.</div>
   <h2>Dictation</h2><div class="card" style="padding:4px 18px">
-    <div class="srow"><div class="l"><b>Hotkey</b><div>${S.capturing ? 'Press the key or combination, then let go. Esc cancels.' : 'Default Ctrl+Space. Hold to talk, double-tap for hands-free. While it is used for dictation the chord is swallowed; Ctrl or Space alone still work. Avoid keys OBS or your games use.'}</div>${S.hkError ? `<div style="color:var(--bad)">${L.esc(S.hkError)}</div>` : ''}</div>
-      <div class="c">${S.capturing ? `<span class="chip" id="cap">${S.capturing.length ? keys(S.capturing) : 'Listening…'}</span>` : keys(s.hotkey.vks)}<button class="btn" id="hk-change">${S.capturing ? 'Cancel' : 'Change'}</button>${S.capturing ? '' : '<button class="btn" id="hk-reset">Reset</button>'}</div></div>
-    <div class="srow"><div class="l"><b>Mode</b><div>Double-tap always starts hands-free.</div></div><div class="c">${seg('mode', [['hold', 'Hold to talk'], ['toggle', 'Press to toggle']], s.mode)}</div></div>
+    <div class="srow"><div class="l"><b>Hold to talk</b><div>${S.capturing && S.capTarget === 'hold' ? 'Press the key or combination, then let go. Esc cancels.' : 'Default Ctrl+Space. Press and hold to talk, release to stop. While it is used for dictation the chord is swallowed; Ctrl or Space alone still work. Avoid keys OBS or your games use.'}</div>${S.hkError && S.capTarget === 'hold' ? `<div style="color:var(--bad)">${L.esc(S.hkError)}</div>` : ''}</div>
+      <div class="c">${S.capturing && S.capTarget === 'hold' ? `<span class="chip" id="cap">${S.capturing.length ? keys(S.capturing) : 'Listening…'}</span>` : keys(s.hotkey.vks)}<button class="btn" id="hk-change">${S.capturing && S.capTarget === 'hold' ? 'Cancel' : 'Change'}</button>${S.capturing && S.capTarget === 'hold' ? '' : '<button class="btn" id="hk-reset">Reset</button>'}</div></div>
+    <div class="srow"><div class="l"><b>Use CapsLock as the dictation toggle</b><div>One press starts dictation hands-free, the next press stops it. While this is on, CapsLock no longer switches capital letters (its state and light are left untouched); turn it off, pause dictation in the tray or quit the app and CapsLock works normally again.</div></div><div class="c">${toggle('tk-on', s.toggleOn)}</div></div>
+    <div class="srow"><div class="l"><b>Toggle key</b><div>${S.capturing && S.capTarget === 'toggle' ? 'Press one key. Esc cancels. (While picking, CapsLock still acts as normal CapsLock; Reset sets it without pressing it.)' : 'Default CapsLock. Only CapsLock is swallowed; another key you pick is still typed as usual. If you also hold the hold key during a toggle session, hold wins and releasing it does not stop the session.'}</div>${S.hkError && S.capTarget === 'toggle' ? `<div style="color:var(--bad)">${L.esc(S.hkError)}</div>` : ''}</div>
+      <div class="c">${S.capturing && S.capTarget === 'toggle' ? `<span class="chip" id="cap">${S.capturing.length ? keys(S.capturing) : 'Listening…'}</span>` : keys(s.toggleKey.vks)}<button class="btn" id="tk-change">${S.capturing && S.capTarget === 'toggle' ? 'Cancel' : 'Change'}</button>${S.capturing && S.capTarget === 'toggle' ? '' : '<button class="btn" id="tk-reset">Reset</button>'}</div></div>
     <div class="srow"><div class="l"><b>Live typing</b><div>Aggressive types every partial and corrects in place. Stable types only words that held for two passes.</div></div><div class="c">${seg('live', [['aggressive', 'Aggressive'], ['stable', 'Stable']], s.liveMode)}</div></div>
     <div class="srow"><div class="l"><b>Language</b><div>Parakeet v3 detects the language itself: English, Dutch and 23 more.</div></div><div class="c"><select disabled><option>Auto-detect</option></select></div></div>
     <div class="srow"><div class="l"><b>Trailing space</b><div>Add a space after the last word.</div></div><div class="c">${toggle('trail', s.trailingSpace)}</div></div>
@@ -105,9 +106,9 @@ function bind() {
     save({ [key]: S.settings[key].filter((_, i) => i !== +b.dataset.del) });
   });
   main.querySelectorAll('[data-style]').forEach((c) => c.onclick = () => save({ style: { casual: c.dataset.style === 'casual' } }));
-  const segs = { mode: 'mode', live: 'liveMode', prov: 'provider' };
+  const segs = { live: 'liveMode', prov: 'provider' };
   for (const [id, key] of Object.entries(segs)) { const el = $('#' + id); if (el) el.querySelectorAll('button').forEach((b) => b.onclick = () => save({ [key]: b.dataset.v })); }
-  const tg = { trail: 'trailingSpace', warm: 'keepMicOpen', hist: 'historyEnabled' };
+  const tg = { 'tk-on': 'toggleOn', trail: 'trailingSpace', warm: 'keepMicOpen', hist: 'historyEnabled' };
   for (const [id, key] of Object.entries(tg)) on(id, () => save({ [key]: !S.settings[key] }));
   on('login', async () => { S.settings = await window.pf.invoke('login:set', !S.settings.launchAtLogin); render(); });
   const val = (id, fn) => { const el = $('#' + id); if (el) el.onchange = () => fn(el.value); };
@@ -123,7 +124,9 @@ function bind() {
   on('dl', () => window.pf.invoke('models:download'));
   bindExtra();
   on('hk-reset', () => { S.hkError = ''; save({ hotkey: { vks: [0x11, 0x20], label: 'Ctrl+Space' } }); });
-  on('hk-change', () => { S.capturing = S.capturing ? null : []; S.hkError = ''; render(); });
+  on('hk-change', () => { S.capTarget = 'hold'; S.capturing = S.capturing ? null : []; S.hkError = ''; render(); });
+  on('tk-reset', () => { S.hkError = ''; save({ toggleKey: { vks: [0x14], label: 'CapsLock' } }); });
+  on('tk-change', () => { S.capTarget = 'toggle'; S.capturing = S.capturing ? null : []; S.hkError = ''; render(); });
 }
 
 // the helper swallows Ctrl+Space for dictation; while the picker listens it must reach this page instead
@@ -160,10 +163,11 @@ window.addEventListener('keyup', async (e) => {
   held.delete(e.code);
   if (held.size) return;
   const vks = combo; combo = [];
-  const err = L.validateHotkey(vks);
+  const toggleTarget = S.capTarget === 'toggle';
+  const err = toggleTarget ? L.validateToggleKey(vks, S.settings.hotkey.vks) : L.validateHotkey(vks);
   if (err) { S.hkError = err; S.capturing = null; render(); return; }
   S.hkError = ''; S.capturing = null;
-  await save({ hotkey: { vks, label: L.hotkeyLabel(vks) } });
+  await save(toggleTarget ? { toggleKey: { vks, label: L.hotkeyLabel(vks) } } : { hotkey: { vks, label: L.hotkeyLabel(vks) } });
 });
 
 async function loadDevices() { try { S.devices = (await navigator.mediaDevices.enumerateDevices()).filter((d) => d.kind === 'audioinput' && d.deviceId !== 'default' && d.deviceId !== 'communications'); } catch (_) { S.devices = []; } }

@@ -39,7 +39,7 @@ test('lib: greeting, escaping, day grouping', () => {
 test('settings: defaults are safe and bad input is coerced', () => {
   assert.equal(DEFAULTS.historyEnabled, false); assert.equal(DEFAULTS.launchAtLogin, false); assert.deepEqual(DEFAULTS.hotkey.vks, [0x11, 0x20]);
   const n = normalize({ threads: 99, mode: 'weird', hotkey: { vks: [] }, dictionary: [{ from: ' a ', to: 'b' }, { from: '', to: 'x' }, null], fillers: ' um , ,uh', provider: 'tpu', language: 'xx' });
-  assert.equal(n.threads, 8); assert.equal(n.mode, 'hold'); assert.deepEqual(n.hotkey.vks, [0x11, 0x20]);
+  assert.equal(n.threads, 8); assert.equal(n.mode, undefined, 'the old mode setting is gone'); assert.equal(n.toggleOn, true); assert.deepEqual(n.toggleKey.vks, [0x14]); assert.equal(n.toggleKey.label, 'CapsLock'); assert.deepEqual(n.hotkey.vks, [0x11, 0x20]);
   assert.deepEqual(n.dictionary, [{ from: 'a', to: 'b' }]); assert.deepEqual(n.fillers, DEFAULTS.fillers, 'a non-array falls back to defaults');
   assert.equal(n.provider, 'cpu'); assert.equal(n.language, 'auto');
   assert.deepEqual(normalize({ fillers: [' um ', '', 'uh'] }).fillers, ['um', 'uh']);

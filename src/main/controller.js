@@ -25,19 +25,26 @@ class Controller extends EventEmitter {
     Object.assign(this, { getAsr, typer, store, mic, ownPid, now, doneFlashMs, llm, notes });
     this.carry = null; this.gain = 1; this.flash = '';
     this.enabled = true; this.capturing = false; this.session = null; this.lastLevelAt = 0; this.level = 0; this.pillState = 'idle';
-    this.fsm = new HotkeyFsm({ mode: store.get().mode, onAction: (a) => this._action(a) });
+    this.fsm = new HotkeyFsm({ onAction: (a) => this._action(a) });
   }
 
   attach() {
     this.typer.on('key', (e) => (this.enabled && !this.capturing ? (e.down ? this.fsm.down(this.now()) : this.fsm.up(this.now())) : null));
+    this.typer.on('toggle', () => (this.enabled && !this.capturing && this._toggleOn() ? this.fsm.toggle() : null));
     this.typer.on('esc', () => this.fsm.esc());
     this._claim();
   }
-  /** the helper swallows the chord (Ctrl+Space) only while dictation can actually use it: not paused, not in the hotkey picker */
-  _claim() { if (this.typer.setClaim) this.typer.setClaim(this.enabled && !this.capturing); }
+  _toggleOn() { const s = this.store.get(); return s.toggleOn !== false && !!(s.toggleKey && s.toggleKey.vks && s.toggleKey.vks[0]); }
+  /** the helper swallows the chord (Ctrl+Space) and the toggle key (CapsLock) only while dictation can actually use them:
+      not paused in the tray, not in a hotkey picker, and (CapsLock) only while its Settings switch is on. Anything else = normal keys. */
+  _claim() {
+    const live = this.enabled && !this.capturing;
+    if (this.typer.setClaim) this.typer.setClaim(live);
+    if (this.typer.setToggleKey) this.typer.setToggleKey(live && this._toggleOn() ? this.store.get().toggleKey.vks[0] : 0);
+  }
   /** the Settings hotkey picker is listening: the chord must reach the page, and must not start dictation */
   setCapturing(on) { this.capturing = !!on; if (on && this.session) this._action({ type: 'cancel' }); this._claim(); }
-  applySettings() { this.fsm.mode = this.store.get().mode; this.emit('flags', this.flags()); }
+  applySettings() { this._claim(); this.emit('flags', this.flags()); }
   /** what the pill shows as always-on chips */
   flags() {
     const s = this.store.get();

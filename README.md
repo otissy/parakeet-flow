@@ -13,9 +13,18 @@ the settings. The design follows the layout and feel of Wispr Flow without using
 If `npm install` leaves `node_modules/electron/dist` nearly empty (it did here), unzip the cached
 `electron-v31.7.7-win32-x64.zip` into it and write `electron.exe` to `node_modules/electron/path.txt`.
 
-Default hotkey: **Ctrl+Space** (either Ctrl). Hold it to talk, double-tap it for hands-free, press it again (or the
-stop button) to end hands-free, Esc cancels and removes the live segment's text. Change it in Settings (the picker
-shows Ctrl+Space as the default and has a Reset button). Launch-at-login is off and is only registered when you
+Two gestures. **Ctrl+Space (either Ctrl) = hold to talk**: press and hold starts, release stops (there is no double-tap).
+**CapsLock = toggle**: one press starts dictation hands-free (the pill shows stop and cancel buttons), the next press
+(or the stop button) stops it. Esc cancels either one and removes the live segment's text. Both keys have a picker
+with a Reset button in Settings, and the switch "Use CapsLock as the dictation toggle" (default on) turns the toggle off.
+While the toggle is active the helper swallows CapsLock (down, repeat and up) so Windows never flips the caps state or
+its light; a CapsLock that was already on at start is left as it is. CapsLock is normal again instantly when the switch
+is turned off, dictation is paused in the tray, a hotkey picker is open, or the app exits or crashes (the hook lives in
+the helper process, which ends with the app). If you hold Ctrl+Space during a toggle session, hold wins: the session keeps
+running, a CapsLock press while the hold is down is ignored, and releasing the hold does not stop it. Only CapsLock
+is swallowed; another toggle key you pick is typed as usual. Upgrading: the old double-tap setting is dropped, and an old
+saved "toggle" mode makes CapsLock the toggle once (hold goes back to Ctrl+Space).
+Launch-at-login is off and is only registered when you
 switch it on. Upgrading: a saved lone Pause from before this default is moved to Ctrl+Space once; a key you pick
 afterwards is kept.
 

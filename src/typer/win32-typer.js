@@ -47,6 +47,7 @@ class Win32Typer extends EventEmitter {
       const a = line.split(' ');
       if (a[0] === 'READY') this._ready();
       else if (a[0] === 'KEY') this.emit('key', { down: a[1] === 'down', at: Date.now() });
+      else if (a[0] === 'TOGGLE') this.emit('toggle', { at: Date.now() });
       else if (a[0] === 'ESC') this.emit('esc');
       else if (a[0] === 'FG') {
         this.fg = { hwnd: Number(a[1]), pid: Number(a[2]), proc: (a[3] || '').toLowerCase() + '.exe',
@@ -60,6 +61,8 @@ class Win32Typer extends EventEmitter {
   setHotkey(vks) { this._send('HOTKEY ' + vks.join('+')); }
   /** swallow the chord's non-modifier key (Ctrl+Space) while its modifiers are held; never for a lone-key hotkey */
   setClaim(on) { this._send('CLAIM ' + (on ? 1 : 0)); }
+  /** the toggle key (CapsLock = 0x14): one 'toggle' event per fresh press. CapsLock is swallowed (down, repeat, up) so Windows never flips it; 0 = off, key back to normal */
+  setToggleKey(vk) { this._send('TOGGLE ' + (vk | 0)); }
   /** tests only (helper started with test:true): inject a key event; with hwnd it is refused unless that window is foreground */
   press(vk, down, hwnd) { this._send(`PRESS ${vk} ${down ? 'down' : 'up'}${hwnd ? ' ' + hwnd : ''}`); }
   /** tests only: raw helper command (SIM, CAPTURE, SIMMID, NORELEASE, DUMP) */

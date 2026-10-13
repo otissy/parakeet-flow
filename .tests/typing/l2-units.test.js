@@ -158,26 +158,22 @@ test('postprocess: fillers, dictionary, snippets, style', () => {
   assert.equal(clean('a (b) [c]', { dictionary: [{ from: '(b)', to: 'X' }] }), 'a X [c]', 'regex metacharacters match literally');
 });
 
-test('hotkey fsm: hold, tap, double-tap hands-free, toggle, esc', () => {
+test('hotkey fsm: hold, tap, no double-tap, toggle, esc', () => {
   const acts = [];
   const f = new HotkeyFsm({ onAction: (a) => acts.push(a.type + ':' + (a.mode || a.reason)) });
   f.down(0); f.up(1000);
   assert.deepEqual(acts, ['start:hold', 'stop:release']);
   acts.length = 0;
   f.down(2000); f.up(2100);           // tap
-  f.down(2300);                        // second tap inside 450 ms
-  assert.deepEqual(acts, ['start:hold', 'stop:tap', 'start:hands-free']);
-  f.up(2400);                          // release of the 2nd press is ignored
-  assert.equal(f.active, true);
-  f.down(5000);
-  assert.equal(acts.at(-1), 'stop:press');
+  f.down(2300);                        // second tap inside 450 ms: a plain new hold, NOT hands-free
+  assert.deepEqual(acts, ['start:hold', 'stop:tap', 'start:hold']);
+  f.up(2400);
   acts.length = 0;
   f.down(9000); f.esc();
   assert.deepEqual(acts, ['start:hold', 'cancel:esc']);
-  const t = new HotkeyFsm({ mode: 'toggle', onAction: (a) => acts.push(a.type) });
   acts.length = 0;
-  t.down(0); t.up(50); t.down(3000);
-  assert.deepEqual(acts, ['start', 'stop']);
+  f.toggle(); f.toggle();
+  assert.deepEqual(acts, ['start:hands-free', 'stop:press']);
 });
 
 test('deny: own pid, own process, deny words in process or title', () => {

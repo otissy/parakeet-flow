@@ -1,51 +1,52 @@
 'use strict';
-/* Hold-to-talk / toggle / double-tap hands-free state machine. Pure: feed it key events with a
-   timestamp, it calls onAction({type:'start'|'stop'|'cancel', mode, reason}).
-   mode 'hold':   press starts, release stops. A quick tap (< tapMs) stops without a session; a second
-                  tap within doubleTapMs starts hands-free.
-   mode 'toggle': press starts, next press stops.
-   hands-free:    stays on until the next press (or Esc). */
+/* Two dictation gestures, one state machine. Pure: feed it events with a timestamp, it calls
+   onAction({type:'start'|'stop'|'cancel', mode, reason}).
+   hold   (Ctrl+Space): down() starts, up() stops. A quick tap (< tapMs) stops without a session.
+   toggle (CapsLock):   toggle() starts hands-free, the next toggle() stops.
+   Precedence: HOLD WINS. While a hold key is down, toggle() is ignored. Holding during a toggle session
+   (state 'toggled') is an overlay: the session keeps running and the hold's release does NOT stop it.
+   Esc cancels from anywhere and clears the overlay. */
 class HotkeyFsm {
-  constructor({ mode = 'hold', tapMs = 250, doubleTapMs = 450, onAction = () => {} } = {}) {
-    Object.assign(this, { mode, tapMs, doubleTapMs, onAction });
-    this.state = 'idle'; // idle | holding | handsfree | toggled
-    this.downAt = 0; this.lastTapAt = -1e9;
+  constructor({ tapMs = 250, onAction = () => {} } = {}) {
+    Object.assign(this, { tapMs, onAction });
+    this.state = 'idle'; // idle | holding | toggled
+    this.overlay = false; // hold key is down on top of a toggle session
+    this.downAt = 0;
   }
   get active() { return this.state !== 'idle'; }
 
   down(t) {
     if (this.state === 'idle') {
-      if (t - this.lastTapAt <= this.doubleTapMs) {
-        this.state = 'handsfree'; this.lastTapAt = -1e9;
-        return this.onAction({ type: 'start', mode: 'hands-free' });
-      }
-      this.downAt = t;
-      if (this.mode === 'toggle') { this.state = 'toggled'; return this.onAction({ type: 'start', mode: 'toggle' }); }
-      this.state = 'holding';
+      this.state = 'holding'; this.downAt = t;
       return this.onAction({ type: 'start', mode: 'hold' });
     }
-    if (this.state === 'handsfree' || this.state === 'toggled') {
-      this.state = 'idle';
-      return this.onAction({ type: 'stop', reason: 'press' });
-    }
+    if (this.state === 'toggled') this.overlay = true;     // hold wins over the toggle session, without stopping it
   }
 
   up(t) {
+    if (this.overlay) { this.overlay = false; return; }    // releasing the overlay never stops the toggle session
     if (this.state !== 'holding') return;
     this.state = 'idle';
     const tap = t - this.downAt < this.tapMs;
-    if (tap) this.lastTapAt = t;
     this.onAction({ type: 'stop', reason: tap ? 'tap' : 'release', tap });
+  }
+
+  /** the CapsLock press: start hands-free, or stop it. Ignored while a hold key is down. */
+  toggle() {
+    if (this.state === 'holding' || this.overlay) return;
+    if (this.state === 'idle') { this.state = 'toggled'; return this.onAction({ type: 'start', mode: 'hands-free' }); }
+    this.state = 'idle';
+    this.onAction({ type: 'stop', reason: 'press' });
   }
 
   esc() {
     if (this.state === 'idle') return;
-    this.state = 'idle';
+    this.state = 'idle'; this.overlay = false;
     this.onAction({ type: 'cancel', reason: 'esc' });
   }
 
   /** the session ended for another reason (focus change, error): back to idle without an action */
-  reset() { this.state = 'idle'; this.lastTapAt = -1e9; }
+  reset() { this.state = 'idle'; this.overlay = false; }
 }
 
 module.exports = { HotkeyFsm };

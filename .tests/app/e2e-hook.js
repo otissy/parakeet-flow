@@ -74,14 +74,14 @@ module.exports = ({ app, get }) => {
       await wait(() => g.controller.pillState === 'idle', 3000);
       rep.states1 = rep.pills.slice();
 
-      // 2. hands-free (double tap), then stop with the stop button path
+      // 2. hands-free (CapsLock toggle), then stop with the next press
       mem.log.length = 0; rep.pills.length = 0;
       const m2 = new WavMic({ file: process.env.PF_AUDIO }); g.controller.mic = m2;
-      fsm.down(Date.now()); await sleep(80); fsm.up(Date.now()); await sleep(120); fsm.down(Date.now()); fsm.up(Date.now());
+      fsm.toggle();
       await sleep(2000); await shot(g.pillWin, 'pill-handsfree');
       rep.handsFreeState = g.controller.pillState;
       // simulate the mouse moving over the stop button (click-through toggles off) and clicking it
-      fsm.down(Date.now());
+      fsm.toggle();
       await wait(() => rep.pills.includes('done') || g.controller.pillState === 'idle', 6000);
       rep.states2 = rep.pills.slice(); rep.handsFreeText = mem.text;
 

@@ -24,7 +24,7 @@ test('the user can change it, and a chosen Pause survives (only the OLD default 
   fs.writeFileSync(path.join(dir, 'settings.json'), JSON.stringify({ hotkey: { vks: [0x13], label: 'Pause' }, mode: 'toggle' }));
   const s = new Store(dir);
   assert.deepEqual(s.get().hotkey.vks, [0x11, 0x20], 'old default Pause (no hotkeyV) moves to Ctrl+Space');
-  assert.equal(s.get().mode, 'toggle', 'other settings untouched');
+  assert.equal(s.get().mode, undefined);
   s.set({ hotkey: { vks: [0x13], label: 'Pause' } });
   assert.deepEqual(new Store(dir).get().hotkey.vks, [0x13], 'picked again after the move: kept');
   s.set({ hotkey: { vks: [0xA3, 0x4B], label: 'Right Ctrl + K' } });

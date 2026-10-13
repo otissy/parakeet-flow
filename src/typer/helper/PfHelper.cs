@@ -9,6 +9,10 @@
 //   FG                           report the foreground window now
 //   CLAIM 0|1                    1 = swallow the hotkey's non-modifier key while its modifiers are held (Ctrl+Space);
 //                                0 = never swallow anything. Lone-key hotkeys (Pause) are never swallowed.
+//   TOGGLE <vk>                  the toggle key (CapsLock = 20): every fresh press prints TOGGLE. When the key is CapsLock
+//                                the hook swallows it (down, auto-repeat, up) so Windows never flips the caps state or LED;
+//                                any other toggle key is only reported. 0 = off: the key behaves normally again at once.
+//                                The helper never sends a CapsLock key itself and never reads the caps state.
 //   PRESS <vk> down|up [hwnd]    only with --test: inject a key event; with hwnd, refused unless that window is foreground
 //   SIM <vk> down|up             only with --test: feed a PHYSICAL key event to the hook logic, no OS event at all
 //   CAPTURE 0|1                  only with --test: Send() reports the key sequence it would send (SENT ...) instead of sending
@@ -17,7 +21,7 @@
 //   NORELEASE 0|1                only with --test: do not release modifiers around typing (the control experiment)
 //   DUMP                         only with --test: DUMP hook=<0|1> claim=<0|1> chord=<0|1> released=<n>
 //   QUIT
-// stdout: READY | KEY down|up | ESC | FG <hwnd> <pid> <proc> <base64 title> | OK <id> | REFUSED <id> | SENT ... | SIM swallow|pass | DUMP ...
+// stdout: READY | KEY down|up | TOGGLE | ESC | FG <hwnd> <pid> <proc> <base64 title> | OK <id> | REFUSED <id> | SENT ... | SIM swallow|pass | DUMP ...
 //
 // Hotkey = a chord. With a non-modifier key in it (Ctrl+Space) the chord starts only when that key goes down while
 // every modifier is ALREADY down (a lone Ctrl, a lone Space, or Space then Ctrl never start it). It is tracked by a
@@ -79,6 +83,8 @@ static class PfHelper
     static readonly HashSet<int> released = new HashSet<int>();    // modifiers we logically released and have not restored yet
     static int trigger = 0;                                        // the one non-modifier key of the hotkey, 0 if none
     static bool claim = false, chordHeld = false, hookOk = false;
+    static int toggleVk = 0, togglePending = 0;                    // toggle key (0 = off); presses not yet reported (the hook never does I/O)
+    static bool toggleSw = false;                                  // a CapsLock down was swallowed: swallow its repeats and its up, even if the feature is switched off meanwhile
     static IntPtr hookHandle = IntPtr.Zero;
     static LowLevelProc hookProc;                                  // kept in a static so the GC never frees the delegate
 
@@ -121,6 +127,12 @@ static class PfHelper
             bool was = phys[vk];
             phys[vk] = down;
             bool ours = !down && released.Remove(vk);                 // a modifier whose up we already sent: swallow the real one
+            if (vk == 0x14 && toggleSw) { if (!down) toggleSw = false; return true; }          // rest of a swallowed CapsLock press
+            if (toggleVk != 0 && vk == toggleVk)
+            {
+                if (down && !was) togglePending++;
+                if (vk == 0x14) { if (down) toggleSw = true; return true; }                      // CapsLock: never reaches Windows, state and LED untouched
+            }
             if (trigger != 0)
             {
                 if (down)
@@ -245,9 +257,13 @@ static class PfHelper
 
     static void Poll()
     {
-        bool down = false, esc = false;
+        bool down = false, esc = false, tglPrev = false;
         while (true)
         {
+            int tv = toggleVk, tp = 0;
+            if (tv != 0 && !hookOk) { bool t = (GetAsyncKeyState(tv) & 0x8000) != 0; if (t && !tglPrev) lock (st) { togglePending++; } tglPrev = t; }
+            lock (st) { tp = togglePending; togglePending = 0; }
+            for (int i = 0; i < tp; i++) Out("TOGGLE");
             int[] hk = hotkey;
             bool now;
             if (hookOk) lock (st) { now = hk.Length > 0 && chordHeld; }
@@ -309,6 +325,7 @@ static class PfHelper
                 {
                     case "HOTKEY": SetHotkey(a.Length > 1 ? a[1] : ""); break;
                     case "FG": Out(FgLine()); break;
+                    case "TOGGLE": lock (st) { toggleVk = a.Length > 1 ? int.Parse(a[1]) : 0; if (toggleVk == 0) togglePending = 0; } break;
                     case "CLAIM": lock (st) { claim = a.Length > 1 && a[1] == "1"; if (!claim) swallowed.Clear(); } break;
                     case "CAPTURE": if (testMode) capture = a.Length > 1 && a[1] == "1"; break;
                     case "NORELEASE": if (testMode) noRelease = a.Length > 1 && a[1] == "1"; break;
@@ -316,7 +333,7 @@ static class PfHelper
                     case "SIMLATE": if (testMode && a.Length > 1) simLate = int.Parse(a[1]); break;
                     case "SIM": if (testMode && a.Length > 2) TestSim(int.Parse(a[1]), a[2] == "down"); break;
                     case "DUMP":
-                        if (testMode) lock (st) { Out("DUMP hook=" + (hookOk ? 1 : 0) + " claim=" + (claim ? 1 : 0) + " chord=" + (chordHeld ? 1 : 0) + " released=" + released.Count + " swallowed=" + swallowed.Count); }
+                        if (testMode) lock (st) { Out("DUMP hook=" + (hookOk ? 1 : 0) + " claim=" + (claim ? 1 : 0) + " chord=" + (chordHeld ? 1 : 0) + " released=" + released.Count + " swallowed=" + swallowed.Count + " toggle=" + toggleVk + " tsw=" + (toggleSw ? 1 : 0)); }
                         break;
                     case "QUIT": return;
                     case "PRESS":

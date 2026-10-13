@@ -9,8 +9,9 @@ const { ACTIONS, DEFAULT_COMMANDS, DEFAULT_NOTE_TRIGGERS } = require('../core/co
 const { PROFILES } = require('../core/tone');
 
 const DEFAULTS = {
-  hotkey: { vks: [0x11, 0x20], label: 'Ctrl+Space' },   // either Ctrl + Space; the helper releases Ctrl around corrections (see PfHelper.cs)
-  mode: 'hold',                  // 'hold' | 'toggle' (double-tap always starts hands-free)
+  hotkey: { vks: [0x11, 0x20], label: 'Ctrl+Space' },   // HOLD to talk: either Ctrl + Space; the helper releases Ctrl around corrections (see PfHelper.cs)
+  toggleOn: true,                                       // "Use CapsLock as the dictation toggle": press = start (hands-free), press = stop
+  toggleKey: { vks: [0x14], label: 'CapsLock' },       // one key; CapsLock is swallowed by the helper only while this is on
   liveMode: 'aggressive',        // 'aggressive' | 'stable'
   provider: 'cpu', threads: 2,
   micId: '', keepMicOpen: false,
@@ -62,6 +63,13 @@ const strList = (v, d) => (Array.isArray(v) ? v.map(String).map((s) => s.trim())
 const pairs = (v, a, b) => (Array.isArray(v)
   ? v.map((p) => ({ [a]: String(p?.[a] ?? '').trim(), [b]: String(p?.[b] ?? '') })).filter((p) => p[a]).slice(0, 500) : []);
 
+/** the toggle gesture is ONE non-modifier key */
+function toggleKey(v, d) {
+  const vk = Array.isArray(v?.vks) && v.vks.length === 1 ? Number(v.vks[0]) : 0;
+  const bad = !(vk > 0 && vk < 256) || [0x10, 0x11, 0x12, 0x5B, 0x5C, 0x1B, 0x08, 0x0D].includes(vk) || (vk >= 0xA0 && vk <= 0xA5);
+  return bad ? d : { vks: [vk], label: String(v.label || '').slice(0, 40) || d.label };
+}
+
 /** validate / coerce anything coming from disk or the UI */
 function normalize(s) {
   const d = DEFAULTS;
@@ -69,7 +77,9 @@ function normalize(s) {
   return {
     hotkeyV: 2,                  // 2 = Ctrl+Space is the default (1 = the old lone Pause key); see Store
     hotkey: vks.length ? { vks, label: String(s?.hotkey?.label || '').slice(0, 40) || d.hotkey.label } : d.hotkey,
-    mode: oneOf(s?.mode, ['hold', 'toggle'], d.mode),
+    gestureV: 3,                 // 3 = hold + CapsLock toggle (older files had `mode` and a double-tap); see Store
+    toggleOn: s?.toggleOn !== false,
+    toggleKey: toggleKey(s?.toggleKey, d.toggleKey),
     liveMode: oneOf(s?.liveMode, ['aggressive', 'stable'], d.liveMode),
     provider: oneOf(s?.provider, ['cpu', 'cuda'], d.provider),
     threads: clampInt(s?.threads, 1, 8, d.threads),
@@ -102,8 +112,15 @@ class Store {
     // one-time move off the old default: a saved lone Pause from before hotkeyV 2 was the default, not a choice
     const oldDefault = raw && raw.hotkeyV !== 2 && Array.isArray(raw.hotkey?.vks) && raw.hotkey.vks.length === 1 && Number(raw.hotkey.vks[0]) === 0x13;
     if (oldDefault) delete raw.hotkey;
+    // one-time move to the two-gesture scheme (gestureV 3): the double-tap is gone (`mode` is dropped); a saved TOGGLE mode meant
+    // "the hotkey is a toggle", and that toggle is now CapsLock, with the hold gesture back on its default
+    const oldGestures = raw && raw.gestureV !== 3 && Object.keys(raw).length > 0;
+    if (oldGestures) {
+      if (raw.mode === 'toggle') { delete raw.hotkey; raw.toggleOn = true; raw.toggleKey = DEFAULTS.toggleKey; }
+      delete raw.mode;
+    }
     this.settings = normalize(raw);
-    if (oldDefault) writeJson(this.files.settings, this.settings);
+    if (oldDefault || oldGestures) writeJson(this.files.settings, this.settings);
     this.stats = readJson(this.files.stats, { days: {} });       // { days: { 'YYYY-MM-DD': { words, speechSec, sessions } } }
     this.history = readJson(this.files.history, []);
   }
