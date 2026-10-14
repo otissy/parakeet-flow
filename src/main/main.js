@@ -117,7 +117,10 @@ async function startEngine() {
     if (!v.ok) { engine = { state: v.bad.length ? 'error' : 'missing', error: v.bad.length ? 'Model file failed its SHA-256 check' : '' }; send(mainWin, 'engine:state'); return; }
     const p = modelPaths(modelsDir);
     if (asr) await asr.close();
-    asr = new AsrHost({ modelDir: p.modelDir, vadPath: p.vadPath, numThreads: s.threads, provider: s.provider, partialIntervalMs: s.partialMs, endpointMs: s.endpointMs });
+    let hotwords = null;                      // contextual biasing toward the enabled slang terms (off by default; docs/slang-packs.md)
+    if (s.slang.biasing.enabled) { try { hotwords = require('../slang/hotwords').build({ tokensFile: path.join(p.modelDir, 'tokens.txt'), terms: slang.enabledTerms(), dir: path.join(app.getPath('userData'), 'dictionary', 'hotwords'), score: s.slang.biasing.score }); } catch (e) { log('error', 'hotwords: ' + String(e.message).slice(0, 80)); } }
+    asr = new AsrHost({ modelDir: p.modelDir, vadPath: p.vadPath, numThreads: s.threads, provider: s.provider, partialIntervalMs: s.partialMs, endpointMs: s.endpointMs, hotwords });
+    if (hotwords) log('info', `hotwords on terms=${hotwords.count} score=${hotwords.hotwordsScore}`);
     asr.on('error', (e) => { engine = { state: 'error', error: String(e.message || e).slice(0, 120) }; send(mainWin, 'engine:state'); });
     const t0 = Date.now();
     await asr.ready();
@@ -230,7 +233,8 @@ function wireIpc() {
     } catch (e) { send(mainWin, 'llm:progress', { done: true, pct: 0 }); llmState.error = String(e.message).slice(0, 120); }
     await refreshLlmState();
   });
-  slangIpc.register(ipcMain, { service: slang, dialog, getWindow: () => mainWin });
+  let slangTimer = null;       // the hotword list is read when the engine starts: a changed list restarts it (once, after the edits settle)
+  slangIpc.register(ipcMain, { service: slang, dialog, getWindow: () => mainWin, onChange: () => { if (!store.get().slang.biasing.enabled && !asr?.opts?.hotwords) return; clearTimeout(slangTimer); slangTimer = setTimeout(() => startEngine(), 2500); } });
   ipcMain.handle('login:set', (_e, on) => {
     if (!process.env.PF_NO_LOGIN_ITEM) app.setLoginItemSettings({ openAtLogin: !!on });
     return store.set({ launchAtLogin: !!on });

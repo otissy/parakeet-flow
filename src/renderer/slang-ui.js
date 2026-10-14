@@ -62,7 +62,8 @@ function slangSection() {
   const msg = SL.msg ? `<div class="note" style="margin-top:6px;color:${SL.msg.ok ? 'var(--ok)' : 'var(--bad)'}">${L.esc(SL.msg.text)}</div>` : '';
   return `<h2 id="sec-slang">Slang packs</h2>
   <div class="sub" style="margin:-4px 0 12px">Spelling and casing for slang, gamer and streamer words, fixed on finished sentences only. Whole words, longest match first, never inside links, file paths or code. Packs are plain files in <code>%APPDATA%\\parakeet-flow\\dictionary\\packs</code>. Your Replace rows above always win.</div>
-  <div class="card" style="padding:4px 18px"><div class="srow"><div class="l"><b>Use slang packs</b><div>${nfmt(st.active)} terms active.</div></div><div class="c" style="width:auto">${toggle('sl-all', st.enabled)}</div></div>${rows}</div>
+  <div class="card" style="padding:4px 18px"><div class="srow"><div class="l"><b>Use slang packs</b><div>${nfmt(st.active)} terms active.</div></div><div class="c" style="width:auto">${toggle('sl-all', st.enabled)}</div></div>
+    <div class="srow" style="padding:11px 0"><div class="l"><b>Bias recognition toward these terms <span class="badge warn">experimental</span></b><div>Makes Parakeet more likely to hear your terms in the first place (contextual biasing). Switching it, or the packs, restarts the speech engine for a moment. Spelling fixes work without it.</div></div><div class="c" style="width:auto">${toggle('sl-bias', st.biasing.enabled, !st.enabled)}</div></div>${rows}</div>
   ${view}
   <h2>My terms</h2>
   <div class="add" style="grid-template-columns:1fr 1.3fr auto auto"><input type="text" id="sl-add-term" placeholder="Term, spelled the way you want it" autocomplete="off" maxlength="80"><input type="text" id="sl-add-var" placeholder="Heard as (optional), separate with |" autocomplete="off"><button class="btn primary" id="sl-add-go">Add</button><button class="btn" id="sl-imp-open">Import...</button></div>
@@ -86,6 +87,7 @@ function bindSlang() {
   const $$ = (s) => main.querySelector(s);
   const on = (id, fn) => { const el = $$('#' + id); if (el) el.onclick = fn; };
   on('sl-all', () => slangAct('slang:set-enabled', '*', !SL.state.enabled));
+  on('sl-bias', () => slangAct('slang:set-biasing', !SL.state.biasing.enabled));
   for (const p of (SL.state ? SL.state.packs : [])) on('sl-pk-' + p.id, () => slangAct('slang:set-enabled', p.id, !p.enabled));
   main.querySelectorAll('[data-sl-view]').forEach((b) => b.onclick = () => { SL.view = SL.view === b.dataset.slView ? null : b.dataset.slView; SL.query = ''; SL.edit = null; slangAct('slang:state'); });
   main.querySelectorAll('[data-sl-export]').forEach((b) => b.onclick = async () => { const r = await window.pf.invoke('slang:export', b.dataset.slExport, 'json'); if (r && !r.cancelled) { SL.msg = { ok: !!r.ok, text: r.ok ? 'Saved ' + r.path : r.error }; render(); } });

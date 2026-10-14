@@ -206,11 +206,11 @@ test('service: vocabulary hint lists the terms present, capped and unique', () =
 });
 
 test('settings: slang block is normalised and survives a round trip', () => {
-  assert.deepEqual(DEFAULTS.slang, { enabled: true, packs: {} });
+  assert.deepEqual(DEFAULTS.slang, { enabled: true, packs: {}, biasing: { enabled: false, score: 1.5 } });
   const n = normalize({ slang: { enabled: false, packs: { 'ok-id': false, 'Bad Id!': false, '../x': true, good2: 'yes', fine: true } } });
-  assert.deepEqual(n.slang, { enabled: false, packs: { 'ok-id': false, fine: true } });
-  assert.deepEqual(normalize({}).slang, { enabled: true, packs: {} });
-  assert.deepEqual(normalize({ slang: 5 }).slang, { enabled: true, packs: {} });
+  assert.deepEqual(n.slang, { enabled: false, packs: { 'ok-id': false, fine: true }, biasing: { enabled: false, score: 1.5 } });
+  assert.deepEqual(normalize({}).slang, { enabled: true, packs: {}, biasing: { enabled: false, score: 1.5 } });
+  assert.deepEqual(normalize({ slang: 5 }).slang, { enabled: true, packs: {}, biasing: { enabled: false, score: 1.5 } });
   const dir = tmp(); const s = new Store(dir); s.set({ slang: { enabled: true, packs: { 'starter-nl': false } } });
   assert.equal(new Store(dir).get().slang.packs['starter-nl'], false);
 });
@@ -319,4 +319,26 @@ test('ipc: handlers validate input, use dialogs for files, and never take a path
   assert.equal((await call('slang:set-enabled', 'starter-nl', false)).ok, true);
   assert.equal((await call('slang:terms', 'starter-en', { query: 'rizz', limit: 5 })).items.length > 0, true);
   assert.equal((await call('slang:remove', 'Ipcterm')).ok, true);
+});
+
+test('hotwords: build() writes the biasing files; settings carry the switch; the service lists enabled terms', () => {
+  const { build } = require(path.join(root, 'src/slang/hotwords.js'));
+  const dir = tmp();
+  const tokens = path.join(dir, 'tokens.txt'); fs.writeFileSync(tokens, '<unk> 0\n<a> 1\n<b> 2\n<c> 3\n<d> 4\n\u2581ri 5\nzz 6\n');
+  assert.equal(build({ tokensFile: tokens, terms: [], dir }), null);
+  const o = build({ tokensFile: tokens, terms: ['Rizz', 'rizz', 'no cap', 'x', ''], dir: path.join(dir, 'h'), score: 9 });
+  assert.equal(o.count, 2); assert.equal(o.hotwordsScore, 3, 'score is clamped');
+  assert.equal(fs.readFileSync(o.hotwordsFile, 'utf8'), 'rizz\nno cap\n');
+  assert.match(fs.readFileSync(o.bpeVocab, 'utf8'), /^<unk>\t0\n/);
+  const { svc, store } = mkService();
+  assert.deepEqual(store.get().slang.biasing, { enabled: false, score: 1.5 });
+  svc.setBiasing(true); assert.equal(store.get().slang.biasing.enabled, true);
+  svc.setEnabled('starter-nl', false); assert.equal(store.get().slang.biasing.enabled, true, 'other settings are kept');
+  assert.ok(svc.enabledTerms().includes('rizz') && !svc.enabledTerms().includes('wallah'));
+  assert.equal(normalize({ slang: { biasing: { enabled: 1, score: 99 } } }).slang.biasing.score, 3);
+});
+
+test('built-in packs leave the 40 neutral measurement sentences untouched', () => {
+  const { svc } = mkService();
+  for (const s of require('./tools/neutral.json')) assert.equal(svc.apply(s), s, s);
 });

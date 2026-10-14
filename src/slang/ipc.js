@@ -24,6 +24,7 @@ function register(ipcMain, { service, dialog, getWindow = () => null, onChange =
   });
   ipcMain.handle('slang:preview', (_e, text) => service.preview(s(text, 2000), service.getSettings().dictionary.map((d) => d.from)));
   h('slang:set-enabled', (id, on) => service.setEnabled(s(id, 60), !!on));
+  h('slang:set-biasing', (on) => service.setBiasing(!!on));
   h('slang:add', (t) => service.addTerm(termArg(t)));
   h('slang:update', (old, t) => service.updateTerm(s(old, 120), termArg(t)));
   h('slang:remove', (term) => service.removeTerm(s(term, 120)));

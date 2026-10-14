@@ -8,6 +8,14 @@ Installer rebuilt on the insert-once typing, note mode and MCP notes server (5f4
 - pf-helper.exe is rebuilt fresh on every installer build; scripts/build-installer.js deletes src/typer/helper/bin before and after, so a stale shipped helper can never be picked up by a later dev run or test.
 - Not re-proven this round: a clean silent install and uninstall (a copy of 0.2.0 is installed on the PC and was left alone); the 0.2.0 proof still stands for the mechanism.
 
+## Unreleased
+
+- Slang packs on the Dictionary page: two built-in starter packs (English 507 terms, Dutch 64), your own packs, My terms (add, edit,
+  delete in one step), import of pasted text or .txt/.csv/.json, export, per-pack switches, a Try it box. Applied to finished
+  sentences only, whole words, longest match first, never inside links, paths or code.
+- The local cleanup prompt names the pack terms that occur in the sentence; a model answer that drops or re-cases one is rejected.
+- Optional contextual biasing (sherpa-onnx hotwords, beam search), off by default.
+- docs/slang-packs.md.
 ## 0.2.0 - 2026-10-13
 
 Packaging release. The app is now a normal Windows install.

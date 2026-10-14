@@ -12,7 +12,8 @@ function modelPaths(modelDir) {
   };
 }
 
-function createSherpaEngine({ modelDir, numThreads = 4, provider = 'cpu' } = {}) {
+/** hotwords: {hotwordsFile, bpeVocab, hotwordsScore} (src/slang/hotwords.js) turns on modified beam search with contextual biasing */
+function createSherpaEngine({ modelDir, numThreads = 4, provider = 'cpu', hotwords = null } = {}) {
   const sherpa = require('sherpa-onnx-node');
   const p = modelPaths(modelDir);
   const recognizer = new sherpa.OfflineRecognizer({
@@ -20,7 +21,9 @@ function createSherpaEngine({ modelDir, numThreads = 4, provider = 'cpu' } = {})
     modelConfig: {
       transducer: { encoder: p.encoder, decoder: p.decoder, joiner: p.joiner },
       tokens: p.tokens, numThreads, provider, debug: 0, modelType: 'nemo_transducer',
+      ...(hotwords ? { modelingUnit: 'bpe', bpeVocab: hotwords.bpeVocab } : {}),
     },
+    ...(hotwords ? { decodingMethod: 'modified_beam_search', maxActivePaths: 4, hotwordsFile: hotwords.hotwordsFile, hotwordsScore: hotwords.hotwordsScore } : {}),
   });
   return {
     name: 'sherpa-parakeet-tdt-v3', provider, numThreads,

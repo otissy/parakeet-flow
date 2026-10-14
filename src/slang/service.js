@@ -44,7 +44,9 @@ class SlangService {
     this.packs = all; this.version++; this._cache = null;
   }
 
-  _cfg() { const s = (this.getSettings() || {}).slang || {}; return { enabled: s.enabled !== false, packs: s.packs || {} }; }
+  _cfg() { const s = (this.getSettings() || {}).slang || {}; return { enabled: s.enabled !== false, packs: s.packs || {}, biasing: s.biasing || { enabled: false, score: 1.5 } }; }
+  /** terms of the enabled packs (hotword biasing) */
+  enabledTerms() { const c = this._cfg(); return c.enabled ? this.packs.filter((p) => c.packs[p.id] !== false).flatMap((p) => p.terms.map((t) => t.term)) : []; }
   isEnabled(id) { const c = this._cfg(); return c.enabled && c.packs[id] !== false; }
   _pack(id) { return this.packs.find((p) => p.id === id); }
 
@@ -53,7 +55,7 @@ class SlangService {
     const c = this._cfg();
     const mine = this._pack(MINE);
     return {
-      enabled: c.enabled,
+      enabled: c.enabled, biasing: c.biasing,
       packs: this.packs.map((p) => ({ id: p.id, name: p.name, description: p.description, language: p.language, builtin: p.builtin, count: p.terms.length,
         variants: p.terms.reduce((n, t) => n + (t.variants || []).length + (t.heard || []).length, 0), enabled: c.packs[p.id] !== false, warnings: (p.warnings || []).slice(0, 8) })),
       mine: { count: mine ? mine.terms.length : 0 },
@@ -62,6 +64,8 @@ class SlangService {
     };
   }
   activeCount() { let n = 0; for (const p of this.packs) if (this.isEnabled(p.id)) n += p.terms.length; return n; }
+
+  setBiasing(on) { const c = this._cfg(); this.setSettings({ slang: { ...c, biasing: { ...c.biasing, enabled: !!on } } }); return { ok: true }; }
 
   /** terms of one pack for the list view: optional text filter, capped */
   terms(id, { query = '', limit = 200, offset = 0 } = {}) {
@@ -74,8 +78,8 @@ class SlangService {
 
   setEnabled(id, on) {
     const c = this._cfg();
-    if (id === '*') { this.setSettings({ slang: { enabled: !!on, packs: c.packs } }); }
-    else if (this._pack(id)) { this.setSettings({ slang: { enabled: c.enabled, packs: { ...c.packs, [id]: !!on } } }); }
+    if (id === '*') { this.setSettings({ slang: { ...c, enabled: !!on } }); }
+    else if (this._pack(id)) { this.setSettings({ slang: { ...c, packs: { ...c.packs, [id]: !!on } } }); }
     else return { ok: false, error: 'No such pack.' };
     this.version++; this._cache = null;
     return { ok: true };

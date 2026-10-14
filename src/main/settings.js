@@ -22,7 +22,7 @@ const DEFAULTS = {
   trailingSpace: false, historyEnabled: false, launchAtLogin: false,
   style: { casual: false },
   dictionary: [], snippets: [],
-  slang: { enabled: true, packs: {} },     // slang packs (src/slang): {id: false} switches one pack off; the packs themselves are files
+  slang: { enabled: true, packs: {}, biasing: { enabled: false, score: 1.5 } },     // slang packs (src/slang): {id: false} switches one pack off; the packs themselves are files
   userName: '',
   // voice commands: whole-segment phrases on finals, English + Dutch, never typed (see core/commands.js)
   commands: { enabled: true, carryMs: 120000, list: DEFAULT_COMMANDS },
@@ -68,7 +68,7 @@ const strList = (v, d) => (Array.isArray(v) ? v.map(String).map((s) => s.trim())
 const pairs = (v, a, b) => (Array.isArray(v)
   ? v.map((p) => ({ [a]: String(p?.[a] ?? '').trim(), [b]: String(p?.[b] ?? '') })).filter((p) => p[a]).slice(0, 500) : []);
 
-const slangCfg = (v) => ({ enabled: v?.enabled !== false, packs: Object.fromEntries(Object.entries(v?.packs && typeof v.packs === 'object' ? v.packs : {}).filter(([k, b]) => /^[a-z0-9][a-z0-9_-]{0,47}$/.test(k) && typeof b === 'boolean').slice(0, 200)) });
+const slangCfg = (v) => ({ biasing: { enabled: !!v?.biasing?.enabled, score: Math.min(3, Math.max(0.1, Number.isFinite(+v?.biasing?.score) ? +v.biasing.score : 1.5)) }, enabled: v?.enabled !== false, packs: Object.fromEntries(Object.entries(v?.packs && typeof v.packs === 'object' ? v.packs : {}).filter(([k, b]) => /^[a-z0-9][a-z0-9_-]{0,47}$/.test(k) && typeof b === 'boolean').slice(0, 200)) });
 
 /** the toggle gesture is ONE non-modifier key */
 function toggleKey(v, d) {

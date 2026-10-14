@@ -256,6 +256,40 @@ GPU: the npm build of sherpa-onnx is CPU-only. Asking for `cuda` logs "compile w
 and falls back to CPU, so no GPU number exists. Default is CPU, 2 threads (8 s of audio decodes in ~0.5 s with
 2 threads and with 4, so more threads only cost CPU).
 
+## Slang packs (Dictionary page, added 2026-10-14)
+
+Dictionary > Slang packs fixes the spelling and casing of slang, gamer and streamer words on finished sentences: "riz" becomes
+"rizz", "goaded" becomes "goated", "Gee Gee" becomes "GG", "tick tock" stays what you said. Two built-in packs ship with the app
+(English: 507 terms in slang, gaming, Rocket League and streaming; Dutch: 64), each switchable on its own. Add a term in one step,
+edit or delete it, paste or import a .txt/.csv/.json list (one term per line, or `term,misheard1|misheard2`), export a pack,
+and try a sentence in the "Try it" box. Format, matching rules and limits: docs/slang-packs.md.
+
+**Where the words come from.** The starter packs were written by hand (spellings, misrecognitions, categories; no definitions).
+Nothing was scraped or copied from Urban Dictionary and the app never contacts it. If you paste words from Urban Dictionary
+into Import, whether bulk-importing from that site is allowed under its terms of service is your decision, not the app's.
+
+**Measured** (synthesised speech, Kokoro voices af_heart and am_michael, a carrier sentence around each of 507 English terms,
+decoded with the app's real Parakeet recognizer; Dutch is unmeasured, there is no Dutch voice here). "Right" = the preferred
+spelling, case-sensitive, appears in the text.
+
+| | voice af_heart | voice am_michael |
+|---|---|---|
+| right with no pack | 218 of 507 (43%) | 209 of 507 (41%) |
+| right ignoring case, no pack | 310 | 288 |
+| guessed variants only | 324 | 306 |
+| shipped pack (guessed + measured, in-sample) | 402 (79%) | 381 (75%) |
+| held-out: measured variants from af_heart only | n/a | 329 (65%) |
+| terms the pack made worse | 0 | 0 |
+
+Beam search with sherpa-onnx hotwords (opt-in, below), voice am_michael, pack measured on the other voice: greedy 209 right,
+333 with the pack; hotwords at score 1: 238 / 368; at 1.5: 245 / 384; at 2: 248 / 392; at 3 the model starts inventing words.
+Neutral sentences (40, no slang): word error rate 0.55% in every setting, no injected terms, the pack changes none of them.
+
+**Hotwords.** sherpa-onnx 1.13.8 does support contextual biasing for this model, with `modified_beam_search` and a bpe
+modeling unit only (the app builds the vocabulary from `tokens.txt`). Off by default: "Bias recognition toward these terms"
+(experimental) restarts the speech engine when it or the packs change. Details: docs/slang-packs.md.
+
+Proof: `pf-proof/slang-*.png` (Dictionary page at 1000x680), `slang-dictation.json` (off versus on through the real VAD + Parakeet).
 ## Tests
 
     node ~/.claude/skills/plan/ladder.js            # whole suite (asr, typing, app)

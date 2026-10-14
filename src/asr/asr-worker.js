@@ -5,7 +5,7 @@ const { createSherpaEngine, createSileroVad } = require('./engine-sherpa');
 const { Segmenter } = require('./segmenter');
 
 const o = workerData;
-const engine = createSherpaEngine({ modelDir: o.modelDir, numThreads: o.numThreads, provider: o.provider });
+const engine = createSherpaEngine({ modelDir: o.modelDir, numThreads: o.numThreads, provider: o.provider, hotwords: o.hotwords || null });
 let vadThreshold = o.vadThreshold || 0.5;
 const makeVad = () => createSileroVad({ modelPath: o.vadPath, minSilence: (o.endpointMs || 500) / 1000, threshold: vadThreshold });
 const vad = makeVad();

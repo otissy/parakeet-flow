@@ -92,3 +92,19 @@ Build recipe: `npm install --ignore-scripts`, `npm --prefix llm-runtime install 
 - **Notes file is shared by two processes** (app and `mcp/server.js`): `src/notes/outbox.js` re-reads under a lock file on every change (the old in-memory copy would have erased MCP-added notes on the next rewrite). The app polls the file once a second (`src/notes/service.js`) and refreshes the Notes page and the Markdown export. `mcp-status.json` is the only other file the server reads. See mcp/README.md.
 - **Markdown export** (`src/notes/export-md.js`): one .md per note with front matter, stable file name `<date>-<slug>-<id>.md`.
 - Tests: `.tests/terminals` (L2 Wispr + routing + terminal detection; `real-terminals.js` is the manual real-keys harness: launches its OWN console windows off-screen, never types into anything else, restores the previous foreground window; needs `PF_METHOD=burst|paste PF_LIVE=1`), `.tests/mcp` (L1-L4).
+
+## Added 2026-10-14: slang packs
+
+Code in `src/slang/` (matcher, import parser, pack validation, service, ipc, hotwords), UI in `src/renderer/slang-ui.js`, packs in
+`src/slang/packs/`, user packs in `%APPDATA%parakeet-flowdictionarypacks`. Pipeline: `clean()` runs the matcher on finals after
+snippets, before the Dictionary (Dictionary heard-texts are excluded from the matcher). Tests: `.tests/slang/` (L1-L4, real-Electron
+UI hook, measurement tools in `.tests/slang/tools/`). Docs: docs/slang-packs.md.
+
+| Limit | What it means |
+|---|---|
+| sherpa-onnx 1.13.8 hotwords on Parakeet TDT | work only with modified_beam_search + modelingUnit bpe + a bpeVocab; a plain hotwordsFile of words fails ("Cannot find ID for token"). The vocab is written from tokens.txt (all pieces equal cost). Opt-in (slang.biasing), restarts the engine. Score 3 hurts |
+| Starter-pack misrecognitions | measured on Kokoro TTS (2 voices), not on real voices; Dutch not measured at all |
+| Variants that are real words | dropped or kept deliberately; see docs/slang-packs.md Limits |
+| Urban Dictionary | never scraped or shipped; the user may paste words (their call under its terms) |
+
+Known problems: real-voice accuracy of the starter pack is unverified; only the Dictionary page UI exists (no Settings entry).

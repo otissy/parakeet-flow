@@ -106,7 +106,7 @@ module.exports = ({ app, get }) => {
         rep.exportedIsJson = rep.exportedHead && rep.exportedHead.trim().startsWith('{');
         // delete a user pack (confirm() answered yes), the built-in packs have no delete button
         rep.builtinDeleteButtons = await js("document.querySelectorAll('[data-sl-delpack=\"starter-en\"]').length");
-        await js('window.confirm = () => true');
+        await js('(window.confirm = () => true, 0)');
         await click('[data-sl-delpack="evil-name"]');
         rep.afterDeletePack = fs.readdirSync(packsDir);
         // 6. master switch
@@ -148,7 +148,7 @@ module.exports = ({ app, get }) => {
         for (const mode of ['off', 'on']) {
           g.store.set({ slang: { enabled: mode === 'on', packs: {} } });
           rep.results[mode] = {};
-          for (const n of [1, 2, 3, 4]) rep.results[mode]['slang-' + n] = await hold(path.join(process.env.PF_FIXTURES, 'slang-' + n + '.wav'));
+          for (const n of [1, 2, 3, 4]) { rep.results[mode]['slang-' + n] = await hold(path.join(process.env.PF_FIXTURES, 'slang-' + n + '.wav')); mark(mode + ' ' + n); }
         }
       }
     } catch (e) { rep.errors.push(String(e.stack || e)); }
