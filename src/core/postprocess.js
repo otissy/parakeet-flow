@@ -41,11 +41,12 @@ function casual(text) {
   return out;
 }
 
-/** clean(text, {fillers, dictionary, snippets, style:{casual}}) */
+/** clean(text, {fillers, dictionary, snippets, slang, style:{casual}}); slang = a compiled slang matcher ({apply(text)}) or null */
 function clean(text, o = {}) {
   let t = String(text || '').normalize('NFC').replace(/[\r\n]+/g, ' ');
   t = removeFillers(t, o.fillers ?? DEFAULT_FILLERS);
   t = applyPairs(t, o.snippets, { wholeUtteranceStripsPunct: true });
+  if (o.slang && o.slang.size) t = o.slang.apply(t);
   t = applyPairs(t, o.dictionary);
   t = tidy(t);
   if (o.style && o.style.casual) t = casual(t);

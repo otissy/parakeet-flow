@@ -32,6 +32,8 @@ const { writeStatus, FILE: MCP_STATUS_FILE } = require('../notes/mcp-status');
 const { SecretStore } = require('./secret');
 const { LlmWorker } = require('../llm/llm-host');
 const { LlmService } = require('../llm/cleanup');
+const { SlangService } = require('../slang/service');
+const slangIpc = require('../slang/ipc');
 const llmStore = require('../llm/llm-store');
 
 const R = (f) => path.join(__dirname, '..', 'renderer', f);
@@ -40,7 +42,7 @@ const PILL_W = 480, PILL_H = 110;
 const OFF = process.env.PF_OFFSCREEN ? -6000 : 0;   // tests: render windows far off-screen, nothing visible on the desktop
 
 let store, typer, controller, asr = null, tray = null, mainWin = null, pillWin = null, capWin = null, mic;
-let outbox, noteService, notion, secrets, llmWorker = null, llmService, llmState = { runtime: false, model: 'unknown', error: '' };
+let outbox, noteService, notion, secrets, slang, llmWorker = null, llmService, llmState = { runtime: false, model: 'unknown', error: '' };
 let engine = { state: 'loading', error: '' };
 let quitting = false, modelsDir, modelsOk = false;
 
@@ -228,6 +230,7 @@ function wireIpc() {
     } catch (e) { send(mainWin, 'llm:progress', { done: true, pct: 0 }); llmState.error = String(e.message).slice(0, 120); }
     await refreshLlmState();
   });
+  slangIpc.register(ipcMain, { service: slang, dialog, getWindow: () => mainWin });
   ipcMain.handle('login:set', (_e, on) => {
     if (!process.env.PF_NO_LOGIN_ITEM) app.setLoginItemSettings({ openAtLogin: !!on });
     return store.set({ launchAtLogin: !!on });
@@ -254,9 +257,10 @@ else {
     notion = new NotionSync({ outbox, base: process.env.PF_NOTION_BASE, getConfig: () => store.get().notes.notion, getToken: () => secrets.get('notion'),
       onChange: () => send(mainWin, 'notes:changed') });
     notion.start();
+    slang = new SlangService({ builtinDir: path.join(__dirname, '..', 'slang', 'packs'), userDir: path.join(app.getPath('userData'), 'dictionary', 'packs'), getSettings: () => store.get(), setSettings: (p) => store.set(p) });
     noteService = new NoteService({ outbox, getSettings: () => store.get(), notion, hasToken: () => secrets.has('notion'), onChange: () => send(mainWin, 'notes:changed'), log });
     noteService.watch();
-    llmService = new LlmService({ llm: llmAdapter, getSettings: () => store.get() });
+    llmService = new LlmService({ llm: llmAdapter, getSettings: () => store.get(), getVocab: (t) => slang.vocab(t) });
     refreshLlmState();
     wireIpc();
     createCapture();
@@ -274,7 +278,7 @@ else {
 
     const fake = arg('fake-mic') || process.env.PF_FAKE_MIC;
     mic = fake ? new WavMic({ file: fake }) : new RendererMic({ ipcMain, getWindow: () => capWin, getSettings: () => store.get() });
-    controller = new Controller({ getAsr: () => (engine.state === 'ready' ? asr : null), typer, store, mic, llm: llmService, notes: notesApi });
+    controller = new Controller({ getAsr: () => (engine.state === 'ready' ? asr : null), typer, store, mic, llm: llmService, notes: notesApi, slang });
     controller.attach();
     typer.on('refused', () => { if (controller.session) controller.session.live._halt('refused'); });
     typer.on('exit', () => log('error', 'helper exited'));

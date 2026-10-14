@@ -1,0 +1,411 @@
+{
+ "format": 1,
+ "id": "starter-nl",
+ "name": "Starter: Dutch slang",
+ "description": "Dutch street and internet slang plus Dutch-speaker gaming verbs. Spellings and misrecognitions only.",
+ "language": "nl",
+ "terms": [
+  {
+   "term": "gozer",
+   "variants": [
+    "gozzer",
+    "gozur"
+   ],
+   "category": "slang",
+   "lang": "nl"
+  },
+  {
+   "term": "lekker bezig",
+   "category": "slang",
+   "lang": "nl"
+  },
+  {
+   "term": "lekker bezig man",
+   "category": "slang",
+   "lang": "nl"
+  },
+  {
+   "term": "nice man",
+   "variants": [
+    "nais man",
+    "naais man"
+   ],
+   "category": "slang",
+   "lang": "nl"
+  },
+  {
+   "term": "mid",
+   "category": "slang",
+   "lang": "nl"
+  },
+  {
+   "term": "wallah",
+   "variants": [
+    "wollah",
+    "walla",
+    "wolla"
+   ],
+   "category": "slang",
+   "lang": "nl"
+  },
+  {
+   "term": "wallahi",
+   "variants": [
+    "walla hi"
+   ],
+   "category": "slang",
+   "lang": "nl"
+  },
+  {
+   "term": "billah",
+   "variants": [
+    "billa"
+   ],
+   "category": "slang",
+   "lang": "nl"
+  },
+  {
+   "term": "mashallah",
+   "variants": [
+    "masjallah",
+    "masha allah"
+   ],
+   "category": "slang",
+   "lang": "nl"
+  },
+  {
+   "term": "inshallah",
+   "variants": [
+    "insjallah",
+    "insha allah"
+   ],
+   "category": "slang",
+   "lang": "nl"
+  },
+  {
+   "term": "habibi",
+   "variants": [
+    "habiebie",
+    "habibie"
+   ],
+   "category": "slang",
+   "lang": "nl"
+  },
+  {
+   "term": "akhi",
+   "variants": [
+    "achi"
+   ],
+   "category": "slang",
+   "lang": "nl"
+  },
+  {
+   "term": "khalas",
+   "variants": [
+    "chalas"
+   ],
+   "category": "slang",
+   "lang": "nl"
+  },
+  {
+   "term": "yalla",
+   "variants": [
+    "jalla"
+   ],
+   "category": "slang",
+   "lang": "nl"
+  },
+  {
+   "term": "fissa",
+   "variants": [
+    "fiza"
+   ],
+   "category": "slang",
+   "lang": "nl"
+  },
+  {
+   "term": "mattie",
+   "variants": [
+    "matty",
+    "matie"
+   ],
+   "category": "slang",
+   "lang": "nl"
+  },
+  {
+   "term": "jonguh",
+   "variants": [
+    "jongu"
+   ],
+   "category": "slang",
+   "lang": "nl"
+  },
+  {
+   "term": "joh",
+   "category": "slang",
+   "lang": "nl"
+  },
+  {
+   "term": "kanjer",
+   "category": "slang",
+   "lang": "nl"
+  },
+  {
+   "term": "kanjers",
+   "category": "slang",
+   "lang": "nl"
+  },
+  {
+   "term": "toppie",
+   "category": "slang",
+   "lang": "nl"
+  },
+  {
+   "term": "tering",
+   "category": "slang",
+   "lang": "nl"
+  },
+  {
+   "term": "tyfus",
+   "variants": [
+    "tijfus"
+   ],
+   "category": "slang",
+   "lang": "nl"
+  },
+  {
+   "term": "sjonge jonge",
+   "category": "slang",
+   "lang": "nl"
+  },
+  {
+   "term": "dikke prima",
+   "category": "slang",
+   "lang": "nl"
+  },
+  {
+   "term": "lekker man",
+   "category": "slang",
+   "lang": "nl"
+  },
+  {
+   "term": "ouwe",
+   "category": "slang",
+   "lang": "nl"
+  },
+  {
+   "term": "ouwehoeren",
+   "variants": [
+    "ouwe hoeren"
+   ],
+   "category": "slang",
+   "lang": "nl"
+  },
+  {
+   "term": "zeikerd",
+   "variants": [
+    "zijkert",
+    "zeikert"
+   ],
+   "category": "slang",
+   "lang": "nl"
+  },
+  {
+   "term": "hakken",
+   "category": "slang",
+   "lang": "nl"
+  },
+  {
+   "term": "gabber",
+   "category": "slang",
+   "lang": "nl"
+  },
+  {
+   "term": "bakkie",
+   "category": "slang",
+   "lang": "nl"
+  },
+  {
+   "term": "bro",
+   "category": "slang",
+   "lang": "nl"
+  },
+  {
+   "term": "broer",
+   "category": "slang",
+   "lang": "nl"
+  },
+  {
+   "term": "bruh",
+   "variants": [
+    "brew"
+   ],
+   "category": "slang",
+   "lang": "nl"
+  },
+  {
+   "term": "slay",
+   "category": "slang",
+   "lang": "nl"
+  },
+  {
+   "term": "glazen",
+   "variants": [
+    "glaasen"
+   ],
+   "category": "slang",
+   "lang": "nl"
+  },
+  {
+   "term": "appen",
+   "category": "internet",
+   "lang": "nl"
+  },
+  {
+   "term": "appje",
+   "category": "internet",
+   "lang": "nl"
+  },
+  {
+   "term": "ghosten",
+   "variants": [
+    "gosten"
+   ],
+   "category": "internet",
+   "lang": "nl"
+  },
+  {
+   "term": "geghost",
+   "category": "internet",
+   "lang": "nl"
+  },
+  {
+   "term": "swipen",
+   "category": "internet",
+   "lang": "nl"
+  },
+  {
+   "term": "gamen",
+   "category": "internet",
+   "lang": "nl"
+  },
+  {
+   "term": "dm'en",
+   "variants": [
+    "d m en",
+    "dm en"
+   ],
+   "category": "internet",
+   "lang": "nl"
+  },
+  {
+   "term": "geliked",
+   "category": "internet",
+   "lang": "nl"
+  },
+  {
+   "term": "influencer",
+   "category": "internet",
+   "lang": "nl"
+  },
+  {
+   "term": "vlogger",
+   "category": "internet",
+   "lang": "nl"
+  },
+  {
+   "term": "whatsappen",
+   "variants": [
+    "whats appen"
+   ],
+   "category": "internet",
+   "lang": "nl"
+  },
+  {
+   "term": "facetimen",
+   "variants": [
+    "face timen"
+   ],
+   "category": "internet",
+   "lang": "nl"
+  },
+  {
+   "term": "catfishen",
+   "category": "internet",
+   "lang": "nl"
+  },
+  {
+   "term": "roasten",
+   "category": "internet",
+   "lang": "nl"
+  },
+  {
+   "term": "gebanned",
+   "variants": [
+    "gebant"
+   ],
+   "category": "internet",
+   "lang": "nl"
+  },
+  {
+   "term": "unmuten",
+   "category": "internet",
+   "lang": "nl"
+  },
+  {
+   "term": "smurfen",
+   "category": "internet",
+   "lang": "nl"
+  },
+  {
+   "term": "campen",
+   "category": "internet",
+   "lang": "nl"
+  },
+  {
+   "term": "clutchen",
+   "category": "internet",
+   "lang": "nl"
+  },
+  {
+   "term": "grinden",
+   "category": "internet",
+   "lang": "nl"
+  },
+  {
+   "term": "farmen",
+   "category": "internet",
+   "lang": "nl"
+  },
+  {
+   "term": "nerfen",
+   "category": "internet",
+   "lang": "nl"
+  },
+  {
+   "term": "generfd",
+   "category": "internet",
+   "lang": "nl"
+  },
+  {
+   "term": "buffen",
+   "category": "internet",
+   "lang": "nl"
+  },
+  {
+   "term": "subben",
+   "category": "internet",
+   "lang": "nl"
+  },
+  {
+   "term": "gesubd",
+   "category": "internet",
+   "lang": "nl"
+  },
+  {
+   "term": "ragen",
+   "category": "internet",
+   "lang": "nl"
+  }
+ ]
+}

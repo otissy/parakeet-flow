@@ -1,0 +1,3885 @@
+{
+ "format": 1,
+ "id": "starter-en",
+ "name": "Starter: English slang, gaming, Rocket League, streaming",
+ "description": "Current internet slang, gaming, Rocket League and streaming vocabulary. Spellings, misrecognitions and categories only; no definitions. Written by hand for this app, not copied from any dictionary site.",
+ "language": "en",
+ "terms": [
+  {
+   "term": "rizz",
+   "variants": [
+    "riz"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "rizzler",
+   "variants": [
+    "riz ler",
+    "rizzla"
+   ],
+   "heard": [
+    "Risler"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "rizz up",
+   "variants": [
+    "riz up"
+   ],
+   "heard": [
+    "ris up"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "unspoken rizz",
+   "variants": [
+    "unspoken riz"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "skibidi",
+   "variants": [
+    "skibbidy",
+    "skibbidi",
+    "skibidy",
+    "skibity"
+   ],
+   "heard": [
+    "Kibitti",
+    "Kibidi",
+    "Skibitti"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "skibidi toilet",
+   "variants": [
+    "skibbidy toilet",
+    "skibbidi toilet",
+    "skibidy toilet"
+   ],
+   "heard": [
+    "Sibitti toilet",
+    "scabity toilet"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "sigma",
+   "variants": [
+    "sigmah"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "sigma male",
+   "variants": [
+    "sigma mail"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "gyatt",
+   "variants": [
+    "gyat",
+    "gee yacht"
+   ],
+   "heard": [
+    "Jayet"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "no cap",
+   "variants": [
+    "no kap",
+    "no cab"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "capping",
+   "variants": [
+    "kapping"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "bussin",
+   "variants": [
+    "bussing",
+    "buss in"
+   ],
+   "heard": [
+    "Busin"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "goated",
+   "variants": [
+    "goaded",
+    "goatted"
+   ],
+   "heard": [
+    "golded"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "GOAT",
+   "variants": [
+    "G.O.A.T."
+   ],
+   "category": "slang",
+   "lang": "en",
+   "casing": "exact",
+   "matchCase": true
+  },
+  {
+   "term": "sus",
+   "variants": [
+    "suss"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "sussy",
+   "variants": [
+    "susy"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "sussy baka",
+   "variants": [
+    "susy baka"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "glazing",
+   "variants": [
+    "glazin",
+    "glaysing"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "glazed",
+   "variants": [
+    "glayzed"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "riding the glaze",
+   "variants": [
+    "riding the glays"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "aura",
+   "variants": [
+    "aurah"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "aura farming",
+   "variants": [
+    "aura farm",
+    "aura farmin"
+   ],
+   "heard": [
+    "a farming"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "minus aura",
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "plus aura",
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "mewing",
+   "variants": [
+    "muing",
+    "mew ing"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "looksmaxxing",
+   "variants": [
+    "looksmaxing",
+    "looks maxing",
+    "looks maxxing"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "looksmax",
+   "variants": [
+    "looks max"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "mogging",
+   "variants": [
+    "mogin"
+   ],
+   "heard": [
+    "Moging"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "mogged",
+   "variants": [
+    "mogd"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "mog",
+   "variants": [
+    "mogg"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "cooked",
+   "variants": [
+    "cookt"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "let him cook",
+   "variants": [
+    "let em cook"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "locked in",
+   "variants": [
+    "locked n"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "mid",
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "fanum tax",
+   "variants": [
+    "fanum tacks",
+    "fan um tax",
+    "phanum tax"
+   ],
+   "heard": [
+    "phantom tax",
+    "Phanom tax"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "fanum",
+   "variants": [
+    "fanham",
+    "fan um"
+   ],
+   "category": "slang",
+   "lang": "en",
+   "heard": [
+    "Phanom"
+   ]
+  },
+  {
+   "term": "only in Ohio",
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "ick",
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "the ick",
+   "variants": [
+    "the ik"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "delulu",
+   "variants": [
+    "de lulu",
+    "de lu lu",
+    "deluli"
+   ],
+   "heard": [
+    "Dalulu"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "solulu",
+   "variants": [
+    "so lulu"
+   ],
+   "heard": [
+    "saw you Lou"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "situationship",
+   "variants": [
+    "situation ship"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "brainrot",
+   "variants": [
+    "brain rot"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "it's giving",
+   "variants": [
+    "its giving"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "understood the assignment",
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "main character energy",
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "rent free",
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "core memory",
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "caught in 4K",
+   "variants": [
+    "caught in four k"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "crash out",
+   "variants": [
+    "crashout"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "crashing out",
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "touch grass",
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "terminally online",
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "chronically online",
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "unc",
+   "variants": [
+    "unk"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "pookie",
+   "variants": [
+    "pookey",
+    "pooky"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "huzz",
+   "variants": [
+    "hozz"
+   ],
+   "heard": [
+    "huz"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "lowkey",
+   "variants": [
+    "low key"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "highkey",
+   "variants": [
+    "high key"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "deadass",
+   "variants": [
+    "dead ass"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "on god",
+   "variants": [
+    "on gawd"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "no shot",
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "fr fr",
+   "variants": [
+    "for real for real",
+    "f r f r"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "fr",
+   "variants": [
+    "f r"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "ngl",
+   "variants": [
+    "n g l"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "tbh",
+   "variants": [
+    "t b h"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "imo",
+   "variants": [
+    "i m o"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "imho",
+   "variants": [
+    "i m h o"
+   ],
+   "heard": [
+    "emho"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "smh",
+   "variants": [
+    "s m h"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "idk",
+   "variants": [
+    "i d k"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "irl",
+   "variants": [
+    "i r l"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "ong",
+   "variants": [
+    "o n g"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "istg",
+   "variants": [
+    "i s t g"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "icl",
+   "variants": [
+    "i c l"
+   ],
+   "heard": [
+    "Eichel"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "pmo",
+   "variants": [
+    "p m o"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "rn",
+   "variants": [
+    "r n"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "fyi",
+   "variants": [
+    "f y i"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "iykyk",
+   "variants": [
+    "i y k y k"
+   ],
+   "heard": [
+    "eark",
+    "earkick"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "lmao",
+   "variants": [
+    "l m a o"
+   ],
+   "heard": [
+    "Elmao"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "lmfao",
+   "variants": [
+    "l m f a o"
+   ],
+   "heard": [
+    "LMV",
+    "LM Pow"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "lol",
+   "variants": [
+    "l o l"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "rofl",
+   "variants": [
+    "r o f l"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "omg",
+   "variants": [
+    "o m g"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "wtf",
+   "variants": [
+    "w t f"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "wth",
+   "variants": [
+    "w t h"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "bffr",
+   "variants": [
+    "b f f r"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "btw",
+   "variants": [
+    "b t w"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "ttyl",
+   "variants": [
+    "t t y l"
+   ],
+   "heard": [
+    "tea tile"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "brb",
+   "variants": [
+    "b r b"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "afk",
+   "variants": [
+    "a f k"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "dms",
+   "variants": [
+    "d ms"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "fomo",
+   "variants": [
+    "f o m o",
+    "fo mo"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "yolo",
+   "variants": [
+    "yo lo"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "jomo",
+   "variants": [
+    "jo mo"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "pov",
+   "variants": [
+    "p o v"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "tldr",
+   "variants": [
+    "t l d r",
+    "t l d are"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "nsfw",
+   "variants": [
+    "n s f w"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "asmr",
+   "variants": [
+    "a s m r"
+   ],
+   "heard": [
+    "Azmer"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "nvm",
+   "variants": [
+    "n v m"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "ily",
+   "variants": [
+    "i l y"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "ikr",
+   "variants": [
+    "i k r"
+   ],
+   "heard": [
+    "Icker"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "hmu",
+   "variants": [
+    "h m u"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "fwiw",
+   "variants": [
+    "f w i w"
+   ],
+   "heard": [
+    "F Will",
+    "F wheel"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "iirc",
+   "variants": [
+    "i i r c"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "periodt",
+   "variants": [
+    "perioddt"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "sheesh",
+   "variants": [
+    "shesh",
+    "she ish"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "yeet",
+   "variants": [
+    "yeat"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "yeeted",
+   "variants": [
+    "yeated"
+   ],
+   "heard": [
+    "yeeded"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "vibe check",
+   "variants": [
+    "vibe chek"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "cringe",
+   "variants": [
+    "crinj"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "cringey",
+   "variants": [
+    "cringy"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "cheugy",
+   "variants": [
+    "chewgy",
+    "chewgie",
+    "chugy"
+   ],
+   "heard": [
+    "Chiu Gi",
+    "Chiuji"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "ratioed",
+   "variants": [
+    "ratio'd"
+   ],
+   "heard": [
+    "Radio'd"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "l bozo",
+   "variants": [
+    "el bozo"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "npc",
+   "variants": [
+    "n p c"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "npc behavior",
+   "variants": [
+    "n p c behavior"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "breadcrumbing",
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "love bombing",
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "gaslighting",
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "gatekeeping",
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "girlboss",
+   "variants": [
+    "girl boss"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "doomscrolling",
+   "variants": [
+    "doom scrolling"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "doomscroll",
+   "variants": [
+    "doom scroll"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "shitposting",
+   "variants": [
+    "shit posting"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "shitpost",
+   "variants": [
+    "shit post"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "copium",
+   "variants": [
+    "co pium",
+    "copeium"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "hopium",
+   "variants": [
+    "hope ium"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "mald",
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "big w",
+   "variants": [
+    "big double u"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "massive w",
+   "variants": [
+    "massive double u"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "w rizz",
+   "variants": [
+    "double u rizz"
+   ],
+   "heard": [
+    "W Riz"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "l take",
+   "variants": [
+    "el take"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "taking an l",
+   "variants": [
+    "taking an el"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "parasocial",
+   "variants": [
+    "para social"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "e-girl",
+   "variants": [
+    "e girl",
+    "egirl"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "e-boy",
+   "variants": [
+    "e boy",
+    "eboy"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "simp tax",
+   "heard": [
+    "Symtax",
+    "simp tacks"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "pick-me",
+   "variants": [
+    "pick me"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "gen z",
+   "variants": [
+    "gen zee"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "gen alpha",
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "gigachad",
+   "variants": [
+    "giga chad"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "normie",
+   "variants": [
+    "normy"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "TikTok",
+   "variants": [
+    "tik tok"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "TikToker",
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "fyp",
+   "variants": [
+    "f y p"
+   ],
+   "heard": [
+    "Fip"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "for you page",
+   "heard": [
+    "for you Paige"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "clout chasing",
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "clout chaser",
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "bing chilling",
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "hits different",
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "boujee",
+   "variants": [
+    "boujie"
+   ],
+   "heard": [
+    "Bauji"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "ootd",
+   "variants": [
+    "o o t d"
+   ],
+   "heard": [
+    "oot"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "grwm",
+   "variants": [
+    "g r w m"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "yassified",
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "yass",
+   "variants": [
+    "yas"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "bae",
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "rage bait",
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "AI slop",
+   "variants": [
+    "a i slop"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "skrrt",
+   "variants": [
+    "skrt",
+    "skirt skirt"
+   ],
+   "heard": [
+    "S-Kr T"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "that's so fetch",
+   "variants": [
+    "thats so fetch"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "NPC energy",
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "unalive",
+   "variants": [
+    "un alive"
+   ],
+   "heard": [
+    "on Alive"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "unalived",
+   "variants": [
+    "un alived"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "seggs",
+   "variants": [
+    "segs"
+   ],
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "grippy sock vacation",
+   "category": "slang",
+   "lang": "en"
+  },
+  {
+   "term": "GG",
+   "variants": [
+    "g g",
+    "gee gee"
+   ],
+   "category": "gaming",
+   "lang": "en",
+   "casing": "upper"
+  },
+  {
+   "term": "GGs",
+   "variants": [
+    "g gs"
+   ],
+   "category": "gaming",
+   "lang": "en"
+  },
+  {
+   "term": "GG EZ",
+   "variants": [
+    "g g e z",
+    "gg easy"
+   ],
+   "heard": [
+    "Gee G as"
+   ],
+   "category": "gaming",
+   "lang": "en"
+  },
+  {
+   "term": "GG WP",
+   "variants": [
+    "g g w p",
+    "gg well played"
+   ],
+   "heard": [
+    "G GWP"
+   ],
+   "category": "gaming",
+   "lang": "en"
+  },
+  {
+   "term": "WP",
+   "variants": [
+    "w p"
+   ],
+   "category": "gaming",
+   "lang": "en"
+  },
+  {
+   "term": "EZ",
+   "variants": [
+    "e z"
+   ],
+   "category": "gaming",
+   "lang": "en"
+  },
+  {
+   "term": "NT",
+   "variants": [
+    "n t"
+   ],
+   "category": "gaming",
+   "lang": "en"
+  },
+  {
+   "term": "noob",
+   "variants": [
+    "newb"
+   ],
+   "category": "gaming",
+   "lang": "en"
+  },
+  {
+   "term": "noobs",
+   "variants": [
+    "newbs"
+   ],
+   "category": "gaming",
+   "lang": "en"
+  },
+  {
+   "term": "sweaty",
+   "category": "gaming",
+   "lang": "en"
+  },
+  {
+   "term": "tryhard",
+   "category": "gaming",
+   "lang": "en"
+  },
+  {
+   "term": "tryhards",
+   "category": "gaming",
+   "lang": "en"
+  },
+  {
+   "term": "try-hard",
+   "category": "gaming",
+   "lang": "en"
+  },
+  {
+   "term": "smurf",
+   "category": "gaming",
+   "lang": "en"
+  },
+  {
+   "term": "smurfing",
+   "category": "gaming",
+   "lang": "en"
+  },
+  {
+   "term": "smurfs",
+   "category": "gaming",
+   "lang": "en"
+  },
+  {
+   "term": "toxic",
+   "category": "gaming",
+   "lang": "en"
+  },
+  {
+   "term": "inting",
+   "category": "gaming",
+   "lang": "en"
+  },
+  {
+   "term": "hardstuck",
+   "variants": [
+    "hard stuck"
+   ],
+   "category": "gaming",
+   "lang": "en"
+  },
+  {
+   "term": "elo",
+   "variants": [
+    "ello"
+   ],
+   "category": "gaming",
+   "lang": "en"
+  },
+  {
+   "term": "elo hell",
+   "variants": [
+    "ello hell"
+   ],
+   "category": "gaming",
+   "lang": "en"
+  },
+  {
+   "term": "MMR",
+   "variants": [
+    "m m r"
+   ],
+   "category": "gaming",
+   "lang": "en",
+   "casing": "upper"
+  },
+  {
+   "term": "rage quit",
+   "variants": [
+    "ragequit"
+   ],
+   "category": "gaming",
+   "lang": "en"
+  },
+  {
+   "term": "ragequitting",
+   "variants": [
+    "rage quitting"
+   ],
+   "category": "gaming",
+   "lang": "en"
+  },
+  {
+   "term": "FPS",
+   "variants": [
+    "f p s"
+   ],
+   "category": "gaming",
+   "lang": "en",
+   "casing": "upper"
+  },
+  {
+   "term": "RNG",
+   "variants": [
+    "r n g"
+   ],
+   "category": "gaming",
+   "lang": "en",
+   "casing": "upper"
+  },
+  {
+   "term": "RNGesus",
+   "variants": [
+    "r n gesus"
+   ],
+   "heard": [
+    "Rn Gesus",
+    "RNGesis"
+   ],
+   "category": "gaming",
+   "lang": "en"
+  },
+  {
+   "term": "nerf",
+   "variants": [
+    "nurf"
+   ],
+   "category": "gaming",
+   "lang": "en"
+  },
+  {
+   "term": "nerfed",
+   "category": "gaming",
+   "lang": "en"
+  },
+  {
+   "term": "meta",
+   "category": "gaming",
+   "lang": "en"
+  },
+  {
+   "term": "OP",
+   "variants": [
+    "o p"
+   ],
+   "category": "gaming",
+   "lang": "en",
+   "casing": "upper"
+  },
+  {
+   "term": "overpowered",
+   "category": "gaming",
+   "lang": "en"
+  },
+  {
+   "term": "cracked",
+   "variants": [
+    "crackt"
+   ],
+   "category": "gaming",
+   "lang": "en"
+  },
+  {
+   "term": "gapped",
+   "heard": [
+    "Gapt"
+   ],
+   "category": "gaming",
+   "lang": "en"
+  },
+  {
+   "term": "ult",
+   "category": "gaming",
+   "lang": "en"
+  },
+  {
+   "term": "ults",
+   "category": "gaming",
+   "lang": "en"
+  },
+  {
+   "term": "AoE",
+   "variants": [
+    "a o e"
+   ],
+   "heard": [
+    "Aoie"
+   ],
+   "category": "gaming",
+   "lang": "en"
+  },
+  {
+   "term": "DPS",
+   "variants": [
+    "d p s"
+   ],
+   "category": "gaming",
+   "lang": "en",
+   "casing": "upper"
+  },
+  {
+   "term": "PvP",
+   "variants": [
+    "p v p"
+   ],
+   "category": "gaming",
+   "lang": "en"
+  },
+  {
+   "term": "PvE",
+   "variants": [
+    "p v e"
+   ],
+   "category": "gaming",
+   "lang": "en"
+  },
+  {
+   "term": "DLC",
+   "variants": [
+    "d l c"
+   ],
+   "category": "gaming",
+   "lang": "en",
+   "casing": "upper"
+  },
+  {
+   "term": "MMO",
+   "variants": [
+    "m m o"
+   ],
+   "category": "gaming",
+   "lang": "en",
+   "casing": "upper"
+  },
+  {
+   "term": "MMORPG",
+   "variants": [
+    "m m o r p g"
+   ],
+   "category": "gaming",
+   "lang": "en"
+  },
+  {
+   "term": "RPG",
+   "variants": [
+    "r p g"
+   ],
+   "category": "gaming",
+   "lang": "en",
+   "casing": "upper"
+  },
+  {
+   "term": "MOBA",
+   "category": "gaming",
+   "lang": "en"
+  },
+  {
+   "term": "roguelike",
+   "category": "gaming",
+   "lang": "en"
+  },
+  {
+   "term": "roguelite",
+   "heard": [
+    "Rogolite"
+   ],
+   "category": "gaming",
+   "lang": "en"
+  },
+  {
+   "term": "soulslike",
+   "category": "gaming",
+   "lang": "en"
+  },
+  {
+   "term": "speedrun",
+   "category": "gaming",
+   "lang": "en"
+  },
+  {
+   "term": "speedrunner",
+   "category": "gaming",
+   "lang": "en"
+  },
+  {
+   "term": "speedrunning",
+   "category": "gaming",
+   "lang": "en"
+  },
+  {
+   "term": "no-scope",
+   "variants": [
+    "no scope"
+   ],
+   "category": "gaming",
+   "lang": "en"
+  },
+  {
+   "term": "quickscope",
+   "variants": [
+    "quick scope"
+   ],
+   "category": "gaming",
+   "lang": "en"
+  },
+  {
+   "term": "360 no scope",
+   "variants": [
+    "three sixty no scope"
+   ],
+   "heard": [
+    "three hundred sixty no scope"
+   ],
+   "category": "gaming",
+   "lang": "en"
+  },
+  {
+   "term": "teabag",
+   "variants": [
+    "t bag"
+   ],
+   "heard": [
+    "teabeg",
+    "T-beg"
+   ],
+   "category": "gaming",
+   "lang": "en"
+  },
+  {
+   "term": "teabagging",
+   "variants": [
+    "t bagging"
+   ],
+   "heard": [
+    "teabegging"
+   ],
+   "category": "gaming",
+   "lang": "en"
+  },
+  {
+   "term": "scrim",
+   "variants": [
+    "scrimm"
+   ],
+   "category": "gaming",
+   "lang": "en"
+  },
+  {
+   "term": "scrims",
+   "category": "gaming",
+   "lang": "en"
+  },
+  {
+   "term": "LAN party",
+   "heard": [
+    "Ellian party",
+    "Ellie and Party"
+   ],
+   "category": "gaming",
+   "lang": "en"
+  },
+  {
+   "term": "esports",
+   "variants": [
+    "e-sports"
+   ],
+   "category": "gaming",
+   "lang": "en"
+  },
+  {
+   "term": "streamsniper",
+   "heard": [
+    "Dream Snipper",
+    "Stream Snipper"
+   ],
+   "category": "gaming",
+   "lang": "en"
+  },
+  {
+   "term": "stream sniping",
+   "category": "gaming",
+   "lang": "en"
+  },
+  {
+   "term": "anticheat",
+   "category": "gaming",
+   "lang": "en"
+  },
+  {
+   "term": "aimbot",
+   "category": "gaming",
+   "lang": "en"
+  },
+  {
+   "term": "wallhack",
+   "category": "gaming",
+   "lang": "en"
+  },
+  {
+   "term": "wallhacks",
+   "category": "gaming",
+   "lang": "en"
+  },
+  {
+   "term": "keybind",
+   "category": "gaming",
+   "lang": "en"
+  },
+  {
+   "term": "keybinds",
+   "category": "gaming",
+   "lang": "en"
+  },
+  {
+   "term": "DPI",
+   "variants": [
+    "d p i"
+   ],
+   "category": "gaming",
+   "lang": "en",
+   "casing": "upper"
+  },
+  {
+   "term": "hitbox",
+   "category": "gaming",
+   "lang": "en"
+  },
+  {
+   "term": "hitboxes",
+   "category": "gaming",
+   "lang": "en"
+  },
+  {
+   "term": "hitreg",
+   "variants": [
+    "hit reg"
+   ],
+   "heard": [
+    "Hittreg",
+    "Hitterg"
+   ],
+   "category": "gaming",
+   "lang": "en"
+  },
+  {
+   "term": "hitscan",
+   "variants": [
+    "hit scan"
+   ],
+   "heard": [
+    "Hitskin"
+   ],
+   "category": "gaming",
+   "lang": "en"
+  },
+  {
+   "term": "tickrate",
+   "variants": [
+    "tick rate"
+   ],
+   "category": "gaming",
+   "lang": "en"
+  },
+  {
+   "term": "netcode",
+   "category": "gaming",
+   "lang": "en"
+  },
+  {
+   "term": "desync",
+   "category": "gaming",
+   "lang": "en"
+  },
+  {
+   "term": "rubberbanding",
+   "category": "gaming",
+   "lang": "en"
+  },
+  {
+   "term": "rubberband",
+   "category": "gaming",
+   "lang": "en"
+  },
+  {
+   "term": "hotfix",
+   "category": "gaming",
+   "lang": "en"
+  },
+  {
+   "term": "loot box",
+   "category": "gaming",
+   "lang": "en"
+  },
+  {
+   "term": "loot boxes",
+   "category": "gaming",
+   "lang": "en"
+  },
+  {
+   "term": "pay-to-win",
+   "variants": [
+    "pay to win"
+   ],
+   "category": "gaming",
+   "lang": "en"
+  },
+  {
+   "term": "free-to-play",
+   "variants": [
+    "free to play"
+   ],
+   "category": "gaming",
+   "lang": "en"
+  },
+  {
+   "term": "F2P",
+   "variants": [
+    "f 2 p",
+    "f two p"
+   ],
+   "category": "gaming",
+   "lang": "en"
+  },
+  {
+   "term": "P2W",
+   "variants": [
+    "p 2 w",
+    "p two w"
+   ],
+   "category": "gaming",
+   "lang": "en"
+  },
+  {
+   "term": "gacha",
+   "category": "gaming",
+   "lang": "en"
+  },
+  {
+   "term": "completionist",
+   "category": "gaming",
+   "lang": "en"
+  },
+  {
+   "term": "Steam Deck",
+   "category": "gaming",
+   "lang": "en"
+  },
+  {
+   "term": "Game Pass",
+   "category": "gaming",
+   "lang": "en"
+  },
+  {
+   "term": "Fortnite",
+   "variants": [
+    "fort night"
+   ],
+   "category": "gaming",
+   "lang": "en"
+  },
+  {
+   "term": "Minecraft",
+   "variants": [
+    "mine craft"
+   ],
+   "category": "gaming",
+   "lang": "en"
+  },
+  {
+   "term": "Roblox",
+   "variants": [
+    "roblocks"
+   ],
+   "category": "gaming",
+   "lang": "en"
+  },
+  {
+   "term": "Valorant",
+   "variants": [
+    "valerant"
+   ],
+   "category": "gaming",
+   "lang": "en"
+  },
+  {
+   "term": "Apex Legends",
+   "variants": [
+    "apex legend"
+   ],
+   "category": "gaming",
+   "lang": "en"
+  },
+  {
+   "term": "Dota",
+   "category": "gaming",
+   "lang": "en"
+  },
+  {
+   "term": "Counter-Strike",
+   "variants": [
+    "counter strike"
+   ],
+   "category": "gaming",
+   "lang": "en"
+  },
+  {
+   "term": "CS2",
+   "variants": [
+    "c s two",
+    "c s 2"
+   ],
+   "category": "gaming",
+   "lang": "en"
+  },
+  {
+   "term": "CSGO",
+   "variants": [
+    "c s g o"
+   ],
+   "category": "gaming",
+   "lang": "en"
+  },
+  {
+   "term": "Warzone",
+   "category": "gaming",
+   "lang": "en"
+  },
+  {
+   "term": "Among Us",
+   "category": "gaming",
+   "lang": "en"
+  },
+  {
+   "term": "Helldivers",
+   "variants": [
+    "hell divers"
+   ],
+   "heard": [
+    "Heldivers"
+   ],
+   "category": "gaming",
+   "lang": "en"
+  },
+  {
+   "term": "Palworld",
+   "variants": [
+    "pal world"
+   ],
+   "category": "gaming",
+   "lang": "en"
+  },
+  {
+   "term": "Baldur's Gate",
+   "variants": [
+    "balders gate",
+    "baldurs gate"
+   ],
+   "category": "gaming",
+   "lang": "en"
+  },
+  {
+   "term": "GTA",
+   "variants": [
+    "g t a"
+   ],
+   "category": "gaming",
+   "lang": "en"
+  },
+  {
+   "term": "GTA 6",
+   "variants": [
+    "g t a six",
+    "gta six"
+   ],
+   "category": "gaming",
+   "lang": "en"
+  },
+  {
+   "term": "Escape from Tarkov",
+   "variants": [
+    "escape from tar cov"
+   ],
+   "category": "gaming",
+   "lang": "en"
+  },
+  {
+   "term": "Tarkov",
+   "variants": [
+    "tar cov"
+   ],
+   "category": "gaming",
+   "lang": "en"
+  },
+  {
+   "term": "R6",
+   "variants": [
+    "r six"
+   ],
+   "category": "gaming",
+   "lang": "en"
+  },
+  {
+   "term": "PlayStation",
+   "variants": [
+    "play station"
+   ],
+   "category": "gaming",
+   "lang": "en"
+  },
+  {
+   "term": "PS5",
+   "variants": [
+    "p s five",
+    "ps five"
+   ],
+   "category": "gaming",
+   "lang": "en"
+  },
+  {
+   "term": "PS4",
+   "variants": [
+    "p s four",
+    "ps four"
+   ],
+   "category": "gaming",
+   "lang": "en"
+  },
+  {
+   "term": "Xbox",
+   "variants": [
+    "x box"
+   ],
+   "category": "gaming",
+   "lang": "en"
+  },
+  {
+   "term": "Nintendo Switch",
+   "category": "gaming",
+   "lang": "en"
+  },
+  {
+   "term": "modpack",
+   "variants": [
+    "mod pack"
+   ],
+   "heard": [
+    "Maud Pack"
+   ],
+   "category": "gaming",
+   "lang": "en"
+  },
+  {
+   "term": "WoW",
+   "variants": [
+    "w o w"
+   ],
+   "heard": [
+    "wo W",
+    "Whoa W"
+   ],
+   "category": "gaming",
+   "lang": "en"
+  },
+  {
+   "term": "RuneScape",
+   "variants": [
+    "rune scape"
+   ],
+   "category": "gaming",
+   "lang": "en"
+  },
+  {
+   "term": "Old School RuneScape",
+   "variants": [
+    "old school rune scape"
+   ],
+   "heard": [
+    "old school runecape"
+   ],
+   "category": "gaming",
+   "lang": "en"
+  },
+  {
+   "term": "OSRS",
+   "variants": [
+    "o s r s"
+   ],
+   "heard": [
+    "Osers"
+   ],
+   "category": "gaming",
+   "lang": "en"
+  },
+  {
+   "term": "Lethal Company",
+   "category": "gaming",
+   "lang": "en"
+  },
+  {
+   "term": "Phasmophobia",
+   "category": "gaming",
+   "lang": "en"
+  },
+  {
+   "term": "DayZ",
+   "variants": [
+    "day z"
+   ],
+   "category": "gaming",
+   "lang": "en"
+  },
+  {
+   "term": "Arc Raiders",
+   "heard": [
+    "Ark Raiders"
+   ],
+   "category": "gaming",
+   "lang": "en"
+  },
+  {
+   "term": "Marvel Rivals",
+   "category": "gaming",
+   "lang": "en"
+  },
+  {
+   "term": "Deadlock",
+   "category": "gaming",
+   "lang": "en"
+  },
+  {
+   "term": "Vampire Survivors",
+   "category": "gaming",
+   "lang": "en"
+  },
+  {
+   "term": "Balatro",
+   "variants": [
+    "ballatro"
+   ],
+   "heard": [
+    "by lateral"
+   ],
+   "category": "gaming",
+   "lang": "en"
+  },
+  {
+   "term": "Geoguessr",
+   "variants": [
+    "geo guessr"
+   ],
+   "heard": [
+    "geo guesser"
+   ],
+   "category": "gaming",
+   "lang": "en"
+  },
+  {
+   "term": "Rocket League",
+   "category": "rocket-league",
+   "lang": "en"
+  },
+  {
+   "term": "RLCS",
+   "variants": [
+    "r l c s"
+   ],
+   "category": "rocket-league",
+   "lang": "en"
+  },
+  {
+   "term": "RL",
+   "variants": [
+    "r l"
+   ],
+   "category": "rocket-league",
+   "lang": "en",
+   "casing": "upper"
+  },
+  {
+   "term": "Sideswipe",
+   "category": "rocket-league",
+   "lang": "en"
+  },
+  {
+   "term": "ceiling shot",
+   "variants": [
+    "sealing shot"
+   ],
+   "category": "rocket-league",
+   "lang": "en"
+  },
+  {
+   "term": "ceiling shots",
+   "variants": [
+    "sealing shots"
+   ],
+   "category": "rocket-league",
+   "lang": "en"
+  },
+  {
+   "term": "ceiling reset",
+   "variants": [
+    "sealing reset"
+   ],
+   "category": "rocket-league",
+   "lang": "en"
+  },
+  {
+   "term": "flip reset",
+   "heard": [
+    "flipper set"
+   ],
+   "category": "rocket-league",
+   "lang": "en"
+  },
+  {
+   "term": "flip resets",
+   "heard": [
+    "flip recettes"
+   ],
+   "category": "rocket-league",
+   "lang": "en"
+  },
+  {
+   "term": "air dribble",
+   "category": "rocket-league",
+   "lang": "en"
+  },
+  {
+   "term": "air dribbles",
+   "category": "rocket-league",
+   "lang": "en"
+  },
+  {
+   "term": "air roll",
+   "category": "rocket-league",
+   "lang": "en"
+  },
+  {
+   "term": "airroll",
+   "category": "rocket-league",
+   "lang": "en"
+  },
+  {
+   "term": "musty flick",
+   "variants": [
+    "mustie flick"
+   ],
+   "category": "rocket-league",
+   "lang": "en"
+  },
+  {
+   "term": "musty",
+   "variants": [
+    "mustie",
+    "musti"
+   ],
+   "category": "rocket-league",
+   "lang": "en"
+  },
+  {
+   "term": "musty flicks",
+   "category": "rocket-league",
+   "lang": "en"
+  },
+  {
+   "term": "Breezi flick",
+   "variants": [
+    "breezy flick"
+   ],
+   "category": "rocket-league",
+   "lang": "en"
+  },
+  {
+   "term": "Breezi",
+   "category": "rocket-league",
+   "lang": "en"
+  },
+  {
+   "term": "tornado flick",
+   "category": "rocket-league",
+   "lang": "en"
+  },
+  {
+   "term": "tornado spin",
+   "category": "rocket-league",
+   "lang": "en"
+  },
+  {
+   "term": "double tap",
+   "category": "rocket-league",
+   "lang": "en"
+  },
+  {
+   "term": "double touch",
+   "category": "rocket-league",
+   "lang": "en"
+  },
+  {
+   "term": "flip cancel",
+   "category": "rocket-league",
+   "lang": "en"
+  },
+  {
+   "term": "half flip",
+   "category": "rocket-league",
+   "lang": "en"
+  },
+  {
+   "term": "speed flip",
+   "variants": [
+    "speedflip"
+   ],
+   "category": "rocket-league",
+   "lang": "en"
+  },
+  {
+   "term": "wave dash",
+   "variants": [
+    "wavedash"
+   ],
+   "category": "rocket-league",
+   "lang": "en"
+  },
+  {
+   "term": "zap dash",
+   "variants": [
+    "zapdash"
+   ],
+   "heard": [
+    "app dash"
+   ],
+   "category": "rocket-league",
+   "lang": "en"
+  },
+  {
+   "term": "fast aerial",
+   "heard": [
+    "fast Ariel"
+   ],
+   "category": "rocket-league",
+   "lang": "en"
+  },
+  {
+   "term": "fast aerials",
+   "category": "rocket-league",
+   "lang": "en"
+  },
+  {
+   "term": "fake challenge",
+   "category": "rocket-league",
+   "lang": "en"
+  },
+  {
+   "term": "shadow defense",
+   "variants": [
+    "shadow defence"
+   ],
+   "category": "rocket-league",
+   "lang": "en"
+  },
+  {
+   "term": "backboard",
+   "variants": [
+    "back board"
+   ],
+   "category": "rocket-league",
+   "lang": "en"
+  },
+  {
+   "term": "backboard save",
+   "heard": [
+    "backward save"
+   ],
+   "category": "rocket-league",
+   "lang": "en"
+  },
+  {
+   "term": "backboard read",
+   "category": "rocket-league",
+   "lang": "en"
+  },
+  {
+   "term": "back post",
+   "category": "rocket-league",
+   "lang": "en"
+  },
+  {
+   "term": "far post",
+   "category": "rocket-league",
+   "lang": "en"
+  },
+  {
+   "term": "near post",
+   "category": "rocket-league",
+   "lang": "en"
+  },
+  {
+   "term": "kickoff",
+   "category": "rocket-league",
+   "lang": "en"
+  },
+  {
+   "term": "kickoffs",
+   "category": "rocket-league",
+   "lang": "en"
+  },
+  {
+   "term": "boost pad",
+   "category": "rocket-league",
+   "lang": "en"
+  },
+  {
+   "term": "boost pads",
+   "category": "rocket-league",
+   "lang": "en"
+  },
+  {
+   "term": "big pad",
+   "category": "rocket-league",
+   "lang": "en"
+  },
+  {
+   "term": "big pads",
+   "category": "rocket-league",
+   "lang": "en"
+  },
+  {
+   "term": "small pad",
+   "category": "rocket-league",
+   "lang": "en"
+  },
+  {
+   "term": "small pads",
+   "category": "rocket-league",
+   "lang": "en"
+  },
+  {
+   "term": "boost starved",
+   "heard": [
+    "Boo starved"
+   ],
+   "category": "rocket-league",
+   "lang": "en"
+  },
+  {
+   "term": "boost starve",
+   "category": "rocket-league",
+   "lang": "en"
+  },
+  {
+   "term": "boost stealing",
+   "category": "rocket-league",
+   "lang": "en"
+  },
+  {
+   "term": "bump",
+   "category": "rocket-league",
+   "lang": "en"
+  },
+  {
+   "term": "bumps",
+   "category": "rocket-league",
+   "lang": "en"
+  },
+  {
+   "term": "demo",
+   "category": "rocket-league",
+   "lang": "en"
+  },
+  {
+   "term": "demos",
+   "category": "rocket-league",
+   "lang": "en"
+  },
+  {
+   "term": "demoed",
+   "variants": [
+    "demo'd"
+   ],
+   "category": "rocket-league",
+   "lang": "en"
+  },
+  {
+   "term": "whiff",
+   "variants": [
+    "wiff"
+   ],
+   "category": "rocket-league",
+   "lang": "en"
+  },
+  {
+   "term": "whiffed",
+   "variants": [
+    "wiffed"
+   ],
+   "heard": [
+    "whift"
+   ],
+   "category": "rocket-league",
+   "lang": "en"
+  },
+  {
+   "term": "whiffing",
+   "variants": [
+    "wiffing"
+   ],
+   "category": "rocket-league",
+   "lang": "en"
+  },
+  {
+   "term": "Kuxir pinch",
+   "variants": [
+    "cooksir pinch",
+    "kuxeer pinch"
+   ],
+   "heard": [
+    "cucks your pinch",
+    "cuck's your pinch"
+   ],
+   "category": "rocket-league",
+   "lang": "en"
+  },
+  {
+   "term": "Kuxir",
+   "variants": [
+    "cooksir"
+   ],
+   "heard": [
+    "Cuxir"
+   ],
+   "category": "rocket-league",
+   "lang": "en"
+  },
+  {
+   "term": "snow day",
+   "category": "rocket-league",
+   "lang": "en"
+  },
+  {
+   "term": "dropshot",
+   "category": "rocket-league",
+   "lang": "en"
+  },
+  {
+   "term": "Hoops",
+   "category": "rocket-league",
+   "lang": "en",
+   "casing": "keep"
+  },
+  {
+   "term": "Rumble",
+   "category": "rocket-league",
+   "lang": "en",
+   "casing": "keep"
+  },
+  {
+   "term": "Heatseeker",
+   "variants": [
+    "heat seeker"
+   ],
+   "category": "rocket-league",
+   "lang": "en"
+  },
+  {
+   "term": "Gridiron",
+   "category": "rocket-league",
+   "lang": "en",
+   "casing": "keep"
+  },
+  {
+   "term": "Supersonic Legend",
+   "category": "rocket-league",
+   "lang": "en"
+  },
+  {
+   "term": "SSL",
+   "variants": [
+    "s s l"
+   ],
+   "category": "rocket-league",
+   "lang": "en",
+   "casing": "upper"
+  },
+  {
+   "term": "GC",
+   "variants": [
+    "g c"
+   ],
+   "category": "rocket-league",
+   "lang": "en",
+   "casing": "upper"
+  },
+  {
+   "term": "GC1",
+   "variants": [
+    "g c one"
+   ],
+   "heard": [
+    "GC one"
+   ],
+   "category": "rocket-league",
+   "lang": "en"
+  },
+  {
+   "term": "GC2",
+   "variants": [
+    "g c two"
+   ],
+   "heard": [
+    "G C2",
+    "G C too"
+   ],
+   "category": "rocket-league",
+   "lang": "en"
+  },
+  {
+   "term": "GC3",
+   "variants": [
+    "g c three"
+   ],
+   "heard": [
+    "GC three"
+   ],
+   "category": "rocket-league",
+   "lang": "en"
+  },
+  {
+   "term": "derank",
+   "variants": [
+    "de rank"
+   ],
+   "category": "rocket-league",
+   "lang": "en"
+  },
+  {
+   "term": "deranked",
+   "variants": [
+    "de ranked"
+   ],
+   "heard": [
+    "Derangt",
+    "Daringt"
+   ],
+   "category": "rocket-league",
+   "lang": "en"
+  },
+  {
+   "term": "Octane",
+   "category": "rocket-league",
+   "lang": "en",
+   "casing": "keep"
+  },
+  {
+   "term": "Fennec",
+   "heard": [
+    "Fenek",
+    "Fenneck"
+   ],
+   "category": "rocket-league",
+   "lang": "en"
+  },
+  {
+   "term": "Dominus",
+   "category": "rocket-league",
+   "lang": "en"
+  },
+  {
+   "term": "Breakout",
+   "category": "rocket-league",
+   "lang": "en",
+   "casing": "keep"
+  },
+  {
+   "term": "Batmobile",
+   "variants": [
+    "bat mobile"
+   ],
+   "category": "rocket-league",
+   "lang": "en"
+  },
+  {
+   "term": "Psyonix",
+   "variants": [
+    "sigh onyx",
+    "psy onyx"
+   ],
+   "category": "rocket-league",
+   "lang": "en"
+  },
+  {
+   "term": "Rocket Pass",
+   "category": "rocket-league",
+   "lang": "en"
+  },
+  {
+   "term": "Rocket Labs",
+   "category": "rocket-league",
+   "lang": "en"
+  },
+  {
+   "term": "powerslide",
+   "variants": [
+    "power slide"
+   ],
+   "category": "rocket-league",
+   "lang": "en"
+  },
+  {
+   "term": "power sliding",
+   "category": "rocket-league",
+   "lang": "en"
+  },
+  {
+   "term": "double commit",
+   "category": "rocket-league",
+   "lang": "en"
+  },
+  {
+   "term": "double commits",
+   "category": "rocket-league",
+   "lang": "en"
+  },
+  {
+   "term": "overcommit",
+   "variants": [
+    "over commit"
+   ],
+   "category": "rocket-league",
+   "lang": "en"
+  },
+  {
+   "term": "overcommitted",
+   "category": "rocket-league",
+   "lang": "en"
+  },
+  {
+   "term": "ball cam",
+   "variants": [
+    "ballcam"
+   ],
+   "category": "rocket-league",
+   "lang": "en"
+  },
+  {
+   "term": "deadzone",
+   "category": "rocket-league",
+   "lang": "en"
+  },
+  {
+   "term": "dpad",
+   "variants": [
+    "d pad"
+   ],
+   "category": "rocket-league",
+   "lang": "en"
+  },
+  {
+   "term": "50/50",
+   "variants": [
+    "fifty fifty"
+   ],
+   "heard": [
+    "50 slash fifty",
+    "fifty slash fifty"
+   ],
+   "category": "rocket-league",
+   "lang": "en"
+  },
+  {
+   "term": "Kaydop",
+   "variants": [
+    "kay dop",
+    "kaydope"
+   ],
+   "heard": [
+    "K-Dop",
+    "Cadup"
+   ],
+   "category": "rocket-league",
+   "lang": "en"
+  },
+  {
+   "term": "SquishyMuffinz",
+   "variants": [
+    "squishy muffins",
+    "squishy muffinz"
+   ],
+   "category": "rocket-league",
+   "lang": "en"
+  },
+  {
+   "term": "Jstn",
+   "heard": [
+    "JSDN"
+   ],
+   "category": "rocket-league",
+   "lang": "en"
+  },
+  {
+   "term": "Fairy Peak",
+   "category": "rocket-league",
+   "lang": "en"
+  },
+  {
+   "term": "Beastmode",
+   "category": "rocket-league",
+   "lang": "en"
+  },
+  {
+   "term": "Sypical",
+   "variants": [
+    "sipical"
+   ],
+   "heard": [
+    "Cypical"
+   ],
+   "category": "rocket-league",
+   "lang": "en"
+  },
+  {
+   "term": "Vatira",
+   "category": "rocket-league",
+   "lang": "en"
+  },
+  {
+   "term": "Atomik",
+   "category": "rocket-league",
+   "lang": "en"
+  },
+  {
+   "term": "Drali",
+   "heard": [
+    "Drolli"
+   ],
+   "category": "rocket-league",
+   "lang": "en"
+  },
+  {
+   "term": "Alpha54",
+   "variants": [
+    "alpha 54",
+    "alpha fifty four"
+   ],
+   "category": "rocket-league",
+   "lang": "en"
+  },
+  {
+   "term": "Mawkzy",
+   "variants": [
+    "mawk zee"
+   ],
+   "category": "rocket-league",
+   "lang": "en"
+  },
+  {
+   "term": "Monkey Moon",
+   "category": "rocket-league",
+   "lang": "en"
+  },
+  {
+   "term": "G2 Esports",
+   "heard": [
+    "G2 a sports"
+   ],
+   "category": "rocket-league",
+   "lang": "en"
+  },
+  {
+   "term": "Karmine Corp",
+   "heard": [
+    "Carmine Corp"
+   ],
+   "category": "rocket-league",
+   "lang": "en"
+  },
+  {
+   "term": "Cloud9",
+   "category": "rocket-league",
+   "lang": "en"
+  },
+  {
+   "term": "Twitch",
+   "category": "streaming",
+   "lang": "en",
+   "casing": "keep"
+  },
+  {
+   "term": "Twitch Prime",
+   "category": "streaming",
+   "lang": "en"
+  },
+  {
+   "term": "prime sub",
+   "category": "streaming",
+   "lang": "en"
+  },
+  {
+   "term": "prime subs",
+   "category": "streaming",
+   "lang": "en"
+  },
+  {
+   "term": "resub",
+   "variants": [
+    "re sub"
+   ],
+   "heard": [
+    "Rasub"
+   ],
+   "category": "streaming",
+   "lang": "en"
+  },
+  {
+   "term": "resubs",
+   "variants": [
+    "re subs"
+   ],
+   "category": "streaming",
+   "lang": "en"
+  },
+  {
+   "term": "gifted subs",
+   "category": "streaming",
+   "lang": "en"
+  },
+  {
+   "term": "gift subs",
+   "category": "streaming",
+   "lang": "en"
+  },
+  {
+   "term": "gift sub",
+   "category": "streaming",
+   "lang": "en"
+  },
+  {
+   "term": "subathon",
+   "variants": [
+    "sub a thon"
+   ],
+   "heard": [
+    "Sabathan",
+    "Subbethan"
+   ],
+   "category": "streaming",
+   "lang": "en"
+  },
+  {
+   "term": "hype train",
+   "category": "streaming",
+   "lang": "en"
+  },
+  {
+   "term": "channel points",
+   "category": "streaming",
+   "lang": "en"
+  },
+  {
+   "term": "donos",
+   "category": "streaming",
+   "lang": "en"
+  },
+  {
+   "term": "dono",
+   "category": "streaming",
+   "lang": "en"
+  },
+  {
+   "term": "Just Chatting",
+   "category": "streaming",
+   "lang": "en"
+  },
+  {
+   "term": "chatters",
+   "category": "streaming",
+   "lang": "en"
+  },
+  {
+   "term": "emote",
+   "category": "streaming",
+   "lang": "en"
+  },
+  {
+   "term": "emotes",
+   "category": "streaming",
+   "lang": "en"
+  },
+  {
+   "term": "7TV",
+   "variants": [
+    "seven t v",
+    "7 t v",
+    "seven tv"
+   ],
+   "heard": [
+    "7 TV"
+   ],
+   "category": "streaming",
+   "lang": "en"
+  },
+  {
+   "term": "BetterTTV",
+   "variants": [
+    "better t t v",
+    "better ttv"
+   ],
+   "category": "streaming",
+   "lang": "en"
+  },
+  {
+   "term": "BTTV",
+   "variants": [
+    "b t t v"
+   ],
+   "category": "streaming",
+   "lang": "en"
+  },
+  {
+   "term": "FFZ",
+   "variants": [
+    "f f z"
+   ],
+   "heard": [
+    "FFC"
+   ],
+   "category": "streaming",
+   "lang": "en"
+  },
+  {
+   "term": "FrankerFaceZ",
+   "variants": [
+    "franker face z"
+   ],
+   "heard": [
+    "Frankerface C",
+    "Frank or face Z"
+   ],
+   "category": "streaming",
+   "lang": "en"
+  },
+  {
+   "term": "Kappa",
+   "category": "streaming",
+   "lang": "en"
+  },
+  {
+   "term": "LUL",
+   "variants": [
+    "l u l"
+   ],
+   "category": "streaming",
+   "lang": "en"
+  },
+  {
+   "term": "LULW",
+   "variants": [
+    "l u l w"
+   ],
+   "category": "streaming",
+   "lang": "en"
+  },
+  {
+   "term": "OMEGALUL",
+   "variants": [
+    "omega lul",
+    "omega l u l"
+   ],
+   "heard": [
+    "Omalul",
+    "Omal"
+   ],
+   "category": "streaming",
+   "lang": "en"
+  },
+  {
+   "term": "KEKW",
+   "variants": [
+    "k e k w",
+    "kek w"
+   ],
+   "heard": [
+    "Kekwa"
+   ],
+   "category": "streaming",
+   "lang": "en"
+  },
+  {
+   "term": "KEK",
+   "category": "streaming",
+   "lang": "en"
+  },
+  {
+   "term": "monkaS",
+   "variants": [
+    "monka s"
+   ],
+   "heard": [
+    "Munker S"
+   ],
+   "category": "streaming",
+   "lang": "en"
+  },
+  {
+   "term": "Sadge",
+   "category": "streaming",
+   "lang": "en"
+  },
+  {
+   "term": "Pepega",
+   "heard": [
+    "Papiga",
+    "Pepiga"
+   ],
+   "category": "streaming",
+   "lang": "en"
+  },
+  {
+   "term": "Poggers",
+   "category": "streaming",
+   "lang": "en"
+  },
+  {
+   "term": "Pog",
+   "category": "streaming",
+   "lang": "en"
+  },
+  {
+   "term": "PogChamp",
+   "variants": [
+    "pog champ"
+   ],
+   "category": "streaming",
+   "lang": "en"
+  },
+  {
+   "term": "PepeHands",
+   "variants": [
+    "pepe hands"
+   ],
+   "category": "streaming",
+   "lang": "en"
+  },
+  {
+   "term": "Copege",
+   "category": "streaming",
+   "lang": "en"
+  },
+  {
+   "term": "EZ Clap",
+   "category": "streaming",
+   "lang": "en"
+  },
+  {
+   "term": "5Head",
+   "variants": [
+    "five head"
+   ],
+   "category": "streaming",
+   "lang": "en"
+  },
+  {
+   "term": "widepeepoHappy",
+   "variants": [
+    "wide peepo happy"
+   ],
+   "heard": [
+    "white people happy"
+   ],
+   "category": "streaming",
+   "lang": "en"
+  },
+  {
+   "term": "AutoMod",
+   "variants": [
+    "auto mod"
+   ],
+   "category": "streaming",
+   "lang": "en"
+  },
+  {
+   "term": "Nightbot",
+   "variants": [
+    "night bot"
+   ],
+   "category": "streaming",
+   "lang": "en"
+  },
+  {
+   "term": "Moobot",
+   "variants": [
+    "moo bot"
+   ],
+   "heard": [
+    "Mubat",
+    "Mubot"
+   ],
+   "category": "streaming",
+   "lang": "en"
+  },
+  {
+   "term": "Streamlabs",
+   "variants": [
+    "stream labs"
+   ],
+   "heard": [
+    "Dreamlabs"
+   ],
+   "category": "streaming",
+   "lang": "en"
+  },
+  {
+   "term": "Streamlabs Desktop",
+   "category": "streaming",
+   "lang": "en"
+  },
+  {
+   "term": "StreamElements",
+   "variants": [
+    "stream elements"
+   ],
+   "category": "streaming",
+   "lang": "en"
+  },
+  {
+   "term": "OBS",
+   "variants": [
+    "o b s"
+   ],
+   "category": "streaming",
+   "lang": "en",
+   "casing": "upper"
+  },
+  {
+   "term": "OBS Studio",
+   "variants": [
+    "o b s studio"
+   ],
+   "category": "streaming",
+   "lang": "en"
+  },
+  {
+   "term": "OBS WebSocket",
+   "variants": [
+    "o b s websocket"
+   ],
+   "category": "streaming",
+   "lang": "en"
+  },
+  {
+   "term": "Stream Deck",
+   "variants": [
+    "streamdeck"
+   ],
+   "heard": [
+    "Dream Deck"
+   ],
+   "category": "streaming",
+   "lang": "en"
+  },
+  {
+   "term": "Elgato",
+   "variants": [
+    "el gato"
+   ],
+   "heard": [
+    "Elgado"
+   ],
+   "category": "streaming",
+   "lang": "en"
+  },
+  {
+   "term": "capture card",
+   "category": "streaming",
+   "lang": "en"
+  },
+  {
+   "term": "NVENC",
+   "variants": [
+    "n v e n c"
+   ],
+   "heard": [
+    "Venk",
+    "in Vink"
+   ],
+   "category": "streaming",
+   "lang": "en"
+  },
+  {
+   "term": "x264",
+   "variants": [
+    "x 264",
+    "x two six four"
+   ],
+   "heard": [
+    "X two hundred sixty four"
+   ],
+   "category": "streaming",
+   "lang": "en"
+  },
+  {
+   "term": "x265",
+   "category": "streaming",
+   "lang": "en"
+  },
+  {
+   "term": "AV1",
+   "variants": [
+    "a v one",
+    "a v 1"
+   ],
+   "heard": [
+    "Av One"
+   ],
+   "category": "streaming",
+   "lang": "en"
+  },
+  {
+   "term": "HEVC",
+   "heard": [
+    "Hevk"
+   ],
+   "category": "streaming",
+   "lang": "en"
+  },
+  {
+   "term": "RTMP",
+   "variants": [
+    "r t m p"
+   ],
+   "category": "streaming",
+   "lang": "en"
+  },
+  {
+   "term": "WebRTC",
+   "variants": [
+    "web r t c"
+   ],
+   "category": "streaming",
+   "lang": "en"
+  },
+  {
+   "term": "bitrate",
+   "heard": [
+    "Bitreet"
+   ],
+   "category": "streaming",
+   "lang": "en"
+  },
+  {
+   "term": "keyframe",
+   "heard": [
+    "Keyfram"
+   ],
+   "category": "streaming",
+   "lang": "en"
+  },
+  {
+   "term": "framerate",
+   "category": "streaming",
+   "lang": "en"
+  },
+  {
+   "term": "1080p",
+   "variants": [
+    "ten eighty p",
+    "1080 p"
+   ],
+   "heard": [
+    "1,080 P"
+   ],
+   "category": "streaming",
+   "lang": "en"
+  },
+  {
+   "term": "1440p",
+   "category": "streaming",
+   "lang": "en"
+  },
+  {
+   "term": "4K",
+   "variants": [
+    "four k"
+   ],
+   "category": "streaming",
+   "lang": "en"
+  },
+  {
+   "term": "HDR",
+   "category": "streaming",
+   "lang": "en"
+  },
+  {
+   "term": "overlay",
+   "category": "streaming",
+   "lang": "en"
+  },
+  {
+   "term": "overlays",
+   "category": "streaming",
+   "lang": "en"
+  },
+  {
+   "term": "scene switcher",
+   "category": "streaming",
+   "lang": "en"
+  },
+  {
+   "term": "scene collection",
+   "category": "streaming",
+   "lang": "en"
+  },
+  {
+   "term": "chroma key",
+   "category": "streaming",
+   "lang": "en"
+  },
+  {
+   "term": "green screen",
+   "variants": [
+    "greenscreen"
+   ],
+   "category": "streaming",
+   "lang": "en"
+  },
+  {
+   "term": "virtual camera",
+   "category": "streaming",
+   "lang": "en"
+  },
+  {
+   "term": "facecam",
+   "variants": [
+    "face cam"
+   ],
+   "heard": [
+    "face Kim",
+    "face gum"
+   ],
+   "category": "streaming",
+   "lang": "en"
+  },
+  {
+   "term": "game capture",
+   "category": "streaming",
+   "lang": "en"
+  },
+  {
+   "term": "display capture",
+   "category": "streaming",
+   "lang": "en"
+  },
+  {
+   "term": "window capture",
+   "category": "streaming",
+   "lang": "en"
+  },
+  {
+   "term": "noise gate",
+   "category": "streaming",
+   "lang": "en"
+  },
+  {
+   "term": "XLR",
+   "variants": [
+    "x l r"
+   ],
+   "category": "streaming",
+   "lang": "en",
+   "casing": "upper"
+  },
+  {
+   "term": "Shure SM7B",
+   "variants": [
+    "sure s m seven b",
+    "shure s m 7 b"
+   ],
+   "heard": [
+    "she'er SM7B",
+    "your SM7B"
+   ],
+   "category": "streaming",
+   "lang": "en"
+  },
+  {
+   "term": "SM7B",
+   "variants": [
+    "s m seven b"
+   ],
+   "heard": [
+    "SM seven B"
+   ],
+   "category": "streaming",
+   "lang": "en"
+  },
+  {
+   "term": "Rode",
+   "category": "streaming",
+   "lang": "en",
+   "casing": "keep"
+  },
+  {
+   "term": "Rodecaster",
+   "heard": [
+    "Roadcaster"
+   ],
+   "category": "streaming",
+   "lang": "en"
+  },
+  {
+   "term": "GoXLR",
+   "variants": [
+    "go x l r"
+   ],
+   "heard": [
+    "go XLR"
+   ],
+   "category": "streaming",
+   "lang": "en"
+  },
+  {
+   "term": "Voicemeeter",
+   "variants": [
+    "voice meeter"
+   ],
+   "heard": [
+    "voiceMeter",
+    "voice meter"
+   ],
+   "category": "streaming",
+   "lang": "en"
+  },
+  {
+   "term": "VB-Cable",
+   "variants": [
+    "vb cable"
+   ],
+   "category": "streaming",
+   "lang": "en"
+  },
+  {
+   "term": "stinger",
+   "category": "streaming",
+   "lang": "en"
+  },
+  {
+   "term": "stingers",
+   "category": "streaming",
+   "lang": "en"
+  },
+  {
+   "term": "starting soon",
+   "category": "streaming",
+   "lang": "en"
+  },
+  {
+   "term": "be right back",
+   "category": "streaming",
+   "lang": "en"
+  },
+  {
+   "term": "TTS",
+   "variants": [
+    "t t s"
+   ],
+   "category": "streaming",
+   "lang": "en",
+   "casing": "upper"
+  },
+  {
+   "term": "text-to-speech",
+   "variants": [
+    "text to speech"
+   ],
+   "heard": [
+    "text a speech"
+   ],
+   "category": "streaming",
+   "lang": "en"
+  },
+  {
+   "term": "soundboard",
+   "variants": [
+    "sound board"
+   ],
+   "category": "streaming",
+   "lang": "en"
+  },
+  {
+   "term": "VODs",
+   "variants": [
+    "v o ds"
+   ],
+   "category": "streaming",
+   "lang": "en"
+  },
+  {
+   "term": "YouTube",
+   "variants": [
+    "you tube"
+   ],
+   "category": "streaming",
+   "lang": "en"
+  },
+  {
+   "term": "YouTuber",
+   "variants": [
+    "you tuber"
+   ],
+   "category": "streaming",
+   "lang": "en"
+  },
+  {
+   "term": "YouTubers",
+   "variants": [
+    "you tubers"
+   ],
+   "category": "streaming",
+   "lang": "en"
+  },
+  {
+   "term": "YouTube Shorts",
+   "variants": [
+    "you tube shorts"
+   ],
+   "category": "streaming",
+   "lang": "en"
+  },
+  {
+   "term": "Discord",
+   "category": "streaming",
+   "lang": "en",
+   "casing": "keep"
+  },
+  {
+   "term": "Snapchat",
+   "variants": [
+    "snap chat"
+   ],
+   "category": "streaming",
+   "lang": "en"
+  },
+  {
+   "term": "WhatsApp",
+   "variants": [
+    "whats app"
+   ],
+   "category": "streaming",
+   "lang": "en"
+  },
+  {
+   "term": "Ko-fi",
+   "variants": [
+    "kofi",
+    "ko fi"
+   ],
+   "category": "streaming",
+   "lang": "en"
+  },
+  {
+   "term": "Linktree",
+   "variants": [
+    "link tree"
+   ],
+   "category": "streaming",
+   "lang": "en"
+  },
+  {
+   "term": "CapCut",
+   "variants": [
+    "cap cut"
+   ],
+   "category": "streaming",
+   "lang": "en"
+  },
+  {
+   "term": "DaVinci Resolve",
+   "variants": [
+    "da vinci resolve"
+   ],
+   "category": "streaming",
+   "lang": "en"
+  },
+  {
+   "term": "ChatGPT",
+   "variants": [
+    "chat gpt",
+    "chat g p t"
+   ],
+   "category": "streaming",
+   "lang": "en"
+  },
+  {
+   "term": "Midjourney",
+   "variants": [
+    "mid journey"
+   ],
+   "category": "streaming",
+   "lang": "en"
+  },
+  {
+   "term": "Stable Diffusion",
+   "category": "streaming",
+   "lang": "en"
+  },
+  {
+   "term": "co-stream",
+   "variants": [
+    "co stream"
+   ],
+   "category": "streaming",
+   "lang": "en"
+  },
+  {
+   "term": "EOS",
+   "variants": [
+    "e o s"
+   ],
+   "heard": [
+    "heos"
+   ],
+   "category": "streaming",
+   "lang": "en"
+  }
+ ]
+}

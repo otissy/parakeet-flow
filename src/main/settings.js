@@ -22,6 +22,7 @@ const DEFAULTS = {
   trailingSpace: false, historyEnabled: false, launchAtLogin: false,
   style: { casual: false },
   dictionary: [], snippets: [],
+  slang: { enabled: true, packs: {} },     // slang packs (src/slang): {id: false} switches one pack off; the packs themselves are files
   userName: '',
   // voice commands: whole-segment phrases on finals, English + Dutch, never typed (see core/commands.js)
   commands: { enabled: true, carryMs: 120000, list: DEFAULT_COMMANDS },
@@ -67,6 +68,8 @@ const strList = (v, d) => (Array.isArray(v) ? v.map(String).map((s) => s.trim())
 const pairs = (v, a, b) => (Array.isArray(v)
   ? v.map((p) => ({ [a]: String(p?.[a] ?? '').trim(), [b]: String(p?.[b] ?? '') })).filter((p) => p[a]).slice(0, 500) : []);
 
+const slangCfg = (v) => ({ enabled: v?.enabled !== false, packs: Object.fromEntries(Object.entries(v?.packs && typeof v.packs === 'object' ? v.packs : {}).filter(([k, b]) => /^[a-z0-9][a-z0-9_-]{0,47}$/.test(k) && typeof b === 'boolean').slice(0, 200)) });
+
 /** the toggle gesture is ONE non-modifier key */
 function toggleKey(v, d) {
   const vk = Array.isArray(v?.vks) && v.vks.length === 1 ? Number(v.vks[0]) : 0;
@@ -94,6 +97,7 @@ function normalize(s) {
     trailingSpace: !!s?.trailingSpace, historyEnabled: !!s?.historyEnabled, launchAtLogin: !!s?.launchAtLogin,
     style: { casual: !!s?.style?.casual },
     dictionary: pairs(s?.dictionary, 'from', 'to'), snippets: pairs(s?.snippets, 'trigger', 'expansion'),
+    slang: slangCfg(s?.slang),
     userName: String(s?.userName || '').slice(0, 40),
     commands: { enabled: s?.commands?.enabled !== false, carryMs: clampInt(s?.commands?.carryMs, 0, 600000, d.commands.carryMs), list: cmdList(s?.commands?.list, d.commands.list) },
     tone: { enabled: s?.tone?.enabled !== false, apps: appRows(s?.tone?.apps) },

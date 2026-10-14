@@ -23,9 +23,9 @@ const rmsOf = (a) => { let s = 0; for (let i = 0; i < a.length; i++) s += a[i] *
 
 class Controller extends EventEmitter {
   /** llm: LlmService-like or null; notes: {save(text)} or null (both optional: with them absent the controller behaves as before) */
-  constructor({ getAsr, typer, store, mic, ownPid = process.pid, now = Date.now, doneFlashMs = 900, llm = null, notes = null }) {
+  constructor({ getAsr, typer, store, mic, ownPid = process.pid, now = Date.now, doneFlashMs = 900, llm = null, notes = null, slang = null }) {
     super();
-    Object.assign(this, { getAsr, typer, store, mic, ownPid, now, doneFlashMs, llm, notes });
+    Object.assign(this, { getAsr, typer, store, mic, ownPid, now, doneFlashMs, llm, notes, slang });
     this.carry = null; this.gain = 1; this.flash = '';
     this.enabled = true; this.capturing = false; this.session = null; this.lastLevelAt = 0; this.level = 0; this.pillState = 'idle';
     this.fsm = new HotkeyFsm({ onAction: (a) => this._action(a) });
@@ -81,6 +81,7 @@ class Controller extends EventEmitter {
     const cmdOn = s.commands.enabled || n.enabled;
     return {
       liveMode: s.liveMode, trailingSpace: s.trailingSpace, fillers: s.fillers, dictionary: s.dictionary, snippets: s.snippets, style: s.style, deny: s.deny,
+      slang: this.slang ? this.slang.matcher(s.dictionary.map((d) => d.from)) : null,      // your Dictionary rows win over slang packs
       commands: cmdOn ? { enabled: true, list: s.commands.enabled ? s.commands.list : [], carryMs: s.commands.carryMs, notes: { enabled: !!(n.enabled && this.notes), triggers: n.triggers } } : null,
       tone: s.tone, translate: s.translate, cleanup: s.cleanup, enterAfterFinal: !!(s.typing && s.typing.enterAfterFinal), terminalFinalsOnly: true,
       deferred: !(s.typing && s.typing.live),

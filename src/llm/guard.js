@@ -50,6 +50,17 @@ function acceptCleanup(original, output, { minCharSim = 0.8, maxWordDiff = 0.34,
   return { ok: true, text: t, wordDiff: wd, charSim: cs, jaccard: jac };
 }
 
+/** vocabulary terms present in the original must survive the model: still there (any case), and exactly as spelled when the spelling has a capital (TikTok, GG) */
+function keepsVocab(original, output, vocab) {
+  const o = String(original ?? ''), t = String(output ?? ''), tl = t.toLowerCase();
+  for (const term of vocab || []) {
+    if (!o.toLowerCase().includes(term.toLowerCase())) continue;
+    if (!tl.includes(term.toLowerCase())) return false;
+    if (term !== term.toLowerCase() && o.includes(term) && !t.includes(term)) return false;
+  }
+  return true;
+}
+
 /** translate: no similarity possible, so check it looks like a translation into `target` ('en'|'nl') */
 function acceptTranslation(original, output, target) {
   const o = String(original ?? '').trim(); const t = tidyOutput(output);
@@ -65,4 +76,4 @@ function acceptTranslation(original, output, target) {
   return { ok: true, text: t };
 }
 
-module.exports = { acceptCleanup, acceptTranslation, tidyOutput, lev, ratio, wordsOf };
+module.exports = { keepsVocab, acceptCleanup, acceptTranslation, tidyOutput, lev, ratio, wordsOf };

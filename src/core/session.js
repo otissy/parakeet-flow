@@ -32,13 +32,13 @@ class DictationSession extends EventEmitter {
       commands: settings.commands || null, carry, carryMs: (settings.commands && settings.commands.carryMs) || 120000, formal, casual,
     };
     if (split) {
-      this.prepare = (t) => clean(t, { fillers: settings.fillers, dictionary: settings.dictionary, snippets: settings.snippets });
+      this.prepare = (t) => clean(t, { fillers: settings.fillers, dictionary: settings.dictionary, snippets: settings.snippets, slang: settings.slang });
       this.live = new LiveTyper({ ...base, prepare: this.prepare,
         tone: (t, profile) => applyTone(t, profile, { globalCasual: !!(style && style.casual) }),
         resolveProfile: tn.enabled ? (fg) => resolveProfile(fg, { enabled: true, apps: tn.apps }).profile : null });
     } else {
       this.live = new LiveTyper({ ...base,
-        finalize: (t) => clean(t, { fillers: settings.fillers, dictionary: settings.dictionary, snippets: settings.snippets, style }) });
+        finalize: (t) => clean(t, { fillers: settings.fillers, dictionary: settings.dictionary, snippets: settings.snippets, slang: settings.slang, style }) });
     }
     for (const ev of ['halted', 'late-final', 'deferred', 'cancelled', 'command', 'note']) this.live.on(ev, (e) => this.emit(ev, e));
     this.speechSec = 0; this.finalsText = []; this.partialText = ''; this.ended = false; this.cancelled = false;
@@ -95,7 +95,7 @@ class DictationSession extends EventEmitter {
     if ((s.snippets || []).length && this._snippetHit(raw)) return undefined;      // a snippet expansion is typed as written
     try {
       const r = this.useTranslate ? await this.llm.translate(text, { target: s.translate.target }) : await this.llm.cleanup(text);
-      return r && r.used ? r.text : undefined;
+      return r && r.used ? (s.slang && s.slang.size ? s.slang.apply(r.text) : r.text) : undefined;      // the model may have changed a term's case: put the pack spelling back
     } catch (_) { return undefined; }
   }
   _snippetHit(raw) {
