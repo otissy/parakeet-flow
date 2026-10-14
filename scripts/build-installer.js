@@ -42,9 +42,18 @@ function preflight() {
     ['llm-runtime/node_modules/node-llama-cpp/dist/index.js', 'run: npm --prefix llm-runtime install --omit=optional --ignore-scripts'],
     ['llm-runtime/node_modules/@node-llama-cpp/win-x64/package.json', 'run: npm --prefix llm-runtime install --omit=optional --ignore-scripts'],
     ['node_modules/electron-builder/cli.js', 'run: npm install'],
+    ['mcp/node_modules/@modelcontextprotocol/sdk/package.json', 'run: npm --prefix mcp ci --ignore-scripts'],
+    ['mcp/node_modules/zod/package.json', 'run: npm --prefix mcp ci --ignore-scripts'],
+    ['.claude/skills/sync-parakeet-notes/SKILL.md', 'the notes skill is missing'],
   ];
   for (const [f, hint] of need) if (!fs.existsSync(path.join(ROOT, f))) throw new Error(`missing ${f}: ${hint}`);
   ensure7z();
+}
+
+/** the shipped helper is a build product: removed before and after, so a stale src/typer/helper/bin can never be used by a later dev run or test */
+function removeBundledHelper() {
+  const typer = require('../src/typer/win32-typer.js');
+  fs.rmSync(path.dirname(typer.BUNDLED), { recursive: true, force: true });
 }
 
 function main(argv) {
@@ -57,11 +66,13 @@ function main(argv) {
   fs.mkdirSync(tmp, { recursive: true });
   // the input helper is compiled ONCE here and shipped inside the installer (not compiled on the user's PC at first run)
   const typer = require('../src/typer/win32-typer.js');
+  removeBundledHelper();
   const helper = typer.compileHelper(typer.BUNDLED);
   log(`pf-helper.exe ${fs.statSync(helper).size} bytes  sha256 ${sha256(helper)}  source ${typer.sourceHash()}`);
   log(`building parakeet-flow ${version} into ${out}`);
   const r = spawnSync(process.execPath, [path.join(ROOT, 'node_modules', 'electron-builder', 'cli.js'), '--win', 'squirrel', '--publish', 'never', `-c.directories.output=${out}`],
     { cwd: ROOT, stdio: 'inherit', windowsHide: true, env: { ...process.env, TEMP: tmp, TMP: tmp, SQUIRREL_TEMP: tmp, CSC_IDENTITY_AUTO_DISCOVERY: 'false' } });
+  removeBundledHelper();
   if (r.status !== 0) { log('build failed'); return 1; }
   const sq = path.join(out, 'squirrel-windows');
   for (const f of fs.existsSync(sq) ? fs.readdirSync(sq) : []) {
@@ -73,4 +84,4 @@ function main(argv) {
 }
 
 if (require.main === module) { try { process.exit(main(process.argv.slice(2))); } catch (e) { log('build-installer: ' + e.message); process.exit(1); } }
-module.exports = { outputDir, ensure7z, preflight };
+module.exports = { outputDir, ensure7z, preflight, removeBundledHelper };

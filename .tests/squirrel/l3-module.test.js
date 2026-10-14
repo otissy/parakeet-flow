@@ -102,3 +102,19 @@ test('docs/antivirus.md exists and says what the helper does not do', () => {
   const d = fs.readFileSync(path.join(root, 'docs', 'antivirus.md'), 'utf8');
   for (const k of ['SetWindowsHookEx', 'SendInput', 'no network', 'sha256', 'false positive']) assert.ok(d.toLowerCase().includes(k.toLowerCase()), k);
 });
+
+test('installer bundles the MCP server with its dependencies and the notes skill', () => {
+  const f = b.files.join(' ');
+  for (const k of ['mcp/server.js', 'mcp/package.json', 'mcp/node_modules/**/*', '.claude/skills/sync-parakeet-notes/SKILL.md']) assert.ok(f.includes(k), k);
+  assert.ok(f.indexOf('!**/*.{md,map,log}') < f.indexOf('SKILL.md'), 'the skill is re-included after the *.md exclusion');
+  for (const p of ['mcp/server.js', '.claude/skills/sync-parakeet-notes/SKILL.md']) assert.ok(fs.existsSync(path.join(root, p)), p);
+  const need = require(path.join(root, 'scripts/build-installer.js'));
+  assert.equal(typeof need.removeBundledHelper, 'function');
+});
+test('removeBundledHelper deletes a stale shipped helper', () => {
+  const bi = require(path.join(root, 'scripts/build-installer.js'));
+  fs.mkdirSync(path.dirname(t.BUNDLED), { recursive: true });
+  fs.writeFileSync(t.BUNDLED, 'stale');
+  bi.removeBundledHelper();
+  assert.ok(!fs.existsSync(path.dirname(t.BUNDLED)));
+});

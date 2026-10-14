@@ -7,7 +7,7 @@ and how to deal with a detection without turning your protection off.
 
 ## Which file
 
-`pf-helper.exe`, about 56 KB, built from `src/typer/helper/` (`PfHelper.cs`, `AssemblyInfo.cs`,
+`pf-helper.exe`, about 60 KB, built from `src/typer/helper/` (`PfHelper.cs`, `AssemblyInfo.cs`,
 `pf-helper.manifest`, icon `assets/icon.ico`) with the C# compiler that ships with Windows
 (`C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe`). Version 0.2.0 and later are compiled once when the
 installer is built and shipped inside the install folder
@@ -18,8 +18,8 @@ It carries a version resource (Company otissy, Product "parakeet-flow input help
 embedded manifest (`asInvoker`, UI access not requested, supported-OS entries) and the app icon. That makes it
 identifiable; it does not guarantee a scanner will like it.
 
-SHA-256 of the 0.2.0 helper shipped in `Parakeet Flow Setup 0.2.0.exe`: `275957767fcc236319fc0e23f4e67f05c03a38cdbb697e1135a3fadaf3ae1a1c`
-SHA-256 of that installer: `5ea1f376a47d6d4a733207c0156b96cc1bf47979c90568bab3d66fda9aa5e16a`
+SHA-256 of the 0.2.1 helper shipped in `Parakeet Flow Setup 0.2.1.exe`: `541edcfbd04b851be3162f4e518fda188abc22604e3b8049d7a17005e612ed25`
+SHA-256 of that installer: `5638ccbbe781442aae58aafb561a18f01be82b6679c6f9d7f0a62f988bd6c470`
 (The compiler does not produce identical bytes twice, so every rebuild has its own hash; the hash of the shipped file is
 recorded here and in the README for each release.)
 

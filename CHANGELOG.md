@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.2.1 - 2026-10-14
+
+Installer rebuilt on the insert-once typing, note mode and MCP notes server (5f4a024, cc911c6).
+
+- The installer now carries mcp/ (server plus its production dependencies, installed with `npm --prefix mcp ci --ignore-scripts`) and the sync-parakeet-notes skill.
+- pf-helper.exe is rebuilt fresh on every installer build; scripts/build-installer.js deletes src/typer/helper/bin before and after, so a stale shipped helper can never be picked up by a later dev run or test.
+- Not re-proven this round: a clean silent install and uninstall (a copy of 0.2.0 is installed on the PC and was left alone); the 0.2.0 proof still stands for the mechanism.
+
 ## 0.2.0 - 2026-10-13
 
 Packaging release. The app is now a normal Windows install.

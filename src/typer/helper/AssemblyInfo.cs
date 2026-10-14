@@ -7,5 +7,5 @@ using System.Reflection;
 [assembly: AssemblyCompany("otissy")]
 [assembly: AssemblyProduct("parakeet-flow input helper")]
 [assembly: AssemblyCopyright("Copyright (c) 2026 otissy")]
-[assembly: AssemblyVersion("0.2.0.0")]
-[assembly: AssemblyFileVersion("0.2.0.0")]
+[assembly: AssemblyVersion("0.2.1.0")]
+[assembly: AssemblyFileVersion("0.2.1.0")]

@@ -65,6 +65,8 @@ Build recipe: `npm install --ignore-scripts`, `npm --prefix llm-runtime install 
 | userData | pinned to %APPDATA%/parakeet-flow in main.js (a product name with a space would otherwise move it) |
 | .tests/asr L4 acceptance | can fail by a word under heavy CPU load (other test runs in parallel); passes alone |
 
+- **2026-10-14** 0.2.1 installer bundles mcp/ + skill; its silent install/uninstall was NOT re-run because an install of 0.2.0 exists in %LOCALAPPDATA%/parakeet-flow (prove-install refuses to touch it). Run scripts/prove-install.js on a PC without an install. The built 0.2.1 app was run off-screen from D:/builds/parakeet-flow/0.2.1/win-unpacked with a scratch user-data folder: engine ready, shipped helper used (nothing compiled), mcp/server.js answers initialize.
+
 ## Known problems
 
 - **2026-10-14** Unverified: a real Claude Code session (its Ink input handling is where live Backspace typing broke), a real Notion write through Claude Code, paste insertion in Windows Terminal (not installed) and VS Code's terminal (only starts as a visible window, skipped on the user's rule), Ctrl+Shift+Space through the real keyboard hook (only injected/simulated events were exercised), self-corrections like "no wait, Tuesday" (not done: the 0.6B cleanup model cannot do it reliably).
