@@ -5,7 +5,61 @@ place and settle into clean text when you let go. Everything runs on this PC (Pa
 via sherpa-onnx). A small floating bar shows the level and the live text; a tray icon and a main window hold
 the settings. The design follows the layout and feel of Wispr Flow without using its name or logo.
 
-## Run
+## Install (Windows installer, 0.2.0)
+
+Run `Parakeet Flow Setup 0.2.0.exe`. It installs for your user only (no admin prompt) into
+`%LOCALAPPDATA%\parakeet-flow`, adds a Start-menu shortcut (Start > otissy > Parakeet Flow) and an entry in
+Settings > Apps. It does NOT start with Windows: no startup entry, no scheduled task, no Run key. "Launch at login"
+exists in Settings and is off until you switch it on.
+
+First run:
+
+1. Open Parakeet Flow from the Start menu. A tray icon appears (hidden icons arrow, bottom right), the main
+   window opens, and a small bar sits at the bottom centre of the primary screen. Closing the window keeps it in the
+   tray; Quit is in the tray menu.
+2. Settings > Speech engine > Download. About 670 MB from the official model hosts, SHA-256 checked. Until the model
+   is there the engine shows "missing" and nothing is typed. The installer itself is 165 MB and holds no models.
+   Models live in `%APPDATA%\parakeet-flow\models`; an existing folder there is picked up as it is.
+3. Windows must allow microphone access for desktop apps (Settings > Privacy > Microphone). Pick the input
+   device in Settings if the default is not the one you speak into.
+4. Hold **Ctrl+Space** and talk; the words appear in the focused app. **CapsLock** toggles hands-free. Both are
+   described below and can be changed in Settings.
+5. Optional local AI cleanup/translate: Settings > AI cleanup > Download (a further 639 MB). The runtime is already
+   in the installer.
+
+The installer is not signed. Windows SmartScreen may say "Windows protected your PC": More info > Run anyway.
+Norton may show a reputation warning (for example IDP.Generic) for a new unsigned installer or for the little helper `pf-helper.exe`
+(built from `src/typer/helper/PfHelper.cs`, shipped inside the install with version info and a manifest; it types text and watches the hotkey).
+What it does, how to verify it, how to restore and exclude only that file, and how to report a false positive: `docs/antivirus.md`.
+Helper SHA-256 (0.2.0): `275957767fcc236319fc0e23f4e67f05c03a38cdbb697e1135a3fadaf3ae1a1c`. The app makes no network calls except the model downloads
+(and Notion, only if you turned it on).
+
+Update: run the newer Setup; it replaces the app and keeps your data. There is no update server and no
+auto-update.
+
+Uninstall: Settings > Apps > Parakeet Flow > Uninstall (or `%LOCALAPPDATA%\parakeet-flow\Update.exe --uninstall`).
+It removes the app, the shortcut and the Settings entry. Squirrel cannot delete the file it runs from, so an empty-ish `%LOCALAPPDATA%\parakeet-flow` (Update.exe, 1.9 MB, plus a `.dead` marker) stays; delete that folder by hand if you want it gone. `%APPDATA%\parakeet-flow` (models, settings,
+notes, logs) stays; delete that folder by hand to remove everything.
+
+Troubleshooting:
+
+| Symptom | Check |
+|---|---|
+| Nothing happens when launched | A copy may already be running in the tray (second start only shows its window). From a terminal, `npm start` now clears `ELECTRON_RUN_AS_NODE`; with that variable set Electron behaved as plain Node and died silently. |
+| Hold the key, nothing is typed | Tray: "Dictation enabled" must be ticked. Settings must show the engine as ready (model downloaded). The target window must be the same one that had focus when you pressed the key, and not in the never-type list. |
+| Ctrl+Space also toggles the Windows IME or VS Code completion | The helper swallows the chord only while dictation can use it; if another keyboard tool grabs Ctrl+Space first, pick a different hotkey in Settings. |
+| Level bar flat | Wrong input device or Windows microphone privacy switch off. |
+| Model "failed its SHA-256 check" | Delete the file named and download again; a damaged file is never used. |
+| Logs | `%APPDATA%\parakeet-flow\logs\app.log` (counts and timings only, never what you said). |
+
+Building the installer yourself (needs Node, the repo's `node_modules`, `llm-runtime` installed):
+
+    npm install --ignore-scripts
+    npm --prefix llm-runtime install --omit=optional --ignore-scripts
+    npm run installer             # builds into D:/builds/parakeet-flow/<version> (fresh folder, never reused)
+    node scripts/prove-install.js "<Setup.exe>" --out=<folder> --hook=scripts/proof-hook.js   # install, run, uninstall, compare
+
+## Run (from source)
 
     npm install            # electron@31.7.7, sherpa-onnx-node@1.13.8 (exact pins)
     npm start              # first run: Settings > Speech engine > Download (about 670 MB, SHA-256 checked)

@@ -1,17 +1,48 @@
 {
   "name": "parakeet-flow",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Local push-to-talk dictation with live partials (Parakeet TDT v3, sherpa-onnx)",
   "main": "src/main/main.js",
+  "author": "otissy",
+  "license": "UNLICENSED",
   "private": true,
   "scripts": {
-    "start": "electron .",
+    "start": "node scripts/start.js",
+    "icon": "node scripts/make-icon.js",
+    "installer": "node scripts/build-installer.js",
     "test": "node .claude/skills/plan/ladder.js .tests"
   },
   "dependencies": {
     "sherpa-onnx-node": "1.13.8"
   },
   "devDependencies": {
-    "electron": "31.7.7"
+    "electron": "31.7.7",
+    "electron-builder": "26.15.3"
+  },
+  "build": {
+    "appId": "com.otissy.parakeet-flow",
+    "productName": "Parakeet Flow",
+    "asar": false,
+    "electronDist": "node_modules/electron/dist",
+    "files": [
+      "package.json",
+      "src/**/*",
+      "assets/icon.png",
+      "assets/icon.ico",
+      "llm-runtime/package.json",
+      "llm-runtime/node_modules/**/*",
+      "!**/*.{md,map,log}",
+      "!**/node_modules/**/{test,tests,__tests__,docs,example,examples}/**"
+    ],
+    "win": {
+      "target": [
+        "squirrel"
+      ],
+      "icon": "assets/icon.ico"
+    },
+    "squirrelWindows": {
+      "name": "parakeet-flow",
+      "iconUrl": "https://raw.githubusercontent.com/electron/electron/main/shell/browser/resources/win/electron.ico"
+    }
   }
 }

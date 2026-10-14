@@ -4,3 +4,4 @@ node_modules/
 models/
 proof/*.wav
 .tests/fixtures/*.wav
+src/typer/helper/bin/

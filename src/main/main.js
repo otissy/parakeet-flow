@@ -8,8 +8,11 @@ const path = require('path');
 const argv = process.argv.slice(1);
 const arg = (name) => { const a = argv.find((x) => x.startsWith('--' + name + '=')); return a ? a.slice(name.length + 3) : null; };
 const userDir = arg('user-data') || process.env.PF_USERDATA;
-if (userDir) app.setPath('userData', userDir);
+const squirrel = require('./squirrel');
+const { mustExit, userDataDir } = squirrel;
 app.setName('parakeet-flow');
+// always the parakeet-flow folder under AppData/Roaming (models, settings, notes), installed or not, whatever the product name is
+app.setPath('userData', userDir || userDataDir(app.getPath('appData')));
 if (process.env.PF_OFFSCREEN) {   // tests: keep rendering windows that sit far off-screen
   app.commandLine.appendSwitch('disable-features', 'CalculateNativeWinOcclusion');
 }
@@ -214,8 +217,10 @@ function wireIpc() {
 }
 
 /* ---------------- boot ---------------- */
-const lock = app.requestSingleInstanceLock();
-if (!lock) app.quit();
+const squirrelExit = mustExit(argv);   // Update.exe runs the app with --squirrel-install/-updated/-uninstall/-obsolete: exit at once
+const lock = squirrelExit ? false : app.requestSingleInstanceLock();
+if (squirrelExit) squirrel.handle(squirrel.squirrelEvent(argv), { execPath: process.execPath, spawn: require('child_process').spawn, exists: fs.existsSync, log: (t) => log('info', t) }, () => app.exit(0));
+else if (!lock) app.quit();
 else {
   app.on('second-instance', () => { if (mainWin) { mainWin.show(); mainWin.focus(); } });
   app.whenReady().then(async () => {

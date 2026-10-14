@@ -9,22 +9,38 @@ const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 
-const SRC = path.join(__dirname, 'helper', 'PfHelper.cs');
-const CSC = path.join(process.env.WINDIR || 'C:\\Windows', 'Microsoft.NET', 'Framework64', 'v4.0.30319', 'csc.exe');
+const HELPER_DIR = path.join(__dirname, 'helper');
+const SRC = path.join(HELPER_DIR, 'PfHelper.cs');
+// everything the exe is built from; the stamp is the hash of all of them, in this order
+const INPUTS = ['PfHelper.cs', 'AssemblyInfo.cs', 'pf-helper.manifest'].map((f) => path.join(HELPER_DIR, f));
+const ICON = path.join(__dirname, '..', '..', 'assets', 'icon.ico');
+// built once at packaging time (scripts/build-installer.js) and shipped inside the installer
+const BUNDLED = path.join(HELPER_DIR, 'bin', 'pf-helper.exe');
+const CSC = path.join(process.env.WINDIR || 'C:\Windows', 'Microsoft.NET', 'Framework64', 'v4.0.30319', 'csc.exe');
 
 function sha(buf) { return crypto.createHash('sha256').update(buf).digest('hex'); }
+/** SHA-256 over the helper's source files (PfHelper.cs, AssemblyInfo.cs, pf-helper.manifest) */
+function sourceHash() { return sha(Buffer.concat(INPUTS.map((f) => fs.readFileSync(f)))); }
 
+/** compile pf-helper.exe from our own source with the csc that ships with Windows; version info, manifest and icon included */
+function compileHelper(exe) {
+  if (!fs.existsSync(CSC)) throw new Error('csc.exe not found: ' + CSC);
+  fs.mkdirSync(path.dirname(exe), { recursive: true });
+  const args = ['/nologo', '/target:exe', '/platform:x64', '/optimize+', '/win32manifest:' + INPUTS[2], ...(fs.existsSync(ICON) ? ['/win32icon:' + ICON] : []), `/out:${exe}`, INPUTS[0], INPUTS[1]];
+  const r = spawnSync(CSC, args, { encoding: 'utf8' });
+  if (r.status !== 0) throw new Error('helper build failed: ' + (r.stdout || '') + (r.stderr || ''));
+  fs.writeFileSync(exe + '.src-sha256', sourceHash());
+  return exe;
+}
+
+/** the helper to run: the one shipped with the app when it matches the source, else one compiled into binDir (dev) */
 function buildHelper(binDir) {
+  const want = sourceHash();
+  const ok = (exe) => fs.existsSync(exe) && fs.existsSync(exe + '.src-sha256') && fs.readFileSync(exe + '.src-sha256', 'utf8') === want;
+  if (ok(BUNDLED)) return BUNDLED;
   fs.mkdirSync(binDir, { recursive: true });
   const exe = path.join(binDir, 'pf-helper.exe');
-  const stamp = exe + '.src-sha256';
-  const want = sha(fs.readFileSync(SRC));
-  if (fs.existsSync(exe) && fs.existsSync(stamp) && fs.readFileSync(stamp, 'utf8') === want) return exe;
-  if (!fs.existsSync(CSC)) throw new Error('csc.exe not found: ' + CSC);
-  const r = spawnSync(CSC, ['/nologo', '/target:exe', '/platform:x64', '/optimize+', `/out:${exe}`, SRC], { encoding: 'utf8' });
-  if (r.status !== 0) throw new Error('helper build failed: ' + (r.stdout || '') + (r.stderr || ''));
-  fs.writeFileSync(stamp, want);
-  return exe;
+  return ok(exe) ? exe : compileHelper(exe);
 }
 
 class Win32Typer extends EventEmitter {
@@ -82,4 +98,4 @@ class Win32Typer extends EventEmitter {
   close() { try { this._send('QUIT'); this.proc.kill(); } catch (_) { /* gone */ } }
 }
 
-module.exports = { Win32Typer, buildHelper };
+module.exports = { Win32Typer, buildHelper, compileHelper, sourceHash, BUNDLED };
