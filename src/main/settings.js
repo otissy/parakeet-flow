@@ -7,6 +7,7 @@ const { DEFAULT_FILLERS } = require('../core/postprocess');
 const { DEFAULT_DENY } = require('../core/deny');
 const { ACTIONS, DEFAULT_COMMANDS, DEFAULT_NOTE_TRIGGERS } = require('../core/commands');
 const { PROFILES } = require('../core/tone');
+const SN = require('./settings-notes');
 
 const DEFAULTS = {
   hotkey: { vks: [0x11, 0x20], label: 'Ctrl+Space' },   // HOLD to talk: either Ctrl + Space; the helper releases Ctrl around corrections (see PfHelper.cs)
@@ -33,7 +34,10 @@ const DEFAULTS = {
   // optional local-model cleanup of FINALS (off by default); hard timeout then the original text is typed
   cleanup: { enabled: false, timeoutMs: 1500, threads: 2, idleMin: 5 },
   // "note to self" -> local outbox (notes.jsonl); Notion sync is optional, the token lives in secrets.json (encrypted)
-  notes: { enabled: true, triggers: DEFAULT_NOTE_TRIGGERS, notion: { enabled: false, targetType: 'database', targetId: '', titleProperty: 'Name' } },
+  notes: { enabled: true, triggers: DEFAULT_NOTE_TRIGGERS, notion: { enabled: false, targetType: 'database', targetId: '', titleProperty: 'Name' }, ...SN.DEFAULTS },
+  // MCP server (mcp/server.js): whether clients may read recent dictation (off); terminal typing: which key a new line presses, Enter after finish (off)
+  mcp: SN.MCP_DEFAULTS,
+  typing: SN.TYPING_DEFAULTS,
 };
 
 const flt = (v, lo, hi, d) => (Number.isFinite(+v) && v !== '' && v !== null ? Math.min(hi, Math.max(lo, +v)) : d);
@@ -100,7 +104,10 @@ function normalize(s) {
       enabled: s?.notes?.enabled !== false, triggers: strList(s?.notes?.triggers, d.notes.triggers),
       notion: { enabled: !!s?.notes?.notion?.enabled, targetType: oneOf(s?.notes?.notion?.targetType, ['database', 'page'], 'database'),
         targetId: notionId(s?.notes?.notion?.targetId), titleProperty: String(s?.notes?.notion?.titleProperty || 'Name').slice(0, 60) || 'Name' },
+      ...SN.normNotes(s?.notes, vks),
     },
+    mcp: SN.normMcp(s?.mcp),
+    typing: SN.normTyping(s?.typing),
   };
 }
 

@@ -58,13 +58,25 @@ module.exports = ({ app, get }) => {
       await sleep(600);
       await shot(g.pillWin, 'pill-idle', BACKDROP);
 
+      // 0. Wispr style (the default): nothing typed while talking, the final text inserted once on release
+      const wait = async (pred, ms) => { for (let i = 0; i < ms / 50 && !pred(); i++) await sleep(50); };
+      g.controller.mic = new WavMic({ file: process.env.PF_AUDIO });
+      fsm.down(Date.now()); await sleep(1700);
+      rep.wisprTypedWhileTalking = mem.text; rep.wisprBarText = g.controller.pillText || '';
+      await wait(() => !g.controller.mic.timer, 12000);
+      fsm.up(Date.now());
+      await wait(() => g.controller.pillState === 'done' || g.controller.pillState === 'idle', 6000);
+      rep.wisprFinal = mem.text; rep.wisprInsertions = mem.log.length; rep.wisprBackspaces = mem.log.filter((o) => o.op === 'bs').length;
+      await wait(() => g.controller.pillState === 'idle', 3000);
+      mem.log.length = 0; rep.pills.length = 0;
+      st.set({ typing: { live: true } });                                   // the rest of this run exercises the opt-in live mode
+
       // 1. hold-to-talk with live partials
       const t0 = Date.now();
       fsm.down(t0);
       await sleep(1700); await shot(g.pillWin, 'pill-listening-partial');
       rep.typedWhileTalking = mem.text;
       await sleep(3300); await shot(g.pillWin, 'pill-listening-later');
-      const wait = async (pred, ms) => { for (let i = 0; i < ms / 50 && !pred(); i++) await sleep(50); };
       await wait(() => !g.controller.mic.timer, 12000);          // audio finished
       fsm.up(Date.now());
       await sleep(30); await shot(g.pillWin, 'pill-processing');

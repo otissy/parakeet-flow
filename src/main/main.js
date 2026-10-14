@@ -27,6 +27,8 @@ const { verify, ensureModels, paths: modelPaths } = require('../asr/model-store'
 const { iconPng } = require('./tray-icon');
 const { Outbox } = require('../notes/outbox');
 const { NotionSync } = require('../notes/notion');
+const { NoteService } = require('../notes/service');
+const { writeStatus, FILE: MCP_STATUS_FILE } = require('../notes/mcp-status');
 const { SecretStore } = require('./secret');
 const { LlmWorker } = require('../llm/llm-host');
 const { LlmService } = require('../llm/cleanup');
@@ -38,7 +40,7 @@ const PILL_W = 480, PILL_H = 110;
 const OFF = process.env.PF_OFFSCREEN ? -6000 : 0;   // tests: render windows far off-screen, nothing visible on the desktop
 
 let store, typer, controller, asr = null, tray = null, mainWin = null, pillWin = null, capWin = null, mic;
-let outbox, notion, secrets, llmWorker = null, llmService, llmState = { runtime: false, model: 'unknown', error: '' };
+let outbox, noteService, notion, secrets, llmWorker = null, llmService, llmState = { runtime: false, model: 'unknown', error: '' };
 let engine = { state: 'loading', error: '' };
 let quitting = false, modelsDir, modelsOk = false;
 
@@ -124,6 +126,7 @@ async function startEngine() {
     log('error', 'engine failed: ' + engine.error);
   }
   send(mainWin, 'engine:state');
+  writeMcpStatus();
 }
 
 const send = (win, ch, ...a) => { if (win && !win.isDestroyed()) win.webContents.send(ch, ...a); };
@@ -151,16 +154,25 @@ function patchSettings(patch) {
   send(mainWin, 'settings:changed', now);
   return now;
 }
-const notesApi = {
-  save(text) {
-    const c = store.get().notes.notion;
-    const configured = !!(c.enabled && c.targetId && secrets.has('notion'));
-    const n = outbox.add(text, { sync: configured ? 'pending' : 'local' });
-    if (n && configured) notion.submit(n.id).catch(() => {});
-    send(mainWin, 'notes:changed');
-    return n;
-  },
-};
+const notesApi = { save: (text, opts) => noteService.save(text, opts) };      // note-mode, the desktop fallback and "note to self" all land here (src/notes/service.js)
+
+/** the small file the MCP server reads (src/notes/mcp-status.js): engine, hotkey labels, and recent dictation only if sharing is on */
+function writeMcpStatus() {
+  try {
+    const s = store.get();
+    const share = !!s.mcp.shareHistory;
+    writeStatus(app.getPath('userData'), {
+      pid: process.pid, version: app.getVersion(), engine: engine.state, hotkeys: { dictation: s.hotkey.label, note: s.notes.noteHotkey.label },
+      shareHistory: share, recent: share && s.historyEnabled ? store.history.slice(0, 50) : [],
+    });
+  } catch (_) { /* the status file is a courtesy, never a failure */ }
+}
+/** push the hotkeys and the newline choice to the helper */
+function applyTyperSettings(s) {
+  typer.setHotkey(s.hotkey.vks);
+  typer.setHotkey2(s.notes.noteHotkey.vks);
+  typer.setNewline(s.typing.newline);
+}
 
 /* ---------------- IPC ---------------- */
 function wireIpc() {
@@ -168,8 +180,9 @@ function wireIpc() {
   ipcMain.handle('settings:set', async (_e, patch) => {
     const before = store.get();
     const now = store.set(patch);
-    typer.setHotkey(now.hotkey.vks);
+    applyTyperSettings(now);
     controller.applySettings();
+    writeMcpStatus();
     const engineKeys = ['threads', 'provider', 'partialMs', 'endpointMs'];
     if (engineKeys.some((k) => before[k] !== now[k])) startEngine();
     return now;
@@ -191,6 +204,14 @@ function wireIpc() {
   });
   ipcMain.handle('app:info', () => ({ version: app.getVersion(), engine: engine.state, error: engine.error, modelsOk: engine.state === 'ready' || modelsOk, gpuAvailable: false, userData: app.getPath('userData'), builtinApps: BUILTIN_APPS }));
   ipcMain.handle('notes:list', () => outbox.list());
+  ipcMain.handle('export:choose', async () => {            // Markdown export folder picker (a native folder dialog; the page never sees a file)
+    const r = await dialog.showOpenDialog(mainWin, { title: 'Folder for exported notes', properties: ['openDirectory', 'createDirectory'] });
+    if (r.canceled || !r.filePaths[0]) return { ok: false };
+    patchSettings({ notes: { ...store.get().notes, export: { ...store.get().notes.export, folder: r.filePaths[0] } } });
+    return { ok: true, folder: r.filePaths[0] };
+  });
+  ipcMain.handle('export:run', () => noteService.exportAll());
+  ipcMain.handle('mcp:info', () => ({ serverPath: path.join(app.getAppPath(), 'mcp', 'server.js'), dataDir: app.getPath('userData'), installed: fs.existsSync(path.join(app.getAppPath(), 'mcp', 'node_modules', '@modelcontextprotocol')), statusFile: MCP_STATUS_FILE }));
   ipcMain.handle('notes:copy', (_e, id) => { const n = outbox.get(String(id)); if (n) clipboard.writeText(n.text); return !!n; });
   ipcMain.handle('notes:resend', async (_e, id) => { await notion.resend(String(id)).catch(() => {}); return outbox.get(String(id)); });
   ipcMain.handle('notes:delete', (_e, id) => { const ok = outbox.remove(String(id)); send(mainWin, 'notes:changed'); return ok; });
@@ -233,6 +254,8 @@ else {
     notion = new NotionSync({ outbox, base: process.env.PF_NOTION_BASE, getConfig: () => store.get().notes.notion, getToken: () => secrets.get('notion'),
       onChange: () => send(mainWin, 'notes:changed') });
     notion.start();
+    noteService = new NoteService({ outbox, getSettings: () => store.get(), notion, hasToken: () => secrets.has('notion'), onChange: () => send(mainWin, 'notes:changed'), log });
+    noteService.watch();
     llmService = new LlmService({ llm: llmAdapter, getSettings: () => store.get() });
     refreshLlmState();
     wireIpc();
@@ -246,7 +269,7 @@ else {
     await Promise.all([mainWin, pillWin, capWin].map((w) => new Promise((r) => { if (!w.webContents.isLoading()) r(); else w.webContents.once('did-finish-load', r); })));
     typer = new Win32Typer({ binDir: path.join(app.getPath('userData'), 'bin') });
     await typer.ready;
-    typer.setHotkey(store.get().hotkey.vks);
+    applyTyperSettings(store.get());
     typer.queryForeground();
 
     const fake = arg('fake-mic') || process.env.PF_FAKE_MIC;
@@ -258,14 +281,15 @@ else {
     controller.on('pill', (p) => send(pillWin, 'pill:state', p));
     controller.on('note', (n) => send(pillWin, 'pill:state', { state: controller.pillState, text: '', ...n }));
     controller.on('level', (v) => send(pillWin, 'pill:level', v));
-    controller.on('history', (h) => send(mainWin, 'app:history', h));
+    controller.on('history', (h) => { send(mainWin, 'app:history', h); writeMcpStatus(); });
     controller.on('flags', (f) => send(pillWin, 'pill:flags', f));
     controller.on('notes', () => send(mainWin, 'notes:changed'));
     send(pillWin, 'pill:flags', controller.flags());
-    controller.on('result', (r) => { log('info', `dictation done words=${r.words} chars=${r.chars}`); send(mainWin, 'app:stats', store.summary()); });
+    writeMcpStatus(); setInterval(writeMcpStatus, 15000).unref();
+    controller.on('result', (r) => { log('info', `dictation done words=${r.words} chars=${r.chars} finals=${r.finals} insertions=${r.insertions} duplicateFinals=${r.duplicateFinals}`); send(mainWin, 'app:stats', store.summary()); });
 
     if (process.env.PF_TEST_HOOK) require(process.env.PF_TEST_HOOK)({ app, get: () => ({ store, typer, controller, mainWin, pillWin, asr: () => asr, mic, engine: () => engine }) });
   });
-  app.on('before-quit', () => { quitting = true; if (typer) typer.close(); if (llmWorker) llmWorker.stop('quit'); if (notion) notion.stop(); });
+  app.on('before-quit', () => { quitting = true; try { fs.unlinkSync(path.join(app.getPath('userData'), MCP_STATUS_FILE)); } catch (_) { /* none */ } if (typer) typer.close(); if (llmWorker) llmWorker.stop('quit'); if (notion) notion.stop(); });
   app.on('window-all-closed', () => { /* stay in the tray */ });
 }

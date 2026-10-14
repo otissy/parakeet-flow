@@ -21,7 +21,7 @@ test('outbox: one JSON line per note with timestamp, text and sync state', () =>
   const a = o.add('Buy oat milk'); t += 1000; const b = o.add('  Bel de tandarts  ', { sync: 'pending' });
   const lines = fs.readFileSync(f, 'utf8').trim().split('\n').map(JSON.parse);
   assert.equal(lines.length, 2);
-  assert.deepEqual(lines[0], { id: 'id1', ts: 1700000000000, text: 'Buy oat milk', sync: 'local', attempts: 0, nextAt: 0 });
+  assert.deepEqual(lines[0], { id: 'id1', ts: 1700000000000, text: 'Buy oat milk', tags: [], source: 'dictation', sync: 'local', attempts: 0, nextAt: 0 });
   assert.equal(lines[1].text, 'Bel de tandarts'); assert.equal(lines[1].sync, 'pending'); assert.equal(lines[1].ts, 1700000001000);
   assert.equal(o.add('   '), null); assert.equal(o.add(''), null);
   assert.deepEqual(o.list().map((n) => n.id), ['id2', 'id1'], 'newest first');
@@ -41,16 +41,16 @@ test('outbox: failure schedules the retry with backoff 30 s, 1 min, 2 min ... ca
   const f = path.join(tmp(), 'notes.jsonl'); let t = 1000;
   const o = new Outbox(f, { now: () => t }); const n = o.add('x', { sync: 'pending' });
   assert.equal(o.due().length, 1);
-  o.markFailed(n.id, 'HTTP 500'); assert.equal(n.sync, 'failed'); assert.equal(n.nextAt, 1000 + 30000); assert.equal(o.due().length, 0);
+  o.markFailed(n.id, 'HTTP 500'); assert.equal(o.get(n.id).sync, 'failed'); assert.equal(o.get(n.id).nextAt, 1000 + 30000); assert.equal(o.due().length, 0);
   t = 31001; assert.equal(o.due().length, 1);
-  o.markFailed(n.id, 'HTTP 429', { retryAfterMs: 600000 }); assert.equal(n.attempts, 2); assert.equal(n.nextAt, 31001 + 600000);
-  o.markSynced(n.id, 'page-1'); assert.equal(n.sync, 'synced'); assert.equal(n.error, undefined); assert.equal(o.due(1e12).length, 0);
+  o.markFailed(n.id, 'HTTP 429', { retryAfterMs: 600000 }); assert.equal(o.get(n.id).attempts, 2); assert.equal(o.get(n.id).nextAt, 31001 + 600000);
+  o.markSynced(n.id, 'page-1'); assert.equal(o.get(n.id).sync, 'synced'); assert.equal(o.get(n.id).error, undefined); assert.equal(o.due(1e12).length, 0);
   assert.equal(new Outbox(f).get(n.id).pageId, 'page-1', 'state persisted');
 });
 
 test('outbox: resend resets the backoff and queues it now; remove deletes', () => {
   const o = new Outbox(path.join(tmp(), 'notes.jsonl'), { now: () => 5 }); const n = o.add('x'); o.markFailed(n.id, 'e'); o.markFailed(n.id, 'e');
-  o.resend(n.id); assert.equal(n.sync, 'pending'); assert.equal(n.attempts, 0); assert.equal(o.due().length, 1);
+  o.resend(n.id); assert.equal(o.get(n.id).sync, 'pending'); assert.equal(o.get(n.id).attempts, 0); assert.equal(o.due().length, 1);
   assert.equal(o.remove(n.id), true); assert.equal(o.remove(n.id), false); assert.equal(o.notes.length, 0);
 });
 

@@ -49,7 +49,8 @@ for (const [name, liveMode] of [['en-pause', 'aggressive'], ['en1', 'aggressive'
     assert.ok(ops(a.typer).length >= 6, 'many live keystroke ops were exercised: ' + ops(a.typer).length);
     assert.deepEqual(ops(b.typer), ops(a.typer));
     assert.equal(b.typer.text, a.typer.text);
-    assert.deepEqual(b.res().stats, a.res().stats);
+    const { finals, duplicateFinals, insertions, method, ...bOld } = b.res().stats;      // 2026-10-14: per-hold counters are new; everything the old code counted must match
+    assert.deepEqual(bOld, a.res().stats);
     fs.mkdirSync(proof, { recursive: true });
     const f = path.join(proof, 'offparity-report.json'); let all = {}; try { all = JSON.parse(fs.readFileSync(f, 'utf8')); } catch (_) { /* first */ }
     all[name] = { liveMode, keystrokeOps: ops(a.typer).length, corrections: a.res().stats.corrections, maxBackspace: a.res().stats.maxBackspace, identical: true, finalText: a.typer.text };

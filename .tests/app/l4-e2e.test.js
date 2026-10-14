@@ -27,7 +27,11 @@ test('app boots, dictates a pause utterance, hands-free, Esc, and renders every 
   assert.deepEqual(rep.errors, []);
   assert.equal(rep.engine.state, 'ready');
 
-  // 1. hold to talk
+  // 0. Wispr style is the default: nothing typed while talking, ONE insertion on release, no Backspace
+  assert.equal(rep.wisprTypedWhileTalking, '', 'nothing typed while the key is held');
+  assert.equal(rep.wisprInsertions, 1); assert.equal(rep.wisprBackspaces, 0);
+  assert.match(rep.wisprFinal.toLowerCase(), /meeting/); assert.match(rep.wisprFinal.toLowerCase(), /reports/);
+  // 1. hold to talk (the opt-in live mode)
   const order = (arr, ...seq) => { let i = -1; return seq.every((s) => (i = arr.indexOf(s, i + 1)) >= 0); };
   assert.ok(order(rep.states1, 'listening', 'processing', 'done', 'idle'), 'pill states: ' + rep.states1);
   assert.ok(rep.typedWhileTalking.length > 10, 'words were typed while still talking: ' + rep.typedWhileTalking.length);

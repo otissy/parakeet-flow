@@ -50,8 +50,8 @@ test('formal: contractions and slang expanded, capitals, full stop', () => {
   assert.equal(T.applyTone('Already formal.', 'formal'), 'Already formal.');
 });
 
-test('code: no auto capital on the first word, no trailing full stop; acronyms and I untouched', () => {
-  assert.equal(T.applyTone('Git status.', 'code'), 'git status');
+test('code: no auto capital on the first word, punctuation kept (Wispr style, 2026-10-14); acronyms and I untouched', () => {
+  assert.equal(T.applyTone('Git status.', 'code'), 'git status.');
   assert.equal(T.applyTone('NPM install', 'code'), 'NPM install');
   assert.equal(T.applyTone("I'll run it", 'code'), "I'll run it");
   assert.equal(T.applyTone('Clear screen', 'code'), 'clear screen');

@@ -12,6 +12,7 @@ const { EventEmitter } = require('events');
 const { LiveTyper } = require('./live-typer');
 const { clean, casual } = require('./postprocess');
 const { applyTone, formal, resolveProfile } = require('./tone');
+const { resolveInsertMethod } = require('./insert-method');
 
 class DictationSession extends EventEmitter {
   /** llm: LlmService-like {cleanup(text), translate(text,{target}), warm()} or null */
@@ -26,7 +27,8 @@ class DictationSession extends EventEmitter {
     const style = settings.style;
     const base = {
       typer, now, ownPid, mode: settings.liveMode || 'aggressive', cap: settings.cap || 40,
-      flushMs: (settings.flushMs || 1500) + modelMs, trailingSpace: !!settings.trailingSpace, deny: settings.deny,
+      flushMs: (settings.flushMs || 1500) + modelMs, trailingSpace: !!settings.trailingSpace, enterAfterFinal: !!settings.enterAfterFinal, terminalFinalsOnly: settings.terminalFinalsOnly !== false,
+      joinPrev: settings.joinPrev || null, deferred: !!settings.deferred, resolveInsert: settings.deferred ? (fg) => resolveInsertMethod(fg, settings.insert || {}) : null, deny: settings.deny,
       commands: settings.commands || null, carry, carryMs: (settings.commands && settings.commands.carryMs) || 120000, formal, casual,
     };
     if (split) {

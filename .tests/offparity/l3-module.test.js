@@ -56,7 +56,8 @@ function play(Session, Typer, ev, settings) {
     else if (e.e === 'cancel') s.cancel();
     else if (e.e === 'done') host.emitEv('done', {});
   }
-  const strip = (r) => r && { text: r.text, halted: r.halted, stats: r.stats, cancelled: r.cancelled, speechSec: r.speechSec, words: r.words };
+  const noNew = (st) => { const { finals, duplicateFinals, insertions, method, ...old } = st; return old; };   // 2026-10-14: per-hold counters added for the insert-once logging; everything the old code counted must match
+  const strip = (r) => r && { text: r.text, halted: r.halted, stats: noNew(r.stats), cancelled: r.cancelled, speechSec: r.speechSec, words: r.words };
   return { log: typer.log.map((o) => ({ op: o.op, text: o.text, n: o.n })), text: typer.text, result: strip(result), pills };
 }
 

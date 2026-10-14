@@ -2,14 +2,14 @@
 // notes + Notion) and the Notes page. Plain functions over the shared state `S` of app.js (loaded after this file).
 const ACTION_LABELS = { delete: 'Delete last segment', undo: 'Undo last action', newline: 'New line', paragraph: 'New paragraph', capitalize: 'Capitalize each word', allcaps: 'ALL CAPS', formal: 'Make formal', casual: 'Make casual' };
 const PROFILE_LABELS = { default: 'Default', casual: 'Casual', formal: 'Formal', code: 'Code / terminal' };
-const X = { llm: null, notion: null, notes: [], dlLlm: null, notionMsg: '' };
+const X = { llm: null, notion: null, notes: [], dlLlm: null, notionMsg: '', mcp: null, noteCap: null, noteErr: '', exportMsg: '', copied: '' };
 
 const opt = (map, val) => Object.entries(map).map(([v, t]) => `<option value="${L.esc(v)}" ${v === val ? 'selected' : ''}>${L.esc(t)}</option>`).join('');
 const sel = (id, map, val, extra = '') => `<select id="${id}" ${extra}>${opt(map, val)}</select>`;
 const badge = (txt, cls = '') => `<span class="badge ${cls}">${L.esc(txt)}</span>`;
 
 async function loadExtra() {
-  [X.llm, X.notion, X.notes] = await Promise.all([window.pf.invoke('llm:status'), window.pf.invoke('notion:status'), window.pf.invoke('notes:list')]);
+  [X.llm, X.notion, X.notes, X.mcp] = await Promise.all([window.pf.invoke('llm:status'), window.pf.invoke('notion:status'), window.pf.invoke('notes:list'), window.pf.invoke('mcp:info')]);
 }
 
 function secCommands() {
@@ -78,7 +78,57 @@ function secNotes() {
   </div>`;
 }
 
-function extraSettings() { return secCommands() + secTone() + secTranslate() + secCleanup() + secNotes(); }
+
+/* ---------- note mode, routing, MCP, Markdown export, terminal typing ---------- */
+const NEWLINE_LABELS = { auto: 'Automatic (Ctrl+J in terminals)', 'shift-enter': 'Shift+Enter', 'ctrl-j': 'Ctrl+J' };
+
+function mcpCommand() { const p = X.mcp ? X.mcp.serverPath : '<path>\\mcp\\server.js'; return `claude mcp add parakeet-flow -- node "${p}"`; }
+
+function secRouting() {
+  const n = S.settings.notes, cap = X.noteCap;
+  const keysHtml = cap ? (cap.length ? keys(cap) : 'Listening…') : keys(n.noteHotkey.vks);
+  return `<h2 id="sec-routing">Note mode</h2><div class="card" style="padding:4px 18px">
+    <div class="srow"><div class="l"><b>Note mode hotkey</b><div>${cap ? 'Hold the keys you want, then let go. Esc cancels.' : 'Hold it, talk, let go: the dictation is saved as a note and nothing is typed. Needs at least one modifier plus one other key.'}</div>${X.noteErr ? `<div style="color:var(--bad)">${L.esc(X.noteErr)}</div>` : ''}</div>
+      <div class="c">${cap ? `<span class="chip">${keysHtml}</span>` : keysHtml}<button class="btn" id="nm-change">${cap ? 'Cancel' : 'Change'}</button>${cap ? '' : '<button class="btn" id="nm-reset">Reset</button>'}</div></div>
+    <div class="srow"><div class="l"><b>Save as a note when nothing can take typing</b><div>If the window in front is the Desktop or taskbar, there is no window, or it is this app, your dictation is saved as a note and the bar says "Saved as note". It never does this inside another program's window.</div></div><div class="c">${toggle('nm-auto', n.autoRoute)}</div></div>
+  </div>`;
+}
+
+function secMcp() {
+  const m = X.mcp || { serverPath: '', installed: false }, share = S.settings.mcp.shareHistory;
+  return `<h2 id="sec-mcp">Connect to Claude (MCP)</h2><div class="card" style="padding:4px 18px">
+    <div class="srow col"><div class="l"><b>Let Claude Code file your notes in Notion, Google Drive or anywhere it is connected</b><div>This app ships a small local MCP server. Claude Code uses its own, already authorised connectors, so this app never holds a Notion token for it. Run this once in a terminal (this app does not run it for you). ${m.installed ? badge('server installed', 'ok') : badge('run: npm --prefix mcp ci', 'warn')}</div></div>
+      <div class="c" style="display:block"><div class="card" style="padding:9px 12px;font-family:Consolas,monospace;font-size:12.5px;overflow-wrap:anywhere;user-select:all">${L.esc(mcpCommand())}</div>
+      <div style="margin-top:8px;display:flex;gap:8px"><button class="btn" id="mcp-copy">${X.copied === 'cmd' ? 'Copied' : 'Copy command'}</button></div></div></div>
+    <div class="srow"><div class="l"><b>Share recent dictation history with MCP clients</b><div>Off by default. When on, a connected client can read your most recent transcripts (needs "Keep transcript history" in Privacy). Notes are always readable by a connected client; this is only about transcripts.${share && !S.settings.historyEnabled ? ' <span style="color:var(--bad)">History is off, so there is nothing to share yet.</span>' : ''}</div></div><div class="c">${toggle('mcp-share', share)}</div></div>
+  </div>`;
+}
+
+function secExport() {
+  const e = S.settings.notes.export;
+  return `<h2 id="sec-export">Markdown export</h2><div class="card" style="padding:4px 18px">
+    <div class="srow"><div class="l"><b>Also save each note as a Markdown file</b><div>For note apps without MCP, such as an Obsidian vault. One .md file per note with front matter (title, id, created, tags). A note always maps to the same file name, so nothing is duplicated.</div></div><div class="c">${toggle('ex-on', e.enabled)}</div></div>
+    <div class="srow"><div class="l"><b>Export folder</b><div>${e.folder ? L.esc(e.folder) : 'No folder chosen.'}${X.exportMsg ? '<br>' + L.esc(X.exportMsg) : ''}</div></div><div class="c"><button class="btn" id="ex-choose">Choose…</button><button class="btn" id="ex-run" ${e.folder ? '' : 'disabled'}>Export all now</button></div></div>
+  </div>`;
+}
+
+const METHOD_LABELS = { burst: 'Type it (one burst of keys)', paste: 'Paste (Ctrl+V, clipboard restored)', 'paste-insert': 'Paste (Shift+Insert, clipboard restored)' };
+function secTyping() {
+  const t = S.settings.typing;
+  const rows = t.insertApps.map((r, i) => `<div class="trow"><div class="a">${L.esc(r.match)}</div><div class="b">${sel('im-m-' + i, METHOD_LABELS, r.method, `data-im="${i}"`)}</div><button class="iconbtn danger" data-im-del="${i}" title="Remove">${ICON_DEL}</button></div>`).join('');
+  return `<h2 id="sec-typing">How text gets in</h2><div class="card" style="padding:4px 18px">
+    <div class="srow"><div class="l"><b>Type while I speak ${badge('experimental', 'warn')}</b><div>Off. Normally the live words only show in the bar while you hold the key, and the finished, punctuated text goes into the app once when you let go (like Wispr Flow). On: words are typed into the app as you speak and corrected in place with Backspace. That can misbehave in terminals and other raw-mode programs (dropped corrections, stray characters), so leave it off there.</div></div><div class="c">${toggle('ty-live', t.live)}</div></div>
+    <div class="srow"><div class="l"><b>Insert method in terminals</b><div>Type it sends the finished text as one paced burst of key events and worked in every console window tested. Paste is one Ctrl+V and your clipboard is put back right after, but a classic console window does not pass it on to a raw-mode program (measured), so use it only for terminals that do (try it per app in the table below).</div></div><div class="c">${sel('ty-term', METHOD_LABELS, t.terminalMethod)}</div></div>
+    <div class="srow"><div class="l"><b>Insert method everywhere else</b><div>Apps in the table below override this.</div></div><div class="c">${sel('ty-other', METHOD_LABELS, t.otherMethod)}</div></div>
+    <div class="srow col"><div class="l"><b>Per-app insert method</b><div>A process name (notepad) or text in the window title. Your rows win over the two defaults above.</div></div>
+      <div class="c" style="display:block"><div class="card tbl" style="padding:2px 14px;max-height:200px;overflow:auto">${rows || '<div class="empty">No rows.</div>'}</div>
+      <div class="add3"><input type="text" id="im-new" placeholder="Process or window title, for example: notepad" autocomplete="off">${sel('im-new-m', METHOD_LABELS, 'burst')}<button class="btn primary" id="im-add">Add</button></div></div></div>
+    <div class="srow"><div class="l"><b>"New line" key</b><div>In a terminal (Windows Terminal, console windows, PowerShell, cmd, Claude Code), Shift+Enter arrives as a plain Enter and would send the line, so the voice command "new line" presses Ctrl+J there instead. Everywhere else it is Shift+Enter.</div></div><div class="c">${sel('ty-nl', NEWLINE_LABELS, t.newline)}</div></div>
+    <div class="srow"><div class="l"><b>Press Enter after I finish</b><div>Off. When on, one Enter is pressed after each finished dictation, so in a chat box or terminal prompt it is sent. Never done for notes or voice commands.</div></div><div class="c">${toggle('ty-enter', t.enterAfterFinal)}</div></div>
+  </div>`;
+}
+
+function extraSettings() { return secCommands() + secTone() + secTranslate() + secCleanup() + secNotes() + secRouting() + secMcp() + secExport() + secTyping(); }
 
 function relTime(ms) {
   const s = Math.max(0, Math.round(ms / 1000));
@@ -87,7 +137,7 @@ function relTime(ms) {
   return 'in ' + Math.round(s / 3600) + ' h';
 }
 function syncLine(n, now = Date.now()) {
-  if (n.sync === 'synced') return badge('Synced to Notion', 'ok');
+  if (n.sync === 'synced') return badge(n.destination ? 'Filed: ' + n.destination : 'Synced to Notion', 'ok') + (n.url ? ` <span class="note">${L.esc(n.url)}</span>` : '');
   if (n.sync === 'pending') return badge('Waiting to sync', 'warn');
   if (n.sync === 'failed') return badge('Sync failed', 'bad') + ` <span class="note">${L.esc(n.error || '')} · retrying ${relTime(n.nextAt - now)}</span>`;
   return badge('Saved on this PC');
@@ -97,7 +147,7 @@ function notesPage() {
   const list = X.notes, c = (X.notion && X.notion.counts) || {};
   const body = !list.length ? `<div class="card empty">No notes yet. Say <b>note to self</b> and then your note while holding the key.</div>`
     : L.groupByDay(list).map((g) => `<div class="day">${L.esc(g.label)}</div><div class="card" style="padding:4px 14px">${g.items.map((n) =>
-      `<div class="row note-row"><div class="time">${L.fmtTime(n.ts)}</div><div class="tx">${L.esc(n.text)}<div class="syncline">${syncLine(n)}</div></div>
+      `<div class="row note-row"><div class="time">${L.fmtTime(n.ts)}</div><div class="tx">${L.esc(n.text)}<div class="syncline">${syncLine(n)}${n.source === 'mcp' ? ' ' + badge('added by Claude') : ''}${(n.tags || []).map((t) => ' ' + badge('#' + t)).join('')}${n.md ? ' ' + badge('.md exported') : ''}</div></div>
       <button class="btn small" data-ncopy="${L.esc(n.id)}" title="Copy the note">Copy</button><button class="btn small" data-nresend="${L.esc(n.id)}" title="Send to Notion again now">Resend</button><button class="iconbtn danger" data-ndel="${L.esc(n.id)}" title="Delete this note">${ICON_DEL}</button></div>`).join('')}</div>`).join('');
   return `<div class="wrap"><h1>Notes</h1><div class="sub">Say "note to self" and your note, and it lands here. ${list.length} saved${c.failed ? `, ${c.failed} waiting to retry` : ''}.</div>${body}</div>`;
 }
@@ -145,11 +195,58 @@ function bindExtra() {
     X.notionMsg = r.ok ? 'Token saved.' : r.error; await loadExtra(); render();
   });
   on('nn-clear', async () => { await window.pf.invoke('notion:clear-token'); X.notionMsg = 'Token removed.'; await loadExtra(); render(); });
+  // note mode, routing, MCP, export, typing
+  on('nm-change', () => { if (X.noteCap) stopNoteCap(); else { X.noteCap = []; X.noteErr = ''; window.pf.send('hotkey:capture', true); render(); } });
+  on('nm-reset', async () => { X.noteErr = ''; const d = await window.pf.invoke('settings:get', 'defaults'); save({ notes: { ...s.notes, noteHotkey: d.notes.noteHotkey } }); });
+  on('nm-auto', () => save({ notes: { ...s.notes, autoRoute: !s.notes.autoRoute } }));
+  on('mcp-copy', async () => { await window.pf.invoke('history:copy', mcpCommand()); X.copied = 'cmd'; render(); setTimeout(() => { X.copied = ''; if (S.page === 'settings') render(); }, 1200); });
+  on('mcp-share', () => save({ mcp: { ...s.mcp, shareHistory: !s.mcp.shareHistory } }));
+  on('ex-on', () => save({ notes: { ...s.notes, export: { ...s.notes.export, enabled: !s.notes.export.enabled } } }));
+  on('ex-choose', async () => { await window.pf.invoke('export:choose'); X.exportMsg = ''; render(); });
+  on('ex-run', async () => { const r = await window.pf.invoke('export:run'); X.exportMsg = r.error ? r.error : `${r.exported} note${r.exported === 1 ? '' : 's'} written${r.failed ? ', ' + r.failed + ' failed' : ''}.`; render(); });
+  val('ty-nl', (v) => save({ typing: { ...s.typing, newline: v } }));
+  on('ty-live', () => save({ typing: { ...s.typing, live: !s.typing.live } }));
+  val('ty-term', (v) => save({ typing: { ...s.typing, terminalMethod: v } }));
+  val('ty-other', (v) => save({ typing: { ...s.typing, otherMethod: v } }));
+  on('im-add', () => { const m = q('im-new').value.trim(); if (m) save({ typing: { ...s.typing, insertApps: [{ match: m, method: q('im-new-m').value }, ...s.typing.insertApps] } }); });
+  main.querySelectorAll('[data-im]').forEach((e) => e.onchange = () => save({ typing: { ...s.typing, insertApps: s.typing.insertApps.map((r, i) => (i === +e.dataset.im ? { ...r, method: e.value } : r)) } }));
+  main.querySelectorAll('[data-im-del]').forEach((b) => b.onclick = () => save({ typing: { ...s.typing, insertApps: s.typing.insertApps.filter((_, i) => i !== +b.dataset.imDel) } }));
+  on('ty-enter', () => save({ typing: { ...s.typing, enterAfterFinal: !s.typing.enterAfterFinal } }));
   // notes page
   main.querySelectorAll('[data-ncopy]').forEach((b) => b.onclick = async () => { await window.pf.invoke('notes:copy', b.dataset.ncopy); b.textContent = 'Copied'; setTimeout(() => { b.textContent = 'Copy'; }, 900); });
   main.querySelectorAll('[data-nresend]').forEach((b) => b.onclick = async () => { b.disabled = true; b.textContent = 'Sending'; await window.pf.invoke('notes:resend', b.dataset.nresend); await loadExtra(); render(); });
   main.querySelectorAll('[data-ndel]').forEach((b) => b.onclick = async () => { await window.pf.invoke('notes:delete', b.dataset.ndel); await loadExtra(); render(); });
 }
+
+function stopNoteCap() { X.noteCap = null; nCombo = []; nHeld.clear(); window.pf.send('hotkey:capture', false); render(); }
+function noteChordErr(vks) {
+  if (vks.some((v) => v === 0x1B || v === 0x08 || v === 0x0D)) return 'Esc, Backspace and Enter cannot be used.';
+  const plain = vks.filter((v) => !L.isModifier(v)), mods = vks.filter(L.isModifier);
+  if (vks.length < 2 || plain.length !== 1 || !mods.length) return 'Use at least one modifier (Ctrl, Shift, Alt, Win) plus exactly one other key.';
+  return '';
+}
+let nCombo = []; const nHeld = new Set();
+window.addEventListener('blur', () => { if (X.noteCap) stopNoteCap(); });
+window.addEventListener('keydown', (e) => {
+  if (!X.noteCap) return;
+  e.preventDefault();
+  if (e.code === 'Escape') { stopNoteCap(); return; }
+  const vk = L.codeToVk(e.code); if (!vk) return;
+  nHeld.add(e.code); if (!nCombo.includes(vk)) nCombo.push(vk);
+  X.noteCap = nCombo.slice(); render();
+}, true);
+window.addEventListener('keyup', async (e) => {
+  if (!X.noteCap) return;
+  nHeld.delete(e.code);
+  if (nHeld.size) return;
+  const vks = nCombo; stopNoteCap();
+  const err = noteChordErr(vks);
+  if (err) { X.noteErr = err; render(); return; }
+  await save({ notes: { ...S.settings.notes, noteHotkey: { vks, label: L.hotkeyLabel(vks) } } });
+  const got = S.settings.notes.noteHotkey.vks;
+  X.noteErr = got.length === vks.length && got.every((v, i) => v === vks[i]) ? '' : 'That clashes with the dictation hotkey. Pick another.';
+  render();
+});
 
 window.pf.on('notes:changed', async () => { X.notes = await window.pf.invoke('notes:list'); X.notion = await window.pf.invoke('notion:status'); if (S.page === 'notes') render(); });
 window.pf.on('llm:progress', async (p) => { X.dlLlm = p.done ? null : { pct: Math.round(p.pct) }; if (p.done) await loadExtra(); if (S.page === 'settings') render(); });

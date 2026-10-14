@@ -9,6 +9,9 @@
      foreground window changes or enters the deny-list; Esc removes only the live segment's text.
    - voice commands (opt-in via `commands`) are matched on FINALS only and are never typed. While a partial could
      still become a command phrase it is not typed either (see isCommandPrefix).
+   DEFERRED mode (the default, "Wispr style"): nothing is typed while the key is held. Finals are collected, the pill shows the live text, and on release
+   the whole finished text is inserted ONCE (one paste, or one burst of Unicode key events), never with a Backspace. The old live mode above stays as the
+   opt-in "Type while I speak (experimental)".
    Counting is in code points. Dictated text is never logged. */
 const { EventEmitter } = require('events');
 const { cp } = require('../typer/typer');
@@ -24,18 +27,18 @@ class LiveTyper extends EventEmitter {
       commands: {enabled, list, notes:{enabled, triggers}} or null (null = no command handling at all). */
   constructor({ typer, mode = 'aggressive', cap = 40, flushMs = 1500, finalHardCap = 400, now = Date.now, finalize = (t) => t,
                 prepare = null, tone = null, resolveProfile = null, commands = null, carry = null, carryMs = 120000,
-                trailingSpace = false, deny, ownPid, formal, casual } = {}) {
+                trailingSpace = false, enterAfterFinal = false, terminalFinalsOnly = false, deferred = false, resolveInsert = null, joinPrev = null, deny, ownPid, formal, casual } = {}) {
     super();
     Object.assign(this, { typer, mode, cap, flushMs, finalHardCap, now, finalize, prepare, tone, resolveProfile, commands, carry, carryMs,
-                          trailingSpace, deny, ownPid, formalFn: formal, casualFn: casual });
+                          trailingSpace, enterAfterFinal, terminalFinalsOnly, deferred, resolveInsert, joinPrev, deny, ownPid, formalFn: formal, casualFn: casual });
     this.reset();
   }
 
   reset() {
     this.active = false; this.releasedAt = null; this.halted = null; this.cancelled = false;
     this.hwnd = null; this.cur = null; this.finals = []; this.finalizedChars = 0;
-    this.profile = 'default'; this.entries = []; this.ops = []; this.commandsRun = []; this.armedNote = 0;
-    this.stats = { keystrokeOps: 0, corrections: 0, maxBackspace: 0, maxFinalBackspace: 0, deferred: 0, lateFinals: 0, typedAfterFlush: 0 };
+    this.pending = []; this._finalIds = new Set(); this._inserted = false; this._body = ''; this.profile = 'default'; this.entries = []; this.ops = []; this.commandsRun = []; this.armedNote = 0;
+    this.stats = { keystrokeOps: 0, corrections: 0, maxBackspace: 0, maxFinalBackspace: 0, deferred: 0, lateFinals: 0, typedAfterFlush: 0, finals: 0, duplicateFinals: 0, insertions: 0 };
   }
 
   begin() {
@@ -103,12 +106,20 @@ class LiveTyper extends EventEmitter {
   }
 
   hypothesis(segId, rawText) {
-    const text = String(rawText || '').normalize('NFC').replace(/\s+/g, ' ').trim();
+    if (this.deferred) return false;                       // preview only (the session shows it in the pill); nothing is typed while the key is held
+    let text = String(rawText || '').normalize('NFC').replace(/\s+/g, ' ').trim();
     if (!text || !this.canType()) return false;
     const seg = this._seg(segId);
     if (seg.done) return false;
+    // terminals (code profile): FINALS ONLY. A raw-mode prompt such as Claude Code's batches and drops rapid key bursts, so live
+    // Backspace corrections left "wor ld i, it  is" on screen (2026-10-13). A final is typed once, with no Backspace at all.
+    if (this.terminalFinalsOnly && this.profile === 'code') return false;
+    const raw = text;
+    // a terminal / editor ("code" profile) never shows a capital or a final stop, not even in the live preview, so the final
+    // does not have to erase the whole sentence just to lower-case its first letter. Command detection below sees the raw text.
+    if (this.profile === 'code' && this.tone) text = this.tone(text, 'code') || text;
     // a partial that could still turn into "delete that" / "note to self ..." is held back, so a command is never typed
-    if (this.commands && this.commands.enabled && !seg.typed && this._maybeCommand(text)) return false;
+    if (this.commands && this.commands.enabled && !seg.typed && this._maybeCommand(raw)) return false;
     let words = text.split(' ');
     let use = words;
     if (this.mode === 'stable') {
@@ -142,6 +153,9 @@ class LiveTyper extends EventEmitter {
 
   /** `mid`: the text after the model (cleanup / translate), instead of prepare(raw); the tone profile is applied after it */
   final(segId, rawText, { mid } = {}) {
+    // a segment is finalised once: a second final for the same segment (a VAD endpoint and the key release both finalising it) is dropped, never inserted again
+    if (this._finalIds.has(segId)) { this.stats.duplicateFinals++; this.emit('duplicate-final', { segId }); return false; }
+    this._finalIds.add(segId); this.stats.finals++;
     const seg = this._seg(segId);
     const cls = this.classify(rawText);
     if (cls) return this._command(seg, cls);
@@ -152,6 +166,12 @@ class LiveTyper extends EventEmitter {
       this._commit(seg);
       this.emit('late-final', { segId, text: clean });
       return false;
+    }
+    if (this.deferred) {
+      if (clean) { this.pending.push({ text: clean }); this.finals.push(clean); }
+      this._commit(seg);
+      this.emit('final-typed', { segId, ok: true, deferred: true });
+      return true;
     }
     const ok = this._apply(seg, seg.sep + clean, true);
     this.finals.push(clean);
@@ -182,6 +202,7 @@ class LiveTyper extends EventEmitter {
       this.emit('note', { text: cls.text });           // saving a note types nothing, so it works even where typing is off
       return this._done('note');
     }
+    if (this.deferred && this.pending.length) { const r = this._pendingCommand(cls.action); if (r !== null) return r; }
     if (!this._guard()) return this._skip(name, this.halted || 'not typing');
     switch (cls.action) {
       case 'delete': return this._delete();
@@ -190,6 +211,20 @@ class LiveTyper extends EventEmitter {
       case 'paragraph': return this._break('\n\n', 'paragraph');
       default: return this._rewriteLast(cls.action);
     }
+  }
+
+  /** a voice command while this utterance's text is still waiting to be inserted: it edits the waiting text (nothing on screen yet). null = not mine */
+  _pendingCommand(action) {
+    const lastText = () => { for (let i = this.pending.length - 1; i >= 0; i--) if (this.pending[i].text) return this.pending[i]; return null; };
+    if (action === 'delete' || action === 'undo') { const p = this.pending.pop(); if (p.text) this.finals.pop(); return this._done(action, { chars: 0 }); }
+    if (action === 'newline') { this.pending.push({ nl: '\n' }); return this._done(action); }
+    if (action === 'paragraph') { this.pending.push({ nl: '\n\n' }); return this._done(action); }
+    const t = lastText();
+    if (!t) return null;
+    const next = transformFor(action, t.text, { formal: this.formalFn, casual: this.casualFn });
+    if (next === t.text) return this._skip(action, 'no change');
+    const i = this.finals.lastIndexOf(t.text); if (i >= 0) this.finals[i] = next;
+    t.text = next; return this._done(action);
   }
 
   _bs(n) {
@@ -265,19 +300,55 @@ class LiveTyper extends EventEmitter {
 
   /** the ASR is done for this session; optional trailing space, then report */
   end() {
-    if (this.trailingSpace && this.profile !== 'code' && this.finalizedChars > 0 && !this._lastBreak() && this._guard()) {
+    let insertedText = null;
+    if (this.deferred) insertedText = this._insertPending();
+    if (!this.deferred && this.trailingSpace && this.profile !== 'code' && this.finalizedChars > 0 && !this._lastBreak() && this._guard()) {
       this.typer.type(' ', { hwnd: this.hwnd });
       this.finalizedChars += 1;
       const e = this.entries[this.entries.length - 1];
       if (e && e.kind === 'text') e.typed += ' ';
     }
+    // opt-in (Settings > Typing, off by default): one Enter after the dictation, only when text was typed and the window is still the one we typed into
+    if (this.enterAfterFinal && this.typer.enter && this.finals.some(Boolean) && !this.halted && this._guard()) this.typer.enter({ hwnd: this.hwnd });
     this.active = false;
     const r = { text: this.finals.filter(Boolean).join(' '), halted: this.halted, stats: { ...this.stats } };
+    if (this.deferred) { r.text = this._inserted ? this._body : this._compose(); r.inserted = insertedText != null; r.insertInfo = insertedText != null ? { hwnd: this.hwnd, endsBreak: /\s$/.test(insertedText) } : null; if (insertedText == null && r.text && this.halted === 'focus changed' && !this.cancelled) r.unsent = r.text; }
     if (this.commands) {
       r.profile = this.profile; r.commands = this.commandsRun.slice();
       r.carry = { hwnd: this.hwnd, entries: this.entries, ops: this.ops };
     } else if (this.resolveProfile) r.profile = this.profile;
     return r;
+  }
+
+  /** the waiting pieces as one string: exactly one space between sentences, none around a line break */
+  _compose() {
+    let out = '';
+    for (const p of this.pending) {
+      if (p.nl) out = out.replace(/ +$/, '') + p.nl;
+      else out += (out && !/\s$/.test(out) ? ' ' : '') + p.text;
+    }
+    return out;
+  }
+
+  /** insert everything that is waiting, once. -> the inserted string, or null (nothing waiting, cancelled, or the window changed: then nothing is typed) */
+  _insertPending() {
+    if (this._inserted || !this.pending.some((p) => p.text) || this.cancelled || this.halted) return null;     // at most ONCE per dictation
+    if (!this._guard()) return null;
+    let body = this._compose();
+    if (this.trailingSpace && this.profile !== 'code' && !/\s$/.test(body)) body += ' ';
+    // one space after the previous insertion in this window (from the commands carry, or the controller's memory of the last insertion), none at the start of a field
+    const jp = this.joinPrev && this.joinPrev.hwnd === this.hwnd && !this.joinPrev.endsBreak ? ' ' : '';
+    const sep = this.entries.length ? (this._lastBreak() ? '' : ' ') : jp;
+    const text = sep + body;
+    const method = this.resolveInsert ? this.resolveInsert(this.typer.foreground()) : 'burst';
+    const ok = this.typer.insert ? this.typer.insert(text, { hwnd: this.hwnd, method }) : this.typer.type(text, { hwnd: this.hwnd });
+    if (ok === false) { this._halt('refused'); return null; }
+    this._inserted = true; this._body = body; this.pending = []; this.stats.insertions++;
+    this.stats.keystrokeOps++; this.stats.method = method;
+    this.finalizedChars += cp(text).length;
+    const e = { kind: 'text', sep, typed: text };
+    this.entries.push(e); this._op({ type: 'remove', entry: e });
+    return text;
   }
 
   /** Esc: remove only the live segment's typed text, if focus is still the same */

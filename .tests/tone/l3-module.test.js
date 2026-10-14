@@ -31,10 +31,10 @@ test('Outlook: formal', () => {
   assert.equal(r.text, 'I am going to send the report tomorrow.'); assert.equal(r.profile, 'formal');
 });
 
-test('VS Code and terminals: code profile, no capital, no trailing full stop and NO trailing space', () => {
+test('VS Code and terminals: code profile, no capital, punctuation kept and NO trailing space', () => {
   for (const fg of [{ proc: 'Code.exe', title: 'x - Visual Studio Code' }, { proc: 'WindowsTerminal.exe', title: 'pwsh' }]) {
     const r = say(fg, ['Git status.'], { trailingSpace: true });
-    assert.equal(r.text, 'git status', fg.proc); assert.equal(r.profile, 'code');
+    assert.equal(r.text, 'git status.', fg.proc); assert.equal(r.profile, 'code');
   }
   assert.equal(say({ proc: 'notepad.exe' }, ['Git status.'], { trailingSpace: true }).text, 'Git status. ');   // default profile keeps the space
 });

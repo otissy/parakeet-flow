@@ -32,8 +32,20 @@ function rig(settings = {}) {
   return { c, host, typer, mic, store, pills, tick, dir };
 }
 
-test('hold-to-talk: press starts mic + listening, partial typed, release -> processing -> final -> done -> idle', async () => {
+test('hold-to-talk (Wispr style, the default): the pill previews, nothing is typed while held, the final goes in once on release', async () => {
   const { c, host, typer, mic, store, pills, tick } = rig({ historyEnabled: true });
+  const previews = []; c.on('pill', (p) => { if (p.text) previews.push(p.text); });
+  typer.key(true); await tick(300);
+  host.emitEv('partial', { segId: 1, text: 'hello wor' });
+  assert.equal(typer.text, '', 'nothing typed while the key is held'); assert.ok(previews.includes('hello wor'), 'the bar shows the live words');
+  typer.key(false);
+  host.emitEv('final', { segId: 1, text: 'Hello world.', audioSec: 1.2 }); host.emitEv('done', {});
+  assert.equal(typer.text, 'Hello world.'); assert.equal(typer.log.length, 1); assert.equal(pills.at(-1), 'done');
+  assert.equal(store.history[0].text, 'Hello world.');
+});
+
+test('hold-to-talk with "Type while I speak" on: press starts mic + listening, partial typed, release -> processing -> final -> done -> idle', async () => {
+  const { c, host, typer, mic, store, pills, tick } = rig({ historyEnabled: true, typing: { live: true } });
   typer.key(true);
   assert.equal(mic.running, true); assert.equal(pills.at(-1), 'listening');
   await tick(300);                                  // not a tap
@@ -65,7 +77,7 @@ test('a double tap of the hold key is NOT hands-free any more: two taps dictate 
 });
 
 test('CapsLock toggle: one press starts hands-free (stop and cancel buttons state), typing continues, next press stops', async () => {
-  const { typer, host, pills, mic, tick } = rig();
+  const { typer, host, pills, mic, tick } = rig({ typing: { live: true } });
   typer.toggle();
   assert.equal(pills.at(-1), 'handsfree'); assert.equal(mic.running, true);
   await tick(50);

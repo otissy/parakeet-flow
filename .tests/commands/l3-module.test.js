@@ -59,7 +59,7 @@ test('"delete that" in a NEW hold removes what the previous hold typed (same win
   await hold('First thought.');
   assert.equal(typer.text, 'First thought.');
   await hold('Second thought.');
-  assert.equal(typer.text, 'First thought.Second thought.');           // sessions do not add a separator (existing behaviour)
+  assert.equal(typer.text, 'First thought. Second thought.');          // Wispr style (2026-10-14): exactly one space between consecutive insertions
   await hold('Scratch that.');
   assert.equal(typer.text, 'First thought.');
   assert.equal(pills.at(-1).state === 'done' || pills.at(-1).state === 'idle', true);
@@ -71,7 +71,7 @@ test('Dutch: nieuwe regel, verwijder dat, maak dat ongedaan', async () => {
   await hold('Hallo Anna,', 'Nieuwe regel.', 'Bedankt voor het rapport.');
   assert.equal(typer.text, 'Hallo Anna,\nBedankt voor het rapport.');
   await hold('Verwijder dat.');
-  assert.equal(typer.text, 'Hallo Anna,\n');
+  assert.equal(typer.text, '');                                        // Wispr style: one hold = one insertion, so "verwijder dat" removes all of it
   await hold('Maak dat ongedaan.');
   assert.equal(typer.text, 'Hallo Anna,\nBedankt voor het rapport.');
 });

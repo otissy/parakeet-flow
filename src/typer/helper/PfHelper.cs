@@ -4,7 +4,15 @@
 //   and types with SendInput(KEYEVENTF_UNICODE) on request.
 // stdin  (one command per line):
 //   HOTKEY <vk>[+<vk>...]        set the hold-to-talk combo (decimal or 0xHEX); empty line disables
-//   TYPE <id> <hwnd> <base64 UTF-16LE text>   (a '\n' in the text is Shift+Enter; '\r' is dropped)
+//   TYPE <id> <hwnd> <base64 UTF-16LE text> [s|j]   (a '\n' in the text is Shift+Enter, or Ctrl+J with 'j': a bare LF that a raw-mode
+//                                terminal prompt takes as a soft newline, where Shift+Enter is a plain Enter; '\r' is dropped)
+//   ENTER <id> <hwnd>            press Enter once (only used when the user turned on "press Enter after I finish")
+//   PASTE <id> <hwnd> <base64 UTF-16LE text> <delayMs> [v|i]   (v = Ctrl+V, i = Shift+Insert)   insert text as ONE Ctrl+V: the clipboard (every memory format) is saved, the text is put there
+//                                (kept out of clipboard history and cloud sync), Ctrl+V is sent, <delayMs> later the old clipboard is put back unless
+//                                somebody else changed it meanwhile. Answers OK, REFUSED (not the foreground window) or PASTEFALLBACK (the clipboard cannot
+//                                be restored exactly: a format that is not plain memory, or it could not be opened): nothing was pasted, type it instead.
+//   CLIPPUT <b64> / CLIPGET      only with --test: set the clipboard to plain text / report it (CLIP <b64>|-)
+//   HOTKEY2 <vk>[+<vk>...]       a second chord ("note mode", Ctrl+Shift+Space): modifiers + exactly one plain key; empty = off
 //   BS   <id> <hwnd> <count>
 //   FG                           report the foreground window now
 //   CLAIM 0|1                    1 = swallow the hotkey's non-modifier key while its modifiers are held (Ctrl+Space);
@@ -21,7 +29,7 @@
 //   NORELEASE 0|1                only with --test: do not release modifiers around typing (the control experiment)
 //   DUMP                         only with --test: DUMP hook=<0|1> claim=<0|1> chord=<0|1> released=<n>
 //   QUIT
-// stdout: READY | KEY down|up | TOGGLE | ESC | FG <hwnd> <pid> <proc> <base64 title> | OK <id> | REFUSED <id> | SENT ... | SIM swallow|pass | DUMP ...
+// stdout: READY | KEY down|up | KEY2 down|up | TOGGLE | ESC | FG <hwnd> <pid> <proc> <base64 title> <window class> | OK <id> | REFUSED <id> | SENT ... | SIM swallow|pass | DUMP ...
 //
 // Hotkey = a chord. With a non-modifier key in it (Ctrl+Space) the chord starts only when that key goes down while
 // every modifier is ALREADY down (a lone Ctrl, a lone Space, or Space then Ctrl never start it). It is tracked by a
@@ -69,6 +77,7 @@ static class PfHelper
     [DllImport("user32.dll")] static extern IntPtr GetForegroundWindow();
     [DllImport("user32.dll")] static extern uint GetWindowThreadProcessId(IntPtr h, out uint pid);
     [DllImport("user32.dll", CharSet = CharSet.Unicode)] static extern int GetWindowText(IntPtr h, StringBuilder sb, int max);
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)] static extern int GetClassName(IntPtr h, StringBuilder sb, int max);
 
     static readonly object outLock = new object();
     static volatile int[] hotkey = new int[0];
@@ -82,6 +91,10 @@ static class PfHelper
     static readonly HashSet<int> swallowed = new HashSet<int>();   // chord keys whose down we swallowed: swallow repeats and the up too
     static readonly HashSet<int> released = new HashSet<int>();    // modifiers we logically released and have not restored yet
     static int trigger = 0;                                        // the one non-modifier key of the hotkey, 0 if none
+    static volatile int[] hotkey2 = new int[0];                    // second chord (note mode)
+    static readonly HashSet<int> swallowed2 = new HashSet<int>();
+    static int trigger2 = 0;
+    static bool chord2Held = false;
     static bool claim = false, chordHeld = false, hookOk = false;
     static int toggleVk = 0, togglePending = 0;                    // toggle key (0 = off); presses not yet reported (the hook never does I/O)
     static bool toggleSw = false;                                  // a CapsLock down was swallowed: swallow its repeats and its up, even if the feature is switched off meanwhile
@@ -113,6 +126,16 @@ static class PfHelper
         foreach (int vk in hotkey) if (IsModifier(vk) && !IsDownLocked(vk)) return false;
         return true;
     }
+    static bool Mods2DownLocked()
+    {
+        foreach (int vk in hotkey2) if (IsModifier(vk) && !IsDownLocked(vk)) return false;
+        return true;
+    }
+    static bool IsChord2ModifierLocked(int vk)
+    {
+        foreach (int h in hotkey2) if (IsModifier(h) && (h == vk || Array.IndexOf(Specific(h), vk) >= 0)) return true;
+        return false;
+    }
     static bool IsChordModifierLocked(int vk)
     {
         foreach (int h in hotkey) if (IsModifier(h) && (h == vk || Array.IndexOf(Specific(h), vk) >= 0)) return true;
@@ -133,12 +156,31 @@ static class PfHelper
                 if (down && !was) togglePending++;
                 if (vk == 0x14) { if (down) toggleSw = true; return true; }                      // CapsLock: never reaches Windows, state and LED untouched
             }
+            bool sw2 = false;
+            if (trigger2 != 0)                                         // the note chord is checked first: Ctrl+Shift+Space must not also start Ctrl+Space
+            {
+                if (down)
+                {
+                    if (swallowed2.Contains(vk)) return true;
+                    if (vk == trigger2 && !was && !chord2Held && Mods2DownLocked())
+                    {
+                        chord2Held = true;
+                        if (claim) { swallowed2.Add(vk); return true; }
+                    }
+                }
+                else
+                {
+                    if (vk == trigger2) chord2Held = false;
+                    else if (chord2Held && IsChord2ModifierLocked(vk) && !Mods2DownLocked()) chord2Held = false;
+                    sw2 = swallowed2.Remove(vk);
+                }
+            }
             if (trigger != 0)
             {
                 if (down)
                 {
                     if (swallowed.Contains(vk)) return true;           // auto-repeat of a swallowed chord key
-                    if (vk == trigger && !was && !chordHeld && ModsDownLocked())
+                    if (vk == trigger && !was && !chordHeld && !chord2Held && ModsDownLocked())
                     {
                         chordHeld = true;
                         if (claim) { swallowed.Add(vk); return true; }
@@ -157,7 +199,7 @@ static class PfHelper
                 foreach (int h in hotkey) if (!IsDownLocked(h)) { all = false; break; }
                 chordHeld = all;
             }
-            return ours;
+            return ours || sw2;
         }
     }
 
@@ -189,6 +231,123 @@ static class PfHelper
     static INPUT Mod(int vk, bool up)
     {
         return Key((ushort)vk, 0, (up ? KEYEVENTF_KEYUP : 0) | ((vk == 0xA3 || vk == 0xA5 || vk == 0x5B || vk == 0x5C) ? KEYEVENTF_EXTENDEDKEY : 0));
+    }
+
+    // ---- clipboard paste (method B) ----
+    [DllImport("user32.dll", SetLastError = true)] static extern bool OpenClipboard(IntPtr h);
+    [DllImport("user32.dll")] static extern bool CloseClipboard();
+    [DllImport("user32.dll")] static extern bool EmptyClipboard();
+    [DllImport("user32.dll")] static extern uint EnumClipboardFormats(uint f);
+    [DllImport("user32.dll")] static extern IntPtr GetClipboardData(uint f);
+    [DllImport("user32.dll")] static extern IntPtr SetClipboardData(uint f, IntPtr h);
+    [DllImport("user32.dll")] static extern uint GetClipboardSequenceNumber();
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)] static extern uint RegisterClipboardFormat(string n);
+    [DllImport("kernel32.dll")] static extern IntPtr GlobalAlloc(uint flags, UIntPtr size);
+    [DllImport("kernel32.dll")] static extern IntPtr GlobalLock(IntPtr h);
+    [DllImport("kernel32.dll")] static extern bool GlobalUnlock(IntPtr h);
+    [DllImport("kernel32.dll")] static extern UIntPtr GlobalSize(IntPtr h);
+
+    const uint CF_UNICODETEXT = 13;
+
+    static bool OpenClip()
+    {
+        for (int i = 0; i < 20; i++) { if (OpenClipboard(IntPtr.Zero)) return true; Thread.Sleep(25); }
+        return false;
+    }
+    static IntPtr MakeGlobal(byte[] data)
+    {
+        IntPtr h = GlobalAlloc(0x2, new UIntPtr((uint)Math.Max(1, data.Length)));      // GMEM_MOVEABLE
+        if (h == IntPtr.Zero) return h;
+        IntPtr p = GlobalLock(h);
+        if (data.Length > 0) Marshal.Copy(data, 0, p, data.Length);
+        GlobalUnlock(h);
+        return h;
+    }
+    // formats whose data is a GDI handle or owner-drawn, not memory: they cannot be copied byte for byte
+    static bool HandleFormat(uint f) { return f == 2 || f == 3 || f == 9 || f == 14 || f == 0x80 || (f >= 0x81 && f <= 0x8E) || (f >= 0x200 && f <= 0x3FF); }
+
+    /// <summary>every memory format on the clipboard; lossy = something was there that could not be copied (then we never touch the clipboard).</summary>
+    static List<KeyValuePair<uint, byte[]>> BackupClip(out bool lossy)
+    {
+        lossy = false;
+        List<KeyValuePair<uint, byte[]>> all = new List<KeyValuePair<uint, byte[]>>();
+        for (uint f = EnumClipboardFormats(0); f != 0; f = EnumClipboardFormats(f))
+        {
+            if (f == 1 || f == 7) continue;                                          // CF_TEXT / CF_OEMTEXT: synthesized from CF_UNICODETEXT
+            if (f == 2 || f == 3 || f == 9 || f == 14) continue;                    // synthesized from CF_DIB / handled by Windows
+            if (HandleFormat(f)) { lossy = true; continue; }
+            IntPtr h = GetClipboardData(f);
+            if (h == IntPtr.Zero) { lossy = true; continue; }
+            long size = (long)GlobalSize(h).ToUInt64();
+            if (size <= 0 || size > 64L * 1024 * 1024) { lossy = true; continue; }
+            IntPtr p = GlobalLock(h);
+            if (p == IntPtr.Zero) { lossy = true; continue; }
+            byte[] b = new byte[size]; Marshal.Copy(p, b, 0, (int)size); GlobalUnlock(h);
+            all.Add(new KeyValuePair<uint, byte[]>(f, b));
+        }
+        return all;
+    }
+    static void SetFlagFormats()
+    {
+        // keep dictated text out of Windows clipboard history and cloud clipboard
+        foreach (string n in new string[] { "ExcludeClipboardContentFromMonitorProcessing", "CanIncludeInClipboardHistory", "CanUploadToCloudClipboard" })
+        {
+            uint f = RegisterClipboardFormat(n);
+            SetClipboardData(f, MakeGlobal(n.StartsWith("Exclude") ? new byte[] { 1, 0, 0, 0 } : new byte[] { 0, 0, 0, 0 }));
+        }
+    }
+    static bool SetClipText(string text)
+    {
+        byte[] b = Encoding.Unicode.GetBytes(text + "\0");
+        IntPtr h = MakeGlobal(b);
+        if (h == IntPtr.Zero) return false;
+        EmptyClipboard();
+        if (SetClipboardData(CF_UNICODETEXT, h) == IntPtr.Zero) return false;
+        SetFlagFormats();
+        return true;
+    }
+    static string GetClipText()
+    {
+        if (!OpenClip()) return null;
+        try
+        {
+            IntPtr h = GetClipboardData(CF_UNICODETEXT);
+            if (h == IntPtr.Zero) return null;
+            IntPtr p = GlobalLock(h); if (p == IntPtr.Zero) return null;
+            string t = Marshal.PtrToStringUni(p); GlobalUnlock(h); return t;
+        }
+        finally { CloseClipboard(); }
+    }
+
+    /// <returns>OK | PASTEFALLBACK</returns>
+    static string PasteText(string text, int delayMs, bool shiftInsert)
+    {
+        List<KeyValuePair<uint, byte[]>> backup;
+        bool lossy;
+        if (!OpenClip()) return "PASTEFALLBACK";
+        try
+        {
+            backup = BackupClip(out lossy);
+            if (lossy) return "PASTEFALLBACK";               // the user's clipboard holds something we cannot give back exactly: do not touch it
+            if (!SetClipText(text)) { RestoreClip(backup); return "PASTEFALLBACK"; }
+        }
+        finally { CloseClipboard(); }
+        uint ours = GetClipboardSequenceNumber();
+        List<INPUT> k = new List<INPUT>();
+        if (shiftInsert) { k.Add(Key(0x10, 0, 0)); k.Add(Key(0x2D, 0, KEYEVENTF_EXTENDEDKEY)); k.Add(Key(0x2D, 0, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP)); k.Add(Key(0x10, 0, KEYEVENTF_KEYUP)); }   // Shift+Insert: the paste a classic console window itself handles
+        else { k.Add(Key(0x11, 0, 0)); k.Add(Key(0x56, 0, 0)); k.Add(Key(0x56, 0, KEYEVENTF_KEYUP)); k.Add(Key(0x11, 0, KEYEVENTF_KEYUP)); }
+        Send(k);
+        Thread.Sleep(Math.Max(30, Math.Min(2000, delayMs)));
+        if (GetClipboardSequenceNumber() == ours && OpenClip())          // nobody copied anything meanwhile: give the old clipboard back
+        {
+            try { RestoreClip(backup); } finally { CloseClipboard(); }
+        }
+        return "OK";
+    }
+    static void RestoreClip(List<KeyValuePair<uint, byte[]>> backup)
+    {
+        EmptyClipboard();
+        foreach (KeyValuePair<uint, byte[]> kv in backup) { IntPtr h = MakeGlobal(kv.Value); if (h != IntPtr.Zero) SetClipboardData(kv.Key, h); }
     }
 
     static void Emit(List<INPUT> list)
@@ -252,27 +411,32 @@ static class PfHelper
         try { proc = Process.GetProcessById((int)pid).ProcessName.Replace(' ', '_'); } catch { }
         StringBuilder sb = new StringBuilder(256); GetWindowText(h, sb, 256);
         string title = Convert.ToBase64String(Encoding.UTF8.GetBytes(sb.ToString()));
-        return "FG " + h.ToInt64() + " " + pid + " " + proc + " " + title;
+        StringBuilder cb = new StringBuilder(128); GetClassName(h, cb, 128);
+        return "FG " + h.ToInt64() + " " + pid + " " + proc + " " + title + " " + cb.ToString().Replace(' ', '_');
     }
 
     static void Poll()
     {
-        bool down = false, esc = false, tglPrev = false;
+        bool down = false, esc = false, tglPrev = false, down2 = false;
         while (true)
         {
             int tv = toggleVk, tp = 0;
             if (tv != 0 && !hookOk) { bool t = (GetAsyncKeyState(tv) & 0x8000) != 0; if (t && !tglPrev) lock (st) { togglePending++; } tglPrev = t; }
             lock (st) { tp = togglePending; togglePending = 0; }
             for (int i = 0; i < tp; i++) Out("TOGGLE");
-            int[] hk = hotkey;
-            bool now;
-            if (hookOk) lock (st) { now = hk.Length > 0 && chordHeld; }
+            int[] hk = hotkey, hk2 = hotkey2;
+            bool now, now2;
+            if (hookOk) lock (st) { now = hk.Length > 0 && chordHeld; now2 = hk2.Length > 0 && chord2Held; }
             else
             {
                 now = hk.Length > 0;
                 foreach (int vk in hk) if ((GetAsyncKeyState(vk) & 0x8000) == 0) { now = false; break; }
+                now2 = hk2.Length > 0;
+                foreach (int vk in hk2) if ((GetAsyncKeyState(vk) & 0x8000) == 0) { now2 = false; break; }
+                if (now2) now = false;
             }
             if (now != down) { down = now; Out(down ? "KEY down" : "KEY up"); }
+            if (now2 != down2) { down2 = now2; Out(down2 ? "KEY2 down" : "KEY2 up"); }
             bool e = (GetAsyncKeyState(VK_ESCAPE) & 0x8000) != 0;
             if (e && !esc) Out("ESC");
             esc = e;
@@ -301,6 +465,25 @@ static class PfHelper
         }
     }
 
+    static void SetHotkey2(string spec)
+    {
+        List<int> vks = new List<int>();
+        foreach (string p in spec.Split(new char[] { '+' }, StringSplitOptions.RemoveEmptyEntries))
+        {
+            string t = p.Trim();
+            try { vks.Add(t.StartsWith("0x") ? Convert.ToInt32(t.Substring(2), 16) : Convert.ToInt32(t)); } catch { }
+        }
+        lock (st)
+        {
+            int plain = 0, which = 0, mods = 0;
+            foreach (int v in vks) { if (!IsModifier(v)) { plain++; which = v; } else mods++; }
+            bool ok = plain == 1 && mods >= 1;                          // a note chord is modifiers + exactly one plain key
+            hotkey2 = ok ? vks.ToArray() : new int[0];
+            trigger2 = ok ? which : 0;
+            chord2Held = false; swallowed2.Clear();
+        }
+    }
+
     static void TestSim(int vk, bool down)
     {
         bool sw = OnKey(vk, down);
@@ -324,17 +507,28 @@ static class PfHelper
                 switch (a[0])
                 {
                     case "HOTKEY": SetHotkey(a.Length > 1 ? a[1] : ""); break;
+                    case "HOTKEY2": SetHotkey2(a.Length > 1 ? a[1] : ""); break;
                     case "FG": Out(FgLine()); break;
                     case "TOGGLE": lock (st) { toggleVk = a.Length > 1 ? int.Parse(a[1]) : 0; if (toggleVk == 0) togglePending = 0; } break;
-                    case "CLAIM": lock (st) { claim = a.Length > 1 && a[1] == "1"; if (!claim) swallowed.Clear(); } break;
+                    case "CLAIM": lock (st) { claim = a.Length > 1 && a[1] == "1"; if (!claim) { swallowed.Clear(); swallowed2.Clear(); } } break;
                     case "CAPTURE": if (testMode) capture = a.Length > 1 && a[1] == "1"; break;
                     case "NORELEASE": if (testMode) noRelease = a.Length > 1 && a[1] == "1"; break;
                     case "SIMMID": if (testMode && a.Length > 1) simMid = int.Parse(a[1]); break;
                     case "SIMLATE": if (testMode && a.Length > 1) simLate = int.Parse(a[1]); break;
                     case "SIM": if (testMode && a.Length > 2) TestSim(int.Parse(a[1]), a[2] == "down"); break;
                     case "DUMP":
-                        if (testMode) lock (st) { Out("DUMP hook=" + (hookOk ? 1 : 0) + " claim=" + (claim ? 1 : 0) + " chord=" + (chordHeld ? 1 : 0) + " released=" + released.Count + " swallowed=" + swallowed.Count + " toggle=" + toggleVk + " tsw=" + (toggleSw ? 1 : 0)); }
+                        if (testMode) lock (st) { Out("DUMP hook=" + (hookOk ? 1 : 0) + " claim=" + (claim ? 1 : 0) + " chord=" + (chordHeld ? 1 : 0) + " chord2=" + (chord2Held ? 1 : 0) + " released=" + released.Count + " swallowed=" + swallowed.Count + " toggle=" + toggleVk + " tsw=" + (toggleSw ? 1 : 0)); }
                         break;
+                    case "CLIPPUT": if (testMode && a.Length > 1 && OpenClip()) { try { SetClipText(Encoding.Unicode.GetString(Convert.FromBase64String(a[1]))); } finally { CloseClipboard(); } Out("OK clip"); } break;
+                    case "CLIPGET": if (testMode) { string ct = GetClipText(); Out("CLIP " + (ct == null ? "-" : Convert.ToBase64String(Encoding.UTF8.GetBytes(ct)))); } break;
+                    case "PASTE":
+                    {
+                        string pid = a[1];
+                        if (GetForegroundWindow().ToInt64() != long.Parse(a[2])) { Out("REFUSED " + pid); break; }
+                        string ptext = Encoding.Unicode.GetString(Convert.FromBase64String(a[3]));
+                        Out(PasteText(ptext, a.Length > 4 ? int.Parse(a[4]) : 200, a.Length > 5 && a[5] == "i") + " " + pid);
+                        break;
+                    }
                     case "QUIT": return;
                     case "PRESS":
                         if (testMode && a.Length > 2)
@@ -345,6 +539,14 @@ static class PfHelper
                             SendInput(1, k.ToArray(), Marshal.SizeOf(typeof(INPUT)));
                         }
                         break;
+                    case "ENTER":
+                    {
+                        string eid = a[1];
+                        if (GetForegroundWindow().ToInt64() != long.Parse(a[2])) { Out("REFUSED " + eid); break; }
+                        List<INPUT> e = new List<INPUT>(); e.Add(Key(0x0D, 0, 0)); e.Add(Key(0x0D, 0, KEYEVENTF_KEYUP));
+                        Send(e); Out("OK " + eid);
+                        break;
+                    }
                     case "TYPE":
                     case "BS":
                     {
@@ -354,10 +556,12 @@ static class PfHelper
                         if (a[0] == "TYPE")
                         {
                             string text = Encoding.Unicode.GetString(Convert.FromBase64String(a[3]));
+                            bool lf = a.Length > 4 && a[4] == "j";
                             foreach (char c in text)
                             {
                                 if (c == '\r') continue;
                                 // "new line" voice command: Shift+Enter, a soft break that never sends a chat message
+                                if (c == '\n' && lf) { l.Add(Key(0x11, 0, 0)); l.Add(Key(0x4A, 0, 0)); l.Add(Key(0x4A, 0, KEYEVENTF_KEYUP)); l.Add(Key(0x11, 0, KEYEVENTF_KEYUP)); continue; }
                                 if (c == '\n') { l.Add(Key(0x10, 0, 0)); l.Add(Key(0x0D, 0, 0)); l.Add(Key(0x0D, 0, KEYEVENTF_KEYUP)); l.Add(Key(0x10, 0, KEYEVENTF_KEYUP)); continue; }
                                 l.Add(Key(0, c, KEYEVENTF_UNICODE));
                                 l.Add(Key(0, c, KEYEVENTF_UNICODE | KEYEVENTF_KEYUP));
@@ -368,8 +572,22 @@ static class PfHelper
                             int n = int.Parse(a[3]);
                             for (int i = 0; i < n; i++) { l.Add(Key(VK_BACK, 0, 0)); l.Add(Key(VK_BACK, 0, KEYEVENTF_KEYUP)); }
                         }
-                        if (l.Count > 0) Send(l);
-                        Out("OK " + id);
+                        bool aborted = false;
+                        bool paced = a[0] == "TYPE" && a.Length > 5 && a[5] == "p";
+                        if (paced && l.Count > 96)      // slices of ~24 characters, 8 ms apart; a slice only ends after a unicode key-up, never inside a Shift+Enter / Ctrl+J group
+                        {
+                            int i = 0;
+                            while (i < l.Count)
+                            {
+                                int n = Math.Min(48, l.Count - i);
+                                while (i + n < l.Count && !(l[i + n - 1].u.ki.wVk == 0 && (l[i + n - 1].u.ki.dwFlags & KEYEVENTF_KEYUP) != 0)) n++;
+                                if (GetForegroundWindow().ToInt64() != want) { aborted = true; break; }      // focus moved mid-text: the rest is NOT typed anywhere
+                                Send(l.GetRange(i, n)); i += n;
+                                Thread.Sleep(8);
+                            }
+                        }
+                        else if (l.Count > 0) Send(l);
+                        Out((aborted ? "REFUSED " : "OK ") + id);
                         break;
                     }
                 }

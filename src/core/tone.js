@@ -3,10 +3,11 @@
      default  : as the model writes it (plus the global Style setting)
      casual   : lower-case start allowed, no final full stop
      formal   : capital letters, full stop, no slang/contractions (English)
-     code     : no auto-capitalisation, no trailing full stop, never a trailing space (terminals, editors)
+     code     : no auto-capitalisation of the first word, punctuation kept, never a trailing space (terminals, editors)
    Finals only. The deny-list is checked before this ever runs (LiveTyper.begin), so it always wins. */
 const { casual } = require('./postprocess');
 const { detectLang } = require('./lang');
+const { TERMINAL_PROCS, TERMINAL_TITLES } = require('./terminals');
 
 const PROFILES = ['default', 'casual', 'formal', 'code'];
 
@@ -24,6 +25,10 @@ const BUILTIN_APPS = [
   { proc: 'wezterm-gui', profile: 'code' }, { proc: 'devenv', profile: 'code' }, { proc: 'idea64', profile: 'code' }, { proc: 'pycharm64', profile: 'code' },
   { title: 'command prompt', profile: 'code' }, { title: 'windows powershell', profile: 'code' },
 ];
+// every terminal / console program (core/terminals.js) is code, unless a row above already says so; also editors that embed a terminal
+for (const proc of ['vscodium', 'windsurf', 'code_-_oss']) if (!BUILTIN_APPS.some((r) => r.proc === proc)) BUILTIN_APPS.push({ proc, profile: 'code' });
+for (const proc of TERMINAL_PROCS) if (!BUILTIN_APPS.some((r) => r.proc === proc)) BUILTIN_APPS.push({ proc, profile: 'code' });
+for (const title of TERMINAL_TITLES) if (!BUILTIN_APPS.some((r) => r.title === title)) BUILTIN_APPS.push({ title, profile: 'code' });
 
 const procOf = (fg) => String(fg?.proc || '').toLowerCase().replace(/\.exe$/, '');
 const titleOf = (fg) => String(fg?.title || '').toLowerCase();
@@ -66,12 +71,12 @@ function formal(text) {
   return t;
 }
 
-/** code / terminal: no auto-capital on the first word (unless it is I, an acronym or already camel-ish), no final full stop */
+/** code / terminal: no auto-capital on the first word (unless it is I, an acronym or already camel-ish); punctuation is kept */
 function codeTone(text) {
   let t = String(text || '');
   const m = /^(\p{Lu})(\p{Ll}+)(\b.*)$/su.exec(t);
   if (m && !/^I$/.test(m[1] + m[2]) && !/^I'/.test(t)) t = m[1].toLowerCase() + m[2] + m[3];
-  return t.replace(/\.(\s*)$/u, '$1');
+  return t;                       // sentence punctuation stays (Wispr style); only the capital is skipped
 }
 
 /** apply a profile to a finished segment. `globalCasual` is the existing Style setting (used by `default`). */

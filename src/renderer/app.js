@@ -25,7 +25,7 @@ function home() {
   return `<div class="wrap">
     <h1>${L.esc(L.greeting(new Date().getHours(), s.userName))}</h1>
     <div class="sub">Everything runs on this computer. Nothing is sent anywhere.</div>
-    <div class="card hint"><div><div class="t">${L.esc(hint)}</div><div class="s">Press Esc to cancel.</div></div></div>
+    <div class="card hint"><div><div class="t">${L.esc(hint)}</div><div class="s">${s.typing && s.typing.live ? 'Words are typed as you speak. ' : 'Your words show in the bar while you talk and the finished text goes in once when you let go. '}Press Esc to cancel.</div></div></div>
     <div class="stats">
       <div class="card stat"><div class="n">${st.words.toLocaleString('en')}</div><div class="l">Words dictated</div></div>
       <div class="card stat"><div class="n">${st.wpm || '–'}<span class="u">${st.wpm ? 'wpm' : ''}</span></div><div class="l">Average speed</div></div>

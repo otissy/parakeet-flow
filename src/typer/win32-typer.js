@@ -8,6 +8,7 @@ const { EventEmitter } = require('events');
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
+const { newlineMode, isConsoleTerminal } = require('./newline');
 
 const HELPER_DIR = path.join(__dirname, 'helper');
 const SRC = path.join(HELPER_DIR, 'PfHelper.cs');
@@ -47,7 +48,7 @@ class Win32Typer extends EventEmitter {
   constructor({ binDir, test = false }) {
     super();
     this.exe = buildHelper(binDir);
-    this.fg = null; this.nextId = 1; this.buf = '';
+    this.fg = null; this.nextId = 1; this.buf = ''; this.newline = 'auto'; this.pasting = new Map();
     this.proc = spawn(this.exe, test ? ['--test'] : [], { stdio: ['pipe', 'pipe', 'ignore'], windowsHide: true });
     this.ready = new Promise((res) => { this._ready = res; });
     this.proc.stdout.setEncoding('utf8');
@@ -64,17 +65,24 @@ class Win32Typer extends EventEmitter {
       if (a[0] === 'READY') this._ready();
       else if (a[0] === 'KEY') this.emit('key', { down: a[1] === 'down', at: Date.now() });
       else if (a[0] === 'TOGGLE') this.emit('toggle', { at: Date.now() });
+      else if (a[0] === 'KEY2') this.emit('key2', { down: a[1] === 'down', at: Date.now() });
       else if (a[0] === 'ESC') this.emit('esc');
       else if (a[0] === 'FG') {
         this.fg = { hwnd: Number(a[1]), pid: Number(a[2]), proc: (a[3] || '').toLowerCase() + '.exe',
-                    title: a[4] ? Buffer.from(a[4], 'base64').toString('utf8') : '' };
+                    title: a[4] ? Buffer.from(a[4], 'base64').toString('utf8') : '', cls: a[5] || '' };
         this.emit('foreground', this.fg);
-      } else if (a[0] === 'REFUSED') this.emit('refused', { id: a[1] });
+      } else if (a[0] === 'REFUSED') { this.pasting.delete(a[1]); this.emit('refused', { id: a[1] }); }
+      else if (a[0] === 'PASTEFALLBACK') { const t = this.pasting.get(a[1]); this.pasting.delete(a[1]); this.emit('paste-fallback', { id: a[1] }); if (t) this.type(t.text, t.opts); }
+      else if (a[0] === 'CLIP') this.emit('line', a);
       else if (a[0] === 'SENT' || a[0] === 'SIM' || a[0] === 'DUMP') this.emit('line', a);   // test-mode replies
     }
   }
   _send(s) { if (this.proc.stdin.writable) this.proc.stdin.write(s + '\n'); }
   setHotkey(vks) { this._send('HOTKEY ' + vks.join('+')); }
+  /** the second chord (note mode): modifiers + exactly one plain key; an empty list switches it off */
+  setHotkey2(vks) { this._send('HOTKEY2 ' + (vks || []).join('+')); }
+  /** 'auto' | 'shift-enter' | 'ctrl-j': which key a newline in typed text presses (see newline.js) */
+  setNewline(mode) { this.newline = ['shift-enter', 'ctrl-j'].includes(mode) ? mode : 'auto'; }
   /** swallow the chord's non-modifier key (Ctrl+Space) while its modifiers are held; never for a lone-key hotkey */
   setClaim(on) { this._send('CLAIM ' + (on ? 1 : 0)); }
   /** the toggle key (CapsLock = 0x14): one 'toggle' event per fresh press. CapsLock is swallowed (down, repeat, up) so Windows never flips it; 0 = off, key back to normal */
@@ -87,7 +95,9 @@ class Win32Typer extends EventEmitter {
   foreground() { return this.fg; }
   type(text, { hwnd } = {}) {
     if (!text) return true;
-    this._send(`TYPE ${this.nextId++} ${hwnd || 0} ${Buffer.from(text, 'utf16le').toString('base64')}`);
+    const nl = ' ' + newlineMode(this.fg, this.newline);
+    const paced = isConsoleTerminal(this.fg) || /^code/.test(String((this.fg && this.fg.proc) || '').toLowerCase()) ? ' p' : '';
+    this._send(`TYPE ${this.nextId++} ${hwnd || 0} ${Buffer.from(text, 'utf16le').toString('base64')}${nl}${paced}`);
     return true;
   }
   backspace(n, { hwnd } = {}) {
@@ -95,6 +105,20 @@ class Win32Typer extends EventEmitter {
     this._send(`BS ${this.nextId++} ${hwnd || 0} ${n}`);
     return true;
   }
+  /** insert text as ONE clipboard paste (the old clipboard is put back; src/typer/helper/PfHelper.cs PASTE). If the clipboard cannot be restored
+      exactly the helper pastes nothing and says so, and the text is typed instead (burst). */
+  paste(text, { hwnd, delayMs = 220, key = 'v' } = {}) {
+    if (!text) return true;
+    const id = String(this.nextId++);
+    this.pasting.set(id, { text, opts: { hwnd } });
+    this._send(`PASTE ${id} ${hwnd || 0} ${Buffer.from(text, 'utf16le').toString('base64')} ${delayMs} ${key === 'insert' ? 'i' : 'v'}`);
+    setTimeout(() => this.pasting.delete(id), 10000).unref();       // never keep dictated text around
+    return true;
+  }
+  /** the one entry point for "put this finished text into the window": method 'paste' | 'burst' */
+  insert(text, { hwnd, method = 'burst' } = {}) { return method === 'paste' || method === 'paste-insert' ? this.paste(text, { hwnd, key: method === 'paste-insert' ? 'insert' : 'v' }) : this.type(text, { hwnd }); }
+  /** one Enter press (only for the opt-in "press Enter after I finish"); refused unless <hwnd> is the foreground window */
+  enter({ hwnd } = {}) { this._send(`ENTER ${this.nextId++} ${hwnd || 0}`); return true; }
   close() { try { this._send('QUIT'); this.proc.kill(); } catch (_) { /* gone */ } }
 }
 
