@@ -93,3 +93,7 @@ input[type=password]:focus { border-color: var(--accent); }
 button.small { padding: 4px 11px; font-size: 12.5px; flex: none; }
 .note-row .tx { white-space: pre-wrap; } .syncline { margin-top: 6px; font-size: 12px; }
 .progress { height: 6px; border-radius: 3px; background: #2a2a31; overflow: hidden; margin-top: 10px; } .progress i { display: block; height: 100%; background: var(--accent); width: 0; transition: width .2s; }
+
+.tryout { padding: 10px 12px; background: #121215; border: 1px solid var(--line); border-radius: 9px; min-height: 40px; overflow-wrap: anywhere; }
+.tryout mark { background: var(--accent-soft); color: #fff; border-radius: 4px; padding: 0 3px; }
+code { font: 12px Consolas, monospace; background: #121215; border: 1px solid var(--line); border-radius: 5px; padding: 1px 5px; }

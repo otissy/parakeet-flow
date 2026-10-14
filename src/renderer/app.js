@@ -123,6 +123,7 @@ function bind() {
   });
   on('dl', () => window.pf.invoke('models:download'));
   bindExtra();
+  if (S.page === 'dictionary') bindSlang();
   on('hk-reset', () => { S.hkError = ''; save({ hotkey: { vks: [0x11, 0x20], label: 'Ctrl+Space' } }); });
   on('hk-change', () => { S.capTarget = 'hold'; S.capturing = S.capturing ? null : []; S.hkError = ''; render(); });
   on('tk-reset', () => { S.hkError = ''; save({ toggleKey: { vks: [0x14], label: 'CapsLock' } }); });
@@ -134,7 +135,7 @@ let lastCap = false;
 function notifyCapture() { const on = !!S.capturing; if (on !== lastCap) { lastCap = on; window.pf.send('hotkey:capture', on); } }
 
 function render() {
-  const pages = { home, dictionary: () => pairsPage({ title: 'Dictionary', blurb: 'Replace a word or name every time it is dictated. Case-insensitive, whole words only.', listKey: 'dictionary', a: 'from', b: 'to', phA: 'Heard as', phB: 'Replace with' }),
+  const pages = { home, dictionary: () => pairsPage({ title: 'Dictionary', blurb: 'Replace a word or name every time it is dictated. Case-insensitive, whole words only.', listKey: 'dictionary', a: 'from', b: 'to', phA: 'Heard as', phB: 'Replace with' }) + slangSection(),
     snippets: () => pairsPage({ title: 'Snippets', blurb: 'Say a short phrase, get a longer text. Say only the phrase to replace the whole line.', listKey: 'snippets', a: 'trigger', b: 'expansion', phA: 'When I say', phB: 'Type this', multi: false }),
     style, settings: settingsPage, notes: notesPage };
   const y = main.scrollTop;
@@ -179,7 +180,7 @@ function engineBadge() {
 }
 
 async function refresh() {
-  await loadExtra();
+  await loadExtra(); await loadSlang();
   [S.settings, S.stats, S.history, S.info] = await Promise.all([window.pf.invoke('settings:get'), window.pf.invoke('stats:get'), window.pf.invoke('history:get'), window.pf.invoke('app:info')]);
   engineBadge(); render();
 }
