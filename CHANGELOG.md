@@ -23,3 +23,13 @@ Packaging release. The app is now a normal Windows install.
 
 Live-typing dictation, voice commands, per-app tone, translate, whisper mode, local-model cleanup, notes, and the
 Ctrl+Space hotkey. See the git log.
+
+## Unreleased - 2026-10-14
+
+- **Wispr-style flow is the default.** Nothing is typed while you hold the key; the bar shows the live words and the finished, punctuated text is inserted once on release (one paced burst of Unicode keys, or an optional clipboard paste that restores your clipboard). Reason: live Backspace corrections corrupted text in Claude Code's prompt and other raw-mode terminals. The old mode is Settings > How text gets in > "Type while I speak (experimental)".
+- Per-app insert method table; terminals use Ctrl+J for "new line" (Shift+Enter would send the line); optional "Press Enter after I finish".
+- More terminals recognised for the code tone (console windows report the program inside them: node, cmd, powershell, claude ...). The code tone keeps punctuation.
+- **Note mode:** hold Ctrl+Shift+Space (changeable) to save a dictation as a note; dictating with the Desktop, no window or this app in front saves a note too ("Saved as note").
+- **MCP server** (`mcp/`, stdio, official SDK pinned): lets Claude Code read, file (Notion, Drive ...) and add your notes with its own connectors; no token in this app. `.claude/skills/sync-parakeet-notes` tells Claude how.
+- Markdown export of notes (Obsidian etc.).
+- The notes file is now safe for two writers (lock + re-read).

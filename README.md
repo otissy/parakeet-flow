@@ -1,7 +1,7 @@
 # parakeet-flow
 
-Hold a key, talk, and the words appear in the focused app while you are still talking. They are corrected in
-place and settle into clean text when you let go. Everything runs on this PC (Parakeet TDT 0.6B v3, int8,
+Hold a key and talk: the live words show in a small bar, and when you let go the finished, punctuated text is
+inserted into the focused app once (like Wispr Flow; typing while you speak is an opt-in experiment). Everything runs on this PC (Parakeet TDT 0.6B v3, int8,
 via sherpa-onnx). A small floating bar shows the level and the live text; a tray icon and a main window hold
 the settings. The design follows the layout and feel of Wispr Flow without using its name or logo.
 
@@ -96,6 +96,91 @@ How the chord behaves (all in `src/typer/helper/PfHelper.cs`):
   already gone out a matching up follows. Apps never see a stuck or unmatched Ctrl. Rejected alternatives:
   Shift+Left select-and-overtype (Ctrl+Shift+Left selects a word, same problem, and a typed letter with Ctrl down is a
   shortcut) and deferring corrections until Ctrl is released (no live correction at all in hold mode).
+
+## How the words get into the app (Wispr style, since 2026-10-14)
+
+Hold the key and talk: the bar under the screen shows what you are saying as it is recognised. **Nothing is typed into the
+app while you hold the key.** When you let go (or press CapsLock again), the finished text, already punctuated and
+capitalised by the model, with fillers removed, is inserted **once**. This is the same idea as Wispr Flow.
+
+Why it changed: typing partial words and fixing them with Backspace breaks in raw-mode terminal prompts such as Claude Code's.
+Dictating "hello world, it is a nice day. second sentence here" left `hello wor ld i, it  is a nice day  second  sentence here`
+in the prompt, and a 480-word stress dictation had a defect every 8 to 12 words (a space inside a word, double spaces, stray
+letters). The old behaviour is still there as **Settings > How text gets in > Type while I speak (experimental)**, off by
+default, and it can misbehave in terminals.
+
+- **Insert method**, chosen per app (Settings table, your rows first, then "terminals" and "everywhere else"): `Type it` = one
+  paced burst of Unicode key events (24 characters at a time, 8 ms apart, the foreground window is re-checked before each
+  slice, no Backspace at all); `Paste` = save the clipboard, put the text there (kept out of Windows clipboard history and
+  cloud sync), send Ctrl+V, put your clipboard back 220 ms later (not if you copied something meanwhile; if the clipboard holds
+  something that cannot be restored exactly, nothing is pasted and the text is typed instead); `Paste (Shift+Insert)`.
+- **Measured** (this PC, harmless raw-mode echo programs in console windows this project launches off-screen, never your windows):
+  see "Insert method measurements" below. Type it works everywhere tested. Paste does not reach a raw-mode program in a classic
+  console window at all (it receives the key itself, 0x16), so the default is Type it everywhere.
+- **Spacing:** exactly one space between sentences; no space at the start; one space before the next insertion in the same window
+  (within 2 minutes), trailing space optional (never in terminals).
+- **Terminals** (Windows Terminal, console windows, PowerShell, cmd, VS Code, Claude Code ...): the `code` tone skips the capital
+  on the first word but keeps punctuation. The voice command "new line" presses **Ctrl+J** there, because a console delivers
+  Shift+Enter as a plain Enter (measured) and that would send your prompt; everywhere else it is Shift+Enter. Enter is never
+  pressed for you unless you turn on **Press Enter after I finish** (off).
+- Voice commands still work: they edit the waiting text before it is inserted ("delete that", "new line", "capitalize that"),
+  or the previous insertion if nothing is waiting.
+- If you switch windows while holding the key, nothing is inserted and the words are saved as a note ("Window changed: saved as note").
+
+### Insert method measurements (2026-10-14)
+
+Harness: `.tests/terminals/real-terminals.js` launches harmless raw-mode key-echo programs (`echo-raw.js`: stdin in raw mode, logs every byte it
+receives, runs nothing) in NEW console windows placed at x=-6000 (never visible), types into them only through pf-helper (which refuses unless that
+window is the foreground window, and now re-checks before every 24-character slice), then puts the previously focused window back. The echo program is
+what a Node TUI such as Claude Code's prompt reads. Each run replays "hello world, it is a nice day. second sentence here." (6 partials, 2 finals) or
+the 480-word stress dictation (word0..word96 x5, 6 segments, partials with corrections) through the real session, or 6 consecutive holds through the real
+Controller (each utterance different, duplicate final events injected). A run is **corrupt** when characters arrive that are not a prefix of the
+intended text, **refused/short** when the window lost focus mid-run (the helper refuses and nothing is typed anywhere else).
+
+| host (what the window owner reports) | method | short sentence | 480 words | 6 holds | corrupt |
+|---|---|---|---|---|---|
+| console window, `node.exe` | Type it (burst) | 7 of 8 exact, 1 refused | 0 of 2 complete (focus kept being taken, 54 re-focus attempts) | refused part-way | 0 |
+| `cmd.exe` | Type it (burst) | 8 of 8 exact | 2 of 2 exact (3309 characters) | exact | 0 |
+| `powershell.exe` | Type it (burst) | 8 of 8 exact | 1 of 2 exact, 1 refused | refused part-way | 0 |
+| console window | Paste (Ctrl+V) | 0 of 6: the program receives byte 0x16, no text | 0 | 0 | 0 (nothing arrives) |
+| console window | Paste (Shift+Insert) | 0 of 3: the program receives ESC [ 2 ; 2 ~ | not run | not run | 0 |
+
+The clipboard was byte-for-byte what it was before in every paste run (hash before = hash after). Windows Terminal is not installed on this PC and VS Code was not
+driven (it can only be started as a visible window), so paste in those two is **unmeasured**; the per-app table lets you switch an app to paste once you
+have tried it. Where the shorts come from: something on this PC keeps taking the foreground away from the test windows (up to 54 times in one run); the helper
+refuses to type when that happens, which is the safe outcome. For comparison, live typing with Backspace corrections (`PF_LIVE=1`) is also clean in this
+ideal echo program; Claude Code's own input handling (Ink) is what drops and merges rapid bursts, and it is not available to test here without running claude
+itself, so the real Claude Code prompt has been verified only by the user's own dictation, not by this harness.
+
+## Notes: note mode, routing, Claude (MCP), Markdown export
+
+- **Note mode:** hold **Ctrl+Shift+Space** (change it in Settings), talk, let go: the dictation is saved as a note and nothing is
+  typed. A lone tap does nothing. "Note to self ..." keeps working.
+- **Automatic fallback:** if the window in front is the Desktop or taskbar, there is no window, or it is this app, there is nowhere
+  to type, so the dictation is saved as a note and the bar says "Saved as note". It never does this inside another program's window.
+  Switch it off in Settings.
+- **Connect to Claude (MCP):** parakeet-flow ships a small local MCP server in `mcp/` so Claude Code can read your notes and file
+  them in the Notion / Google Drive it is already connected to. This app never holds a Notion token for that. See `mcp/README.md`.
+
+  ```
+  npm --prefix mcp ci --ignore-scripts
+  claude mcp add parakeet-flow -- node "C:\path\to\parakeet-flow\mcp\server.js"
+  ```
+
+  or in `.mcp.json`:
+
+  ```json
+  { "mcpServers": { "parakeet-flow": { "command": "node", "args": ["C:\\path\\to\\parakeet-flow\\mcp\\server.js"] } } }
+  ```
+
+  (You run these yourself; the app does not touch Claude's settings. Settings > Connect to Claude shows your exact path with a Copy
+  button.) Then ask Claude "sync my parakeet notes": the project skill `.claude/skills/sync-parakeet-notes/SKILL.md` tells it to find
+  your Notes database in Notion, create one entry per note (title, text, date, tags), and call `note_mark_synced`. Tools:
+  `notes_list`, `note_get`, `note_mark_synced`, `notes_add`, `dictation_status`, and `recent_dictation` only if you switch on
+  "Share recent dictation history with MCP clients" (off by default).
+- **Markdown export** for apps without MCP (an Obsidian vault, any folder): Settings > Markdown export. One `.md` per note with
+  front matter (title, id, created, tags, source), always the same file name for the same note.
+- The built-in Notion sync with your own integration token (above) is unchanged and optional.
 
 ## How it works
 
