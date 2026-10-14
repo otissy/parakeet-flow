@@ -1,0 +1,32 @@
+parakeet-flow
+Copyright (c) 2026 otiyyy. Licensed under the MIT License (see LICENSE).
+
+This product includes or downloads the third-party software and models below. Each keeps its own licence.
+"Checked" means the licence field was read from the package.json installed on the build PC (or its LICENSE file
+for the packages named). "Not verified locally" means no licence text or model card for it is on this PC; the
+licence given is the one the publisher states on the page the app downloads from and must be confirmed there.
+
+Software shipped inside the installer
+
+| Component | Version | Licence | Status |
+|---|---|---|---|
+| Electron (includes Chromium and Node.js; their notices are in LICENSE.electron.txt and LICENSES.chromium.html in the install folder) | 31.7.7 | MIT | checked (package.json, LICENSE) |
+| sherpa-onnx-node (speech engine bindings) | 1.13.8 | Apache-2.0 | checked (package.json) |
+| sherpa-onnx-win-x64 (native libraries; contains ONNX Runtime) | 1.13.8 | Apache-2.0 | checked (package.json); the ONNX Runtime component's own licence (MIT) is not verified locally |
+| node-llama-cpp (local model runtime) | 3.22.1 | MIT | checked (package.json, LICENSE) |
+| @node-llama-cpp/win-x64 (prebuilt CPU binary; contains llama.cpp, MIT upstream) | 3.22.1 | MIT | checked (package.json); llama.cpp's own licence not verified locally |
+| @modelcontextprotocol/sdk (notes MCP server) | 1.32.1 | MIT | checked (package.json) |
+| zod | 3.25.76 | MIT | checked (package.json, LICENSE) |
+| The npm dependencies of node-llama-cpp and of @modelcontextprotocol/sdk | see each package's package.json under llm-runtime/node_modules and mcp/node_modules | their own | not individually listed here |
+
+Build tooling (not shipped): electron-builder 26.15.3 (MIT, checked), Squirrel.Windows through electron-winstaller 5.4.0.
+
+Models (not in the installer; downloaded on first use from the hosts named in the README, SHA-256 checked)
+
+| Model | Licence | Status |
+|---|---|---|
+| NVIDIA Parakeet TDT 0.6B v3 (int8 sherpa-onnx export by csukuangfj) | CC-BY-4.0. Attribution: "Parakeet TDT 0.6B v3 by NVIDIA, used under CC BY 4.0; converted to ONNX int8 for sherpa-onnx." Source: https://huggingface.co/nvidia/parakeet-tdt-0.6b-v3 | not verified locally (no model card on this PC) |
+| Silero VAD (silero_vad.onnx, from the sherpa-onnx release assets) | MIT (snakers4/silero-vad) | not verified locally |
+| Qwen3-0.6B-Q8_0.gguf (Qwen/Qwen3-0.6B-GGUF, optional AI cleanup) | Apache-2.0 | not verified locally |
+
+The CC-BY-4.0 attribution above must stay with any redistribution of the Parakeet model or of output that carries it.

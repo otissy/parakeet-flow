@@ -118,3 +118,22 @@ test('removeBundledHelper deletes a stale shipped helper', () => {
   bi.removeBundledHelper();
   assert.ok(!fs.existsSync(path.dirname(t.BUNDLED)));
 });
+
+test('LICENSE is MIT for otiyyy 2026 and NOTICE lists every third-party component with its real version', () => {
+  const lic = fs.readFileSync(path.join(root, 'LICENSE'), 'utf8');
+  assert.match(lic, /^MIT License/); assert.match(lic, /Copyright \(c\) 2026 otiyyy/);
+  assert.equal(pkg.license, 'MIT');
+  const notice = fs.readFileSync(path.join(root, 'NOTICE'), 'utf8');
+  const comps = [['node_modules/electron', 'MIT'], ['node_modules/sherpa-onnx-node', 'Apache-2.0'], ['llm-runtime/node_modules/node-llama-cpp', 'MIT'],
+    ['mcp/node_modules/@modelcontextprotocol/sdk', 'MIT'], ['mcp/node_modules/zod', 'MIT']];
+  let checked = 0;
+  for (const [dir, licence] of comps) {
+    const f = path.join(root, dir, 'package.json');
+    if (!fs.existsSync(f)) continue;             // dependency not installed here: skipped, not guessed
+    const j = JSON.parse(fs.readFileSync(f, 'utf8'));
+    assert.equal(j.license, licence, dir);
+    assert.ok(notice.includes(j.version), `${dir} ${j.version} is listed in NOTICE`); checked++;
+  }
+  assert.ok(checked >= 1);
+  for (const k of ['CC-BY-4.0', 'Silero', 'MIT', 'Qwen3-0.6B', 'Apache-2.0', 'not verified locally']) assert.ok(notice.includes(k), k);
+});

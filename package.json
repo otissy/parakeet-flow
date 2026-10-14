@@ -4,7 +4,7 @@
   "description": "Local push-to-talk dictation with live partials (Parakeet TDT v3, sherpa-onnx)",
   "main": "src/main/main.js",
   "author": "otissy",
-  "license": "UNLICENSED",
+  "license": "MIT",
   "private": true,
   "scripts": {
     "start": "node scripts/start.js",
