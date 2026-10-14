@@ -42,3 +42,21 @@ test('--squirrel-firstrun boots the whole app; npm start script strips ELECTRON_
   assert.equal(o.ud, ud); assert.ok(o.wins >= 3); assert.equal(o.erm, null);
   fs.rmSync(ud, { recursive: true, force: true });
 });
+
+/* the BUILT package (D:/builds/parakeet-flow/<version>/win-unpacked, made by npm run installer) must hold what the source tree holds */
+const builtApp = path.join(process.env.PF_BUILDS || 'D:/builds/parakeet-flow', require(path.join(root, 'package.json')).version, 'win-unpacked', 'resources', 'app');
+test('built package contains src/slang, every starter pack, the MCP server, the licence files and the shipped helper', { skip: fs.existsSync(builtApp) ? false : 'no built package for this version yet (run npm run installer; UNVERIFIED)' }, () => {
+  const walk = (d, o = []) => { for (const e of fs.readdirSync(d, { withFileTypes: true })) { const p = path.join(d, e.name); if (e.isDirectory()) walk(p, o); else o.push(p); } return o; };
+  const src = walk(path.join(root, 'src', 'slang'));
+  assert.ok(src.length >= 8, 'source slang files: ' + src.length);
+  assert.ok(src.some((f) => /starter-en\.json$/.test(f)) && src.some((f) => /starter-nl\.json$/.test(f)), 'starter packs exist in source');
+  for (const f of src) {
+    const rel = path.relative(root, f), b = path.join(builtApp, rel);
+    assert.ok(fs.existsSync(b), 'missing in package: ' + rel);
+    assert.equal(fs.statSync(b).size, fs.statSync(f).size, 'size differs: ' + rel);
+  }
+  for (const rel of ['LICENSE', 'NOTICE', 'mcp/server.js', 'mcp/node_modules/zod/package.json', '.claude/skills/sync-parakeet-notes/SKILL.md', 'src/typer/helper/bin/pf-helper.exe', 'src/typer/helper/bin/pf-helper.exe.src-sha256', 'package.json']) {
+    assert.ok(fs.existsSync(path.join(builtApp, rel)), 'missing in package: ' + rel);
+  }
+  assert.equal(JSON.parse(fs.readFileSync(path.join(builtApp, 'package.json'), 'utf8')).version, require(path.join(root, 'package.json')).version);
+});

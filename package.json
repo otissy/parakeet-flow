@@ -1,6 +1,6 @@
 {
   "name": "parakeet-flow",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Local push-to-talk dictation with live partials (Parakeet TDT v3, sherpa-onnx)",
   "main": "src/main/main.js",
   "author": "otissy",
@@ -26,6 +26,8 @@
     "electronDist": "node_modules/electron/dist",
     "files": [
       "package.json",
+      "LICENSE",
+      "NOTICE",
       "src/**/*",
       "assets/icon.png",
       "assets/icon.ico",
