@@ -18,8 +18,8 @@ It carries a version resource (Company otissy, Product "parakeet-flow input help
 embedded manifest (`asInvoker`, UI access not requested, supported-OS entries) and the app icon. That makes it
 identifiable; it does not guarantee a scanner will like it.
 
-SHA-256 of the 0.2.1 helper shipped in `Parakeet Flow Setup 0.2.1.exe`: `541edcfbd04b851be3162f4e518fda188abc22604e3b8049d7a17005e612ed25`
-SHA-256 of that installer: `5638ccbbe781442aae58aafb561a18f01be82b6679c6f9d7f0a62f988bd6c470`
+SHA-256 of the 0.2.2 helper shipped in `Parakeet Flow Setup 0.2.2.exe`: `3606ef1734592dec450167e0d0f97cdc8ff492dc3768678f3da9688aebbe5c74`
+SHA-256 of that installer: `096f961cb01477ff8eee9540132b7c49f3004687e974bbb906665c0ecd27b9ab`
 (The compiler does not produce identical bytes twice, so every rebuild has its own hash; the hash of the shipped file is
 recorded here and in the README for each release.)
 

@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.2.2 - 2026-10-14
+
+Installer rebuilt on 29a321a so it contains the slang packs (src/slang and the English and Dutch starter packs), which 0.2.1 lacked.
+
+- MIT LICENSE (otiyyy, 2026) and a NOTICE listing third-party software and models with versions; both ship in the installer. Model licences (Parakeet CC-BY-4.0, Silero MIT, Qwen3 Apache-2.0) are marked "not verified locally": no model card is on the build PC.
+- A packaging test checks that the BUILT package holds every src/slang file, both starter packs, the MCP server, the licence files and the shipped helper.
+- Silent install and uninstall were not run for this build (a live 0.2.1 install exists; it is updated with Update.exe --update).
+
 ## 0.2.1 - 2026-10-14
 
 Installer rebuilt on the insert-once typing, note mode and MCP notes server (5f4a024, cc911c6).
