@@ -67,6 +67,7 @@ Build recipe: `npm install --ignore-scripts`, `npm --prefix llm-runtime install 
 
 - **2026-10-14** 0.2.1 installer bundles mcp/ + skill; its silent install/uninstall was NOT re-run because an install of 0.2.0 exists in %LOCALAPPDATA%/parakeet-flow (prove-install refuses to touch it). Run scripts/prove-install.js on a PC without an install. The built 0.2.1 app was run off-screen from D:/builds/parakeet-flow/0.2.1/win-unpacked with a scratch user-data folder: engine ready, shipped helper used (nothing compiled), mcp/server.js answers initialize.
 
+- **2026-10-24** 0.2.3 installer rebuild aligns the app and helper version metadata to 0.2.3; installing it over 0.2.2 must be verified to preserve the existing per-user install and pinned shortcut.
 - **2026-10-14** 0.2.2 installer (D:/builds/parakeet-flow/0.2.2) adds slang packs, LICENSE and NOTICE. Not run: silent install/uninstall (a real 0.2.1 install is live, updated with Update.exe --update). The squirrel L4 packaging test checks the built win-unpacked folder against the source tree.
 
 ## Known problems

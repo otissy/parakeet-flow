@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.2.3 - 2026-10-24
+
+Rebuilt the Windows installer with the correct 0.2.3 package version so installing it upgrades the existing 0.2.2 app
+instead of presenting the same version again. The bundled helper's Windows file version is aligned to 0.2.3.
+
+- The installer includes the current source, including the Dictionary slang packs and optional contextual biasing.
+- Squirrel release assets are published together so the pinned Parakeet Flow shortcut continues to use its existing install.
+
 ## 0.2.2 - 2026-10-14
 
 Installer rebuilt on 29a321a so it contains the slang packs (src/slang and the English and Dutch starter packs), which 0.2.1 lacked.
