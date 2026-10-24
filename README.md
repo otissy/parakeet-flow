@@ -27,6 +27,25 @@ First run:
 5. Optional local AI cleanup/translate: Settings > AI cleanup > Download (a further 639 MB). The runtime is already
    in the installer.
 
+## Local meetings
+
+The Meetings page records microphone and primary-display system audio locally. It processes the recording after you
+stop, then saves a speaker-labelled transcript, an editable summary, and action items in
+`%APPDATA%\parakeet-flow\meetings.json`. Audio is held in a temporary WAV file only while recording/processing and is
+deleted after processing; incomplete staging files are cleaned up at the next launch. Meeting content is not sent to
+Notion or a remote transcription service.
+
+On first use, Meetings downloads NVIDIA's NeMo-Speech.cpp 0.2.0 Windows runtime and the Parakeet TDT v3 and
+Nemotron-3-Diarization models (about 930 MB total with an NVIDIA GPU; model/runtime files are SHA-256 checked).
+The RTX/CUDA runtime is selected when `nvidia-smi` detects an NVIDIA GPU; otherwise the CPU runtime is used.
+The existing optional local Qwen model is used for summaries and action items; if it is not installed, download it
+from Settings > AI cleanup and use the meeting's summary retry action.
+
+Meetings do not use Sherpa or Python. The Windows native runtime supports regular Parakeet TDT transcription plus
+Nemotron speaker diarization for up to eight speakers. It is not the overlap-specialized Multitalker Parakeet model,
+so simultaneous speech may not be transcribed as accurately as separate speaker streams. Recording is live; transcript,
+speaker attribution, and summary are generated after you stop the meeting.
+
 Licence: the app is MIT (`LICENSE`). Third-party software and the models are listed in `NOTICE`. The models are separate downloads
 under their own licences (Parakeet TDT v3 CC-BY-4.0 with attribution, Silero VAD MIT, Qwen3-0.6B Apache-2.0), not part of this MIT licence
 and not in the installer.
