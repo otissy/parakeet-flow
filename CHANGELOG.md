@@ -1,7 +1,9 @@
 # Changelog
 
-## Unreleased
+## 0.2.4 - 2026-10-25
 
+- Meetings: a Meetings page records the microphone and the main display's audio locally and produces a speaker-labelled transcript, an editable summary and action items (nothing is sent anywhere).
+- One Parakeet Flow at a time, newest wins: starting it again makes the running copy quit and the new start takes over (copies older than 0.2.4 only show their window).
 - Dictionary: "Add a word" box (word, heard as, pack, optional own bias), duplicates in any case are merged, Undo.
 - "Add to dictionary" from the transcript history on Home and from meeting transcripts (select a word, or the line's button).
 - Hotword bias is shown and set as a percentage (1-100%, default 50%); a word can have its own bias. Old settings load unchanged.
