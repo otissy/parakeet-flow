@@ -97,3 +97,50 @@ button.small { padding: 4px 11px; font-size: 12.5px; flex: none; }
 .tryout { padding: 10px 12px; background: #121215; border: 1px solid var(--line); border-radius: 9px; min-height: 40px; overflow-wrap: anywhere; }
 .tryout mark { background: var(--accent-soft); color: #fff; border-radius: 4px; padding: 0 3px; }
 code { font: 12px Consolas, monospace; background: #121215; border: 1px solid var(--line); border-radius: 5px; padding: 1px 5px; }
+
+
+/* Meetings */
+.meetings-wrap { max-width: 1120px; }
+.meetings-heading { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 18px; }
+.meeting-setup { margin-bottom: 12px; padding: 12px 16px; }
+.meeting-setup-top { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.meeting-setup-top b { font-weight: 550; }
+.meeting-setup .note { margin-top: 3px; }
+.meeting-setup.ready { display: flex; align-items: center; gap: 12px; }
+.meeting-setup.ready .note { margin: 0; }
+.meeting-toolbar { display: flex; gap: 10px; margin: 18px 0 14px; }
+.meeting-toolbar > div { flex: 1; min-width: 0; }
+.meeting-workspace { display: grid; grid-template-columns: minmax(230px, .72fr) minmax(0, 1.65fr); gap: 14px; align-items: start; }
+.meeting-list, .meeting-detail { min-width: 0; }
+.meeting-list { background: var(--card); border: 1px solid var(--line); border-radius: var(--r); padding: 12px; }
+.meeting-list-head { display: flex; align-items: center; justify-content: space-between; padding: 0 4px 8px; }
+.meeting-list-head h2, .transcript-heading h2 { margin: 0; }
+.meeting-list-row { display: flex; align-items: center; gap: 2px; border-top: 1px solid var(--line); }
+.meeting-list-row.on { background: var(--accent-soft); border-radius: 8px; }
+.meeting-open { min-width: 0; flex: 1; padding: 10px 8px; border: 0; background: transparent; color: var(--text); text-align: left; cursor: pointer; font: inherit; }
+.meeting-open:hover .meeting-list-title { color: #fff; }
+.meeting-list-title { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 550; }
+.meeting-list-meta { display: flex; align-items: center; gap: 7px; margin-top: 4px; color: var(--muted); font-size: 12px; }
+.meeting-list-meta .badge { font-size: 10px; line-height: 16px; padding: 0 6px; }
+.meeting-delete { width: 28px; height: 28px; }
+.meeting-empty { min-height: 180px; display: flex; align-items: center; justify-content: center; }
+.meeting-detail { display: flex; flex-direction: column; gap: 12px; }
+.meeting-edit { padding: 16px; }
+.meeting-field + .meeting-field { margin-top: 13px; }
+.meeting-field label { display: flex; align-items: baseline; gap: 8px; margin-bottom: 6px; color: var(--muted); font-size: 12.5px; }
+.meeting-field label .note { font-size: 11.5px; }
+.meeting-save-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 12px; }
+.transcript-card { padding: 14px 16px; }
+.transcript-heading { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+.transcript-entry { display: grid; grid-template-columns: 95px minmax(0, 1fr); gap: 12px; padding: 10px 0; border-top: 1px solid var(--line); }
+.transcript-meta { display: flex; flex-direction: column; gap: 2px; color: var(--faint); font-size: 11.5px; font-variant-numeric: tabular-nums; }
+.transcript-meta .speaker { color: var(--accent); font-size: 12px; font-weight: 600; }
+.transcript-text { min-width: 0; overflow-wrap: anywhere; white-space: pre-wrap; }
+.meeting-progress { padding: 12px 14px; }
+.meeting-error { margin-bottom: 10px; padding: 10px 12px; border: 1px solid rgba(255,122,133,.35); border-radius: 9px; background: rgba(255,122,133,.07); color: var(--bad); overflow-wrap: anywhere; }
+.meeting-error b { color: #ff9da5; }
+.recording-banner { display: flex; align-items: center; gap: 9px; margin: 12px 0; padding: 9px 12px; background: rgba(255,122,133,.07); border: 1px solid rgba(255,122,133,.25); border-radius: 9px; color: #ff9da5; }
+.recording-banner button { margin-left: auto; }
+.recording-pulse { width: 8px; height: 8px; border-radius: 50%; background: var(--bad); box-shadow: 0 0 0 4px rgba(255,122,133,.12); }
+button:disabled { opacity: .5; cursor: default; }
+@media (max-width: 980px) { .meeting-workspace { grid-template-columns: 1fr; } .meeting-list { max-height: 260px; overflow-y: auto; } }

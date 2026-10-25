@@ -1,7 +1,7 @@
 'use strict';
 /* parakeet-flow main process: tray, windows, helper, engine, IPC. Dictated text only travels through
    memory and (if the user turned history on) history.json; logs carry counts and timings. */
-const { app, BrowserWindow, Tray, Menu, nativeImage, ipcMain, screen, clipboard, session, dialog, safeStorage } = require('electron');
+const { app, BrowserWindow, Tray, Menu, nativeImage, ipcMain, screen, clipboard, session, dialog, safeStorage, desktopCapturer } = require('electron');
 const fs = require('fs');
 const path = require('path');
 
@@ -35,14 +35,18 @@ const { LlmService } = require('../llm/cleanup');
 const { SlangService } = require('../slang/service');
 const slangIpc = require('../slang/ipc');
 const llmStore = require('../llm/llm-store');
+const { MeetingStore } = require('../meetings/store');
+const { NemoRuntime } = require('../meetings/runtime');
+const { MeetingService } = require('../meetings/service');
 
 const R = (f) => path.join(__dirname, '..', 'renderer', f);
 const PRELOAD = path.join(__dirname, 'preload.js');
 const PILL_W = 480, PILL_H = 110;
 const OFF = process.env.PF_OFFSCREEN ? -6000 : 0;   // tests: render windows far off-screen, nothing visible on the desktop
 
-let store, typer, controller, asr = null, tray = null, mainWin = null, pillWin = null, capWin = null, mic;
+let store, typer, controller, asr = null, tray = null, mainWin = null, pillWin = null, capWin = null, meetingCaptureWin = null, mic;
 let outbox, noteService, notion, secrets, slang, llmWorker = null, llmService, llmState = { runtime: false, model: 'unknown', error: '' };
+let meetingStore = null, meetingService = null;
 let engine = { state: 'loading', error: '' };
 let quitting = false, modelsDir, modelsOk = false;
 
@@ -89,6 +93,10 @@ function createPill() {
 function createCapture() {
   capWin = new BrowserWindow({ show: false, width: 200, height: 100, webPreferences: { preload: PRELOAD, contextIsolation: true, sandbox: true, backgroundThrottling: false } });
   capWin.loadFile(R('capture.html'));
+}
+function createMeetingCapture() {
+  meetingCaptureWin = new BrowserWindow({ show: false, width: 200, height: 100, webPreferences: { preload: PRELOAD, contextIsolation: true, sandbox: true, backgroundThrottling: false } });
+  meetingCaptureWin.loadFile(path.join(__dirname, '..', 'meetings', 'capture.html'));
 }
 
 function createTray() {
@@ -181,6 +189,10 @@ function applyTyperSettings(s) {
 
 /* ---------------- IPC ---------------- */
 function wireIpc() {
+  const assertMainWindow = (event) => {
+    if (event.sender !== mainWin?.webContents) throw new Error('Meeting action is not allowed from this page');
+    if (!meetingService) throw new Error('Local meeting storage is unavailable');
+  };
   ipcMain.handle('settings:get', (_e, what) => (what === 'defaults' ? DEFAULTS : store.get()));
   ipcMain.handle('settings:set', async (_e, patch) => {
     const before = store.get();
@@ -233,6 +245,27 @@ function wireIpc() {
     } catch (e) { send(mainWin, 'llm:progress', { done: true, pct: 0 }); llmState.error = String(e.message).slice(0, 120); }
     await refreshLlmState();
   });
+  ipcMain.handle('meetings:list', (event) => { assertMainWindow(event); return meetingStore.list(); });
+  ipcMain.handle('meetings:status', (event) => { assertMainWindow(event); return meetingService.status(); });
+  ipcMain.handle('meetings:setup', (event) => { assertMainWindow(event); return meetingService.setup(); });
+  ipcMain.handle('meetings:start', (event, options) => { assertMainWindow(event); return meetingService.start(options || {}); });
+  ipcMain.handle('meetings:stop', (event, options) => { assertMainWindow(event); return meetingService.stop(options?.id); });
+  ipcMain.handle('meetings:update', (event, options) => { assertMainWindow(event); return meetingService.update(options?.id, options?.patch); });
+  ipcMain.handle('meetings:delete', (event, value) => { assertMainWindow(event); return meetingService.delete(value && typeof value === 'object' ? value.id : value); });
+  ipcMain.handle('meetings:summarize', (event, value) => { assertMainWindow(event); return meetingService.summarize(value && typeof value === 'object' ? value.id : value); });
+  ipcMain.on('meeting:audio-chunk', (event, chunk) => {
+    if (event.sender !== meetingCaptureWin?.webContents || !meetingService) return;
+    try { meetingService.audioChunk(chunk); } catch (error) {
+      log('error', 'meeting capture failed: ' + String(error.message || error).slice(0, 120));
+      meetingService.captureError(error).catch((failure) => log('error', 'meeting capture cleanup failed: ' + String(failure.message || failure).slice(0, 120)));
+    }
+  });
+  ipcMain.on('meeting:capture-ready', (event) => { if (event.sender === meetingCaptureWin?.webContents && meetingService) meetingService.captureReady(); });
+  ipcMain.on('meeting:capture-stopped', (event) => { if (event.sender === meetingCaptureWin?.webContents && meetingService) meetingService.captureStopped(); });
+  ipcMain.on('meeting:capture-error', (event, error) => {
+    if (event.sender !== meetingCaptureWin?.webContents || !meetingService) return;
+    meetingService.captureError(error).catch((failure) => log('error', 'meeting capture failure: ' + String(failure.message || failure).slice(0, 120)));
+  });
   let slangTimer = null;       // the hotword list is read when the engine starts: a changed list restarts it (once, after the edits settle)
   slangIpc.register(ipcMain, { service: slang, dialog, getWindow: () => mainWin, onChange: () => { if (!store.get().slang.biasing.enabled && !asr?.opts?.hotwords) return; clearTimeout(slangTimer); slangTimer = setTimeout(() => startEngine(), 2500); } });
   ipcMain.handle('login:set', (_e, on) => {
@@ -266,15 +299,39 @@ else {
     noteService.watch();
     llmService = new LlmService({ llm: llmAdapter, getSettings: () => store.get(), getVocab: (t) => slang.vocab(t) });
     refreshLlmState();
+    try {
+      meetingStore = new MeetingStore(path.join(app.getPath('userData'), 'meetings.json'));
+      const runtime = new NemoRuntime({ userData: app.getPath('userData') });
+      meetingService = new MeetingService({
+        store: meetingStore,
+        runtime,
+        userData: app.getPath('userData'),
+        getCaptureWindow: () => meetingCaptureWin,
+        getSystemSource: async () => {
+          const sources = await desktopCapturer.getSources({ types: ['screen'], thumbnailSize: { width: 0, height: 0 } });
+          const primaryId = String(screen.getPrimaryDisplay().id);
+          return (sources.find((source) => source.display_id === primaryId) || sources[0])?.id || '';
+        },
+        getMicId: () => store.get().micId,
+        llm: llmAdapter,
+        summaryReady: () => llmState.runtime && llmState.model === 'ready',
+        onChange: () => send(mainWin, 'meetings:changed'),
+        onProgress: (progress) => send(mainWin, 'meetings:progress', progress),
+        onState: (state) => send(mainWin, 'meetings:state', state),
+      });
+    } catch (error) {
+      log('error', 'meeting storage unavailable: ' + String(error.message || error).slice(0, 120));
+    }
     wireIpc();
     createCapture();
+    createMeetingCapture();
     createMain({ show: !argv.includes('--hidden') });
     createPill();
     createTray();
     startEngine();
     // The helper child process is spawned only after the pages have loaded: started earlier it stalls
     // Chromium's renderer launch on this machine (pages never reach dom-ready).
-    await Promise.all([mainWin, pillWin, capWin].map((w) => new Promise((r) => { if (!w.webContents.isLoading()) r(); else w.webContents.once('did-finish-load', r); })));
+    await Promise.all([mainWin, pillWin, capWin, meetingCaptureWin].map((w) => new Promise((r) => { if (!w.webContents.isLoading()) r(); else w.webContents.once('did-finish-load', r); })));
     typer = new Win32Typer({ binDir: path.join(app.getPath('userData'), 'bin') });
     await typer.ready;
     applyTyperSettings(store.get());
@@ -296,8 +353,8 @@ else {
     writeMcpStatus(); setInterval(writeMcpStatus, 15000).unref();
     controller.on('result', (r) => { log('info', `dictation done words=${r.words} chars=${r.chars} finals=${r.finals} insertions=${r.insertions} duplicateFinals=${r.duplicateFinals}`); send(mainWin, 'app:stats', store.summary()); });
 
-    if (process.env.PF_TEST_HOOK) require(process.env.PF_TEST_HOOK)({ app, get: () => ({ store, typer, controller, mainWin, pillWin, asr: () => asr, mic, engine: () => engine }) });
+    if (process.env.PF_TEST_HOOK) require(process.env.PF_TEST_HOOK)({ app, get: () => ({ store, typer, controller, mainWin, pillWin, asr: () => asr, mic, engine: () => engine, meetings: meetingService }) });
   });
-  app.on('before-quit', () => { quitting = true; try { fs.unlinkSync(path.join(app.getPath('userData'), MCP_STATUS_FILE)); } catch (_) { /* none */ } if (typer) typer.close(); if (llmWorker) llmWorker.stop('quit'); if (notion) notion.stop(); });
+  app.on('before-quit', () => { quitting = true; try { fs.unlinkSync(path.join(app.getPath('userData'), MCP_STATUS_FILE)); } catch (_) { /* none */ } if (meetingService) { try { meetingService.close(); } catch (e) { log('error', 'meeting shutdown failed: ' + String(e.message || e).slice(0, 120)); } } if (typer) typer.close(); if (llmWorker) llmWorker.stop('quit'); if (notion) notion.stop(); });
   app.on('window-all-closed', () => { /* stay in the tray */ });
 }

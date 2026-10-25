@@ -2,7 +2,8 @@
 const L = window.PFLib;
 const $ = (s, r = document) => r.querySelector(s);
 const main = $('#main');
-const S = { page: 'home', settings: null, stats: { words: 0, wpm: 0, streak: 0 }, history: [], info: null, devices: [], dl: null, capturing: null, hkError: '' };
+let meetingStatusTimer = null;
+const S = { page: 'home', settings: null, stats: { words: 0, wpm: 0, streak: 0 }, history: [], info: null, devices: [], dl: null, capturing: null, hkError: '', meetings: [], meetingStatus: null, meetingProgress: null, recordingId: null, processingId: null, selectedMeetingId: null, meetingsError: '', meetingStatusError: '', meetingsBusy: false, meetingsActionError: '', meetingsLoading: false };
 
 const ICON_COPY = '<svg viewBox="0 0 16 16"><rect x="5.5" y="5.5" width="8" height="8" rx="1.8"/><path d="M10.5 5.5V4a1.5 1.5 0 00-1.5-1.5H4A1.5 1.5 0 002.5 4v5A1.5 1.5 0 004 10.5h1.5"/></svg>';
 const ICON_DEL = '<svg viewBox="0 0 16 16"><path d="M3.5 4.5h9M6.5 4.5V3h3v1.5M5 4.5l.5 8h5l.5-8"/></svg>';
@@ -89,6 +90,121 @@ function settingsPage() {
   <div class="note" style="margin-top:16px">Logs hold timings and counts only, never what you said.</div></div>`;
 }
 
+/* ---------- meetings ---------- */
+function errorText(err) { return String(err && err.message ? err.message : err || 'Unknown error'); }
+function meetingById(id) { return S.meetings.find((m) => m.id === id) || null; }
+function formatMeetingDate(value) {
+  const d = new Date(value);
+  return Number.isNaN(d.getTime()) ? 'Date unavailable' : d.toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+}
+function formatOffset(value) {
+  const n = Math.max(0, Math.floor(Number(value) || 0));
+  return `${Math.floor(n / 60)}:${String(n % 60).padStart(2, '0')}`;
+}
+function actionItemsValue(value) {
+  if (Array.isArray(value)) return value.map((item) => typeof item === 'string' ? item : item && (item.text || item.title) || '').filter(Boolean).join('\n');
+  return typeof value === 'string' ? value : '';
+}
+function actionItemsPatch(original, value) {
+  const lines = value.split(/\r?\n/).map((line) => line.replace(/^\s*[-*]\s*/, '').trim()).filter(Boolean);
+  return Array.isArray(original) || original == null ? lines : lines.join('\n');
+}
+async function loadMeetings() {
+  try {
+    const meetings = await window.pf.invoke('meetings:list');
+    S.meetings = Array.isArray(meetings) ? meetings : [];
+    S.meetingsError = '';
+    if (!meetingById(S.selectedMeetingId)) S.selectedMeetingId = S.meetings[0] ? S.meetings[0].id : null;
+  } catch (err) {
+    S.meetingsError = errorText(err);
+  }
+}
+function syncMeetingStatusPolling() {
+  const downloading = S.page === 'meetings' && S.meetingStatus && S.meetingStatus.downloading;
+  if (downloading && !meetingStatusTimer) {
+    meetingStatusTimer = setInterval(async () => {
+      await loadMeetingStatus();
+      if (S.page === 'meetings') render();
+      syncMeetingStatusPolling();
+    }, 1000);
+  } else if (!downloading && meetingStatusTimer) {
+    clearInterval(meetingStatusTimer);
+    meetingStatusTimer = null;
+  }
+}
+async function loadMeetingStatus() {
+  try {
+    S.meetingStatus = await window.pf.invoke('meetings:status');
+    S.meetingStatusError = '';
+  } catch (err) {
+    S.meetingStatusError = errorText(err);
+  }
+  syncMeetingStatusPolling();
+}
+async function loadMeetingsPage() {
+  S.meetingsLoading = true;
+  render();
+  await Promise.all([loadMeetings(), loadMeetingStatus()]);
+  S.meetingsLoading = false;
+  if (S.page === 'meetings') render();
+}
+function meetingStatusCard() {
+  const st = S.meetingStatus || {};
+  if (st.downloading) {
+    const pct = Math.max(0, Math.min(100, Number(st.progress) || 0));
+    return `<div class="card meeting-setup"><div class="meeting-setup-top"><div><b>Preparing local meeting processing</b><div class="note">${L.esc(st.error || 'Downloading and setting up on this computer.')}</div></div><span class="badge warn">${Math.round(pct)}%</span></div><div class="progress"><i style="width:${pct}%"></i></div></div>`;
+  }
+  if (st.ready) return `<div class="card meeting-setup ready"><span class="badge ok">Local processing ready</span><span class="note">Audio and transcripts stay on this computer.</span></div>`;
+  const issue = S.meetingStatusError || st.error;
+  return `<div class="card meeting-setup"><div class="meeting-setup-top"><div><b>${issue ? 'Meeting setup needs attention' : 'Set up local meeting processing'}</b><div class="note">${L.esc(issue || 'Download the local processing components before recording your first meeting.')}</div></div><button class="btn primary" id="meeting-setup" ${S.meetingsBusy ? 'disabled' : ''}>${S.meetingsBusy ? 'Working…' : 'Set up'}</button></div></div>`;
+}
+function meetingsPage() {
+  const selected = meetingById(S.selectedMeetingId);
+  const processing = S.processingId && S.processingId === (selected && selected.id);
+  const rows = S.meetings.map((m) => {
+    const recording = S.recordingId === m.id;
+    const busy = S.processingId === m.id || m.status === 'processing';
+    const status = recording ? 'Recording' : busy ? 'Processing' : (m.status || 'Saved');
+    return `<div class="meeting-list-row ${m.id === S.selectedMeetingId ? 'on' : ''}">
+      <button class="meeting-open" data-meeting-open="${L.esc(m.id)}"><span class="meeting-list-title">${L.esc(m.title || 'Untitled meeting')}</span><span class="meeting-list-meta">${L.esc(formatMeetingDate(m.createdAt))}<span class="badge ${recording ? 'bad' : busy ? 'warn' : ''}">${L.esc(status)}</span></span></button>
+      <button class="iconbtn danger meeting-delete" data-meeting-delete="${L.esc(m.id)}" title="Delete meeting" aria-label="Delete ${L.esc(m.title || 'meeting')}">${ICON_DEL}</button>
+    </div>`;
+  }).join('');
+  let details = '<div class="card empty meeting-empty">Choose a meeting to view its transcript, or start a new recording.</div>';
+  if (selected) {
+    const progress = S.meetingProgress && S.meetingProgress.meetingId === selected.id ? S.meetingProgress : null;
+    const pct = Math.max(0, Math.min(100, Number(progress && progress.percent) || 0));
+    const lines = Array.isArray(selected.segments) ? selected.segments : [];
+    const transcript = lines.length ? lines.map((segment) => `<div class="transcript-entry"><div class="transcript-meta"><span class="speaker">${L.esc(segment.speaker || 'Speaker')}</span><span>${L.esc(formatOffset(segment.start))}</span></div><div class="transcript-text">${L.esc(segment.text || '')}</div></div>`).join('') : `<div class="empty">${processing ? 'Transcript is being prepared…' : 'No transcript entries yet.'}</div>`;
+    const statusErrors = [['summaryError', 'Summary'], ['diarizationError', 'Speaker labels'], ['captureError', 'Audio capture']].filter(([key]) => selected[key]).map(([key, label]) => `<div class="meeting-error"><b>${label}:</b> ${L.esc(selected[key])}</div>`).join('');
+    details = `<div class="meeting-detail">
+      ${processing ? `<div class="meeting-progress card"><div class="meeting-setup-top"><b>${L.esc(progress && progress.detail || progress && progress.phase || 'Processing meeting…')}</b><span class="badge warn">${Math.round(pct)}%</span></div><div class="progress"><i style="width:${pct}%"></i></div></div>` : ''}
+      ${statusErrors}
+      <div class="card meeting-edit"><div class="meeting-field"><label for="meeting-title">Title</label><input id="meeting-title" type="text" value="${L.esc(selected.title || '')}" maxlength="160"></div>
+      <div class="meeting-field"><label for="meeting-summary">Summary</label><textarea id="meeting-summary" rows="4" placeholder="A summary will appear here when processing is complete.">${L.esc(selected.summary || '')}</textarea>${selected.summaryError && lines.length ? '<button class="btn small meeting-summary-retry" id="meeting-summary-retry" ' + (S.meetingsBusy ? 'disabled' : '') + '>' + (S.meetingsBusy ? 'Retrying…' : 'Retry summary') + '</button>' : ''}</div>
+      <div class="meeting-field"><label for="meeting-actions">Action items <span class="note">One item per line</span></label><textarea id="meeting-actions" rows="4" placeholder="Action items will appear here when available.">${L.esc(actionItemsValue(selected.actionItems))}</textarea></div>
+      <div class="meeting-save-row"><span class="note">Edits are saved locally.</span><button class="btn primary" id="meeting-save" ${S.meetingsBusy ? 'disabled' : ''}>Save changes</button></div></div>
+      <div class="card transcript-card"><div class="transcript-heading"><h2>Transcript</h2><span class="note">${lines.length} ${lines.length === 1 ? 'entry' : 'entries'}</span></div>${transcript}</div>
+    </div>`;
+  }
+  const live = S.recordingId ? `<div class="recording-banner"><span class="recording-pulse"></span>Recording in progress${meetingById(S.recordingId) ? ` · ${L.esc(meetingById(S.recordingId).title || 'Untitled meeting')}` : ''}<button class="btn danger" id="meeting-stop" ${S.meetingsBusy ? 'disabled' : ''}>${S.meetingsBusy ? 'Stopping…' : 'Stop recording'}</button></div>` : '';
+  const error = S.meetingsActionError ? `<div class="meeting-error" role="alert">${L.esc(S.meetingsActionError)}</div>` : '';
+  const listError = S.meetingsError ? `<div class="meeting-error" role="alert">Could not load meetings: ${L.esc(S.meetingsError)} <button class="btn small" id="meetings-retry">Retry</button></div>` : '';
+  return `<div class="meetings-wrap"><div class="meetings-heading"><div><h1>Meetings</h1><div class="sub">Record and review local meetings with speaker-labelled transcripts.</div></div></div>
+    ${meetingStatusCard()}${error}${live}
+    <div class="meeting-toolbar"><div><input id="meeting-new-title" type="text" maxlength="160" placeholder="Meeting title" aria-label="New meeting title"></div><button class="btn primary" id="meeting-start" ${S.meetingsBusy || S.recordingId || S.processingId || !(S.meetingStatus && S.meetingStatus.ready) ? 'disabled' : ''}>${S.meetingsBusy ? 'Starting…' : 'Start recording'}</button></div>
+    <div class="meeting-workspace"><section class="meeting-list"><div class="meeting-list-head"><h2>Past meetings</h2><button class="btn small" id="meetings-refresh" ${S.meetingsBusy ? 'disabled' : ''}>Refresh</button></div>${listError}${S.meetingsLoading ? '<div class="empty">Loading meetings…</div>' : rows || '<div class="empty">No meetings yet. Start a recording to create one.</div>'}</section>${details}</div>
+  </div>`;
+}
+async function meetingAction(action) {
+  S.meetingsActionError = '';
+  S.meetingsBusy = true;
+  render();
+  try { await action(); } catch (err) { S.meetingsActionError = errorText(err); }
+  S.meetingsBusy = false;
+  if (S.page === 'meetings') render();
+}
+
 /* ---------- wiring ---------- */
 function bind() {
   main.querySelectorAll('[data-copy]').forEach((b) => b.onclick = () => { const e = S.history.find((x) => x.id === b.dataset.copy); if (e) window.pf.invoke('history:copy', e.text); b.style.color = 'var(--ok)'; setTimeout(() => { b.style.color = ''; }, 700); });
@@ -128,6 +244,64 @@ function bind() {
   on('hk-change', () => { S.capTarget = 'hold'; S.capturing = S.capturing ? null : []; S.hkError = ''; render(); });
   on('tk-reset', () => { S.hkError = ''; save({ toggleKey: { vks: [0x14], label: 'CapsLock' } }); });
   on('tk-change', () => { S.capTarget = 'toggle'; S.capturing = S.capturing ? null : []; S.hkError = ''; render(); });
+  on('meeting-setup', () => meetingAction(async () => { await window.pf.invoke('meetings:setup'); await loadMeetingStatus(); }));
+  on('meeting-start', () => {
+    const title = ($('#meeting-new-title') && $('#meeting-new-title').value.trim()) || 'Untitled meeting';
+    meetingAction(async () => {
+      const meeting = await window.pf.invoke('meetings:start', { title });
+      if (meeting && meeting.id) { S.recordingId = meeting.id; S.selectedMeetingId = meeting.id; }
+      await loadMeetings();
+      if (meeting && meeting.id && !meetingById(meeting.id)) S.meetings.unshift(meeting);
+    });
+  });
+  on('meeting-stop', () => {
+    const id = S.recordingId;
+    if (!id) return;
+    meetingAction(async () => {
+      const meeting = await window.pf.invoke('meetings:stop', { id });
+      S.recordingId = null; S.processingId = id; S.meetingProgress = null;
+      if (meeting) {
+        const index = S.meetings.findIndex((item) => item.id === id);
+        if (index >= 0) S.meetings[index] = meeting; else S.meetings.unshift(meeting);
+      }
+      await loadMeetings();
+      S.selectedMeetingId = id;
+    });
+  });
+  on('meetings-refresh', () => meetingAction(async () => { await Promise.all([loadMeetings(), loadMeetingStatus()]); }));
+  on('meetings-retry', () => meetingAction(async () => { await Promise.all([loadMeetings(), loadMeetingStatus()]); }));
+  main.querySelectorAll('[data-meeting-open]').forEach((b) => b.onclick = () => { S.selectedMeetingId = b.dataset.meetingOpen; S.meetingsActionError = ''; render(); });
+  main.querySelectorAll('[data-meeting-delete]').forEach((b) => b.onclick = () => {
+    const id = b.dataset.meetingDelete, meeting = meetingById(id);
+    if (!window.confirm(`Delete “${meeting && meeting.title || 'Untitled meeting'}”? This cannot be undone.`)) return;
+    meetingAction(async () => {
+      await window.pf.invoke('meetings:delete', { id });
+      if (S.recordingId === id) S.recordingId = null;
+      if (S.processingId === id) S.processingId = null;
+      if (S.selectedMeetingId === id) S.selectedMeetingId = null;
+      await loadMeetings();
+    });
+  });
+  on('meeting-summary-retry', () => {
+    const meeting = meetingById(S.selectedMeetingId);
+    if (!meeting) return;
+    meetingAction(async () => {
+      await window.pf.invoke('meetings:summarize', { id: meeting.id });
+      await loadMeetings();
+    });
+  });
+  on('meeting-save', () => {
+    const meeting = meetingById(S.selectedMeetingId);
+    if (!meeting) return;
+    const title = ($('#meeting-title').value || '').trim() || 'Untitled meeting';
+    const summary = $('#meeting-summary').value;
+    const actionItems = actionItemsPatch(meeting.actionItems, $('#meeting-actions').value);
+    meetingAction(async () => {
+      const updated = await window.pf.invoke('meetings:update', { id: meeting.id, patch: { title, summary, actionItems } });
+      const index = S.meetings.findIndex((item) => item.id === meeting.id);
+      if (index >= 0) S.meetings[index] = updated || { ...meeting, title, summary, actionItems };
+    });
+  });
 }
 
 // the helper swallows Ctrl+Space for dictation; while the picker listens it must reach this page instead
@@ -135,7 +309,7 @@ let lastCap = false;
 function notifyCapture() { const on = !!S.capturing; if (on !== lastCap) { lastCap = on; window.pf.send('hotkey:capture', on); } }
 
 function render() {
-  const pages = { home, dictionary: () => pairsPage({ title: 'Dictionary', blurb: 'Replace a word or name every time it is dictated. Case-insensitive, whole words only.', listKey: 'dictionary', a: 'from', b: 'to', phA: 'Heard as', phB: 'Replace with' }) + slangSection(),
+  const pages = { home, meetings: meetingsPage, dictionary: () => pairsPage({ title: 'Dictionary', blurb: 'Replace a word or name every time it is dictated. Case-insensitive, whole words only.', listKey: 'dictionary', a: 'from', b: 'to', phA: 'Heard as', phB: 'Replace with' }) + slangSection(),
     snippets: () => pairsPage({ title: 'Snippets', blurb: 'Say a short phrase, get a longer text. Say only the phrase to replace the whole line.', listKey: 'snippets', a: 'trigger', b: 'expansion', phA: 'When I say', phB: 'Type this', multi: false }),
     style, settings: settingsPage, notes: notesPage };
   const y = main.scrollTop;
@@ -146,7 +320,7 @@ function render() {
   bind();
 }
 
-document.querySelectorAll('.nav').forEach((n) => n.onclick = () => { S.page = n.dataset.page; S.capturing = null; render(); });
+document.querySelectorAll('.nav').forEach((n) => n.onclick = () => { S.page = n.dataset.page; S.capturing = null; syncMeetingStatusPolling(); render(); if (S.page === 'meetings') loadMeetingsPage(); });
 
 // hotkey capture: collect every key pressed, commit when all are released
 const held = new Set(); let combo = [];
@@ -189,6 +363,13 @@ window.pf.on('app:stats', (s) => { S.stats = s; if (S.page === 'home') render();
 window.pf.on('settings:changed', (s) => { S.settings = s; render(); });
 window.pf.on('engine:state', async () => { S.info = await window.pf.invoke('app:info'); engineBadge(); if (S.page === 'settings') render(); });
 window.pf.on('models:progress', (p) => { S.dl = p.done ? null : { pct: Math.round(p.pct) }; engineBadge(); if (S.page === 'settings') render(); });
+window.pf.on('meetings:changed', async () => { await loadMeetings(); if (S.page === 'meetings') render(); });
+window.pf.on('meetings:progress', (progress) => { S.meetingProgress = progress; if (S.page === 'meetings') render(); });
+window.pf.on('meetings:state', (state) => {
+  S.recordingId = state && state.recordingId || null;
+  S.processingId = state && state.processingId || null;
+  if (S.page === 'meetings') render();
+});
 window.pf.on('test:set', (t) => {
   if (t.page) { S.page = t.page; } if (t.state) Object.assign(S, t.state); if (t.x) Object.assign(X, t.x); render();
   if (t.scrollTo) { const el = document.querySelector(t.scrollTo); if (el) { if (t.center) el.scrollIntoView({ block: 'center' }); else main.scrollTop = el.offsetTop - 12; } }

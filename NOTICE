@@ -21,11 +21,20 @@ Software shipped inside the installer
 
 Build tooling (not shipped): electron-builder 26.15.3 (MIT, checked), Squirrel.Windows through electron-winstaller 5.4.0.
 
+Software downloaded on first use
+
+| Component | Version | Licence | Status |
+|---|---|---|---|
+| NVIDIA NeMo-Speech.cpp (Windows native runtime; CPU or CUDA release) | 0.2.0 | Apache-2.0 | downloaded from the official GitHub release; archive SHA-256 is pinned in `src/meetings/runtime.js` |
+| llama.cpp and ggml native libraries included by NeMo-Speech.cpp | included with runtime | MIT | upstream licence; downloaded as part of the official NeMo-Speech.cpp release |
+
 Models (not in the installer; downloaded on first use from the hosts named in the README, SHA-256 checked)
 
 | Model | Licence | Status |
 |---|---|---|
 | NVIDIA Parakeet TDT 0.6B v3 (int8 sherpa-onnx export by csukuangfj) | CC-BY-4.0. Attribution: "Parakeet TDT 0.6B v3 by NVIDIA, used under CC BY 4.0; converted to ONNX int8 for sherpa-onnx." Source: https://huggingface.co/nvidia/parakeet-tdt-0.6b-v3 | not verified locally (no model card on this PC) |
+| NVIDIA Parakeet TDT 0.6B v3 (Q8_0 GGUF for NeMo-Speech.cpp) | CC-BY-4.0. Attribution: "Parakeet TDT 0.6B v3 by NVIDIA, used under CC BY 4.0." Source: https://huggingface.co/nvidia/parakeet-tdt-0.6b-v3 | model SHA-256 and size are pinned in the NeMo-Speech.cpp 0.2.0 model index |
+| NVIDIA Nemotron-3-Diarization (Q8_0 GGUF) | NVIDIA Open Model License (OpenMDW 1.1) | model SHA-256 and size are pinned in the NeMo-Speech.cpp 0.2.0 model index; licence: https://huggingface.co/nvidia/Nemotron-3-Diarization |
 | Silero VAD (silero_vad.onnx, from the sherpa-onnx release assets) | MIT (snakers4/silero-vad) | not verified locally |
 | Qwen3-0.6B-Q8_0.gguf (Qwen/Qwen3-0.6B-GGUF, optional AI cleanup) | Apache-2.0 | not verified locally |
 
