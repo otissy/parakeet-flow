@@ -7,6 +7,7 @@ const S = { page: 'home', settings: null, stats: { words: 0, wpm: 0, streak: 0 }
 
 const ICON_COPY = '<svg viewBox="0 0 16 16"><rect x="5.5" y="5.5" width="8" height="8" rx="1.8"/><path d="M10.5 5.5V4a1.5 1.5 0 00-1.5-1.5H4A1.5 1.5 0 002.5 4v5A1.5 1.5 0 004 10.5h1.5"/></svg>';
 const ICON_DEL = '<svg viewBox="0 0 16 16"><path d="M3.5 4.5h9M6.5 4.5V3h3v1.5M5 4.5l.5 8h5l.5-8"/></svg>';
+const ICON_ADDWORD = '<svg viewBox="0 0 16 16"><path d="M3 3.5h6.5a1.5 1.5 0 011.5 1.5v3M3 3.5V12a1.5 1.5 0 001.5 1.5H8M12.5 10v4.5M10.25 12.25h4.5"/></svg>';
 
 async function save(patch) { S.settings = await window.pf.invoke('settings:set', patch); render(); }
 
@@ -22,7 +23,7 @@ function home() {
   if (!s.historyEnabled) hist = `<div class="card empty">History is off, so nothing you dictate is kept.<br><br><button class="btn" id="hist-on">Turn on history</button></div>`;
   else if (!S.history.length) hist = `<div class="card empty">Nothing here yet. Dictate something and it shows up here.</div>`;
   else hist = L.groupByDay(S.history).map((g) => `<div class="day">${L.esc(g.label)}</div><div class="card" style="padding:4px 14px">${g.items.map((e) =>
-    `<div class="row"><div class="time">${L.fmtTime(e.ts)}</div><div class="tx">${L.esc(e.text)}</div><button class="iconbtn" data-copy="${L.esc(e.id)}" title="Copy">${ICON_COPY}</button></div>`).join('')}</div>`).join('');
+    `<div class="row" data-qa-line><div class="time">${L.fmtTime(e.ts)}</div><div class="tx" data-qa-src>${L.esc(e.text)}</div><button class="iconbtn" data-qa-row title="Add a word from this line to the dictionary" aria-label="Add a word from this line to the dictionary">${ICON_ADDWORD}</button><button class="iconbtn" data-copy="${L.esc(e.id)}" title="Copy">${ICON_COPY}</button></div>`).join('')}</div>`).join('');
   return `<div class="wrap">
     <h1>${L.esc(L.greeting(new Date().getHours(), s.userName))}</h1>
     <div class="sub">Everything runs on this computer. Nothing is sent anywhere.</div>
@@ -175,7 +176,7 @@ function meetingsPage() {
     const progress = S.meetingProgress && S.meetingProgress.meetingId === selected.id ? S.meetingProgress : null;
     const pct = Math.max(0, Math.min(100, Number(progress && progress.percent) || 0));
     const lines = Array.isArray(selected.segments) ? selected.segments : [];
-    const transcript = lines.length ? lines.map((segment) => `<div class="transcript-entry"><div class="transcript-meta"><span class="speaker">${L.esc(segment.speaker || 'Speaker')}</span><span>${L.esc(formatOffset(segment.start))}</span></div><div class="transcript-text">${L.esc(segment.text || '')}</div></div>`).join('') : `<div class="empty">${processing ? 'Transcript is being prepared…' : 'No transcript entries yet.'}</div>`;
+    const transcript = lines.length ? lines.map((segment) => `<div class="transcript-entry" data-qa-line><div class="transcript-meta"><span class="speaker">${L.esc(segment.speaker || 'Speaker')}</span><span>${L.esc(formatOffset(segment.start))}</span></div><div class="transcript-text" data-qa-src>${L.esc(segment.text || '')}</div><button class="iconbtn transcript-add" data-qa-row title="Add a word from this line to the dictionary" aria-label="Add a word from this line to the dictionary">${ICON_ADDWORD}</button></div>`).join('') : `<div class="empty">${processing ? 'Transcript is being prepared…' : 'No transcript entries yet.'}</div>`;
     const statusErrors = [['summaryError', 'Summary'], ['diarizationError', 'Speaker labels'], ['captureError', 'Audio capture']].filter(([key]) => selected[key]).map(([key, label]) => `<div class="meeting-error"><b>${label}:</b> ${L.esc(selected[key])}</div>`).join('');
     details = `<div class="meeting-detail">
       ${processing ? `<div class="meeting-progress card"><div class="meeting-setup-top"><b>${L.esc(progress && progress.detail || progress && progress.phase || 'Processing meeting…')}</b><span class="badge warn">${Math.round(pct)}%</span></div><div class="progress"><i style="width:${pct}%"></i></div></div>` : ''}
@@ -313,11 +314,14 @@ function render() {
     snippets: () => pairsPage({ title: 'Snippets', blurb: 'Say a short phrase, get a longer text. Say only the phrase to replace the whole line.', listKey: 'snippets', a: 'trigger', b: 'expansion', phA: 'When I say', phB: 'Type this', multi: false }),
     style, settings: settingsPage, notes: notesPage };
   const y = main.scrollTop;
+  const act = document.activeElement, keepId = act && main.contains(act) && act.id ? act.id : '', caret = keepId && typeof act.selectionStart === 'number' ? act.selectionStart : null;
   main.innerHTML = S.settings ? pages[S.page]() : '';
   main.scrollTop = y;
+  if (keepId) { const el = document.getElementById(keepId); if (el) { el.focus({ preventScroll: true }); if (caret !== null && typeof el.setSelectionRange === 'function') { try { el.setSelectionRange(caret, caret); } catch (_) { /* not a text field */ } } } }
   notifyCapture();
   document.querySelectorAll('.nav').forEach((n) => n.classList.toggle('on', n.dataset.page === S.page));
   bind();
+  bindQuickAdd(S.page);
 }
 
 document.querySelectorAll('.nav').forEach((n) => n.onclick = () => { S.page = n.dataset.page; S.capturing = null; syncMeetingStatusPolling(); render(); if (S.page === 'meetings') loadMeetingsPage(); });
@@ -361,7 +365,7 @@ async function refresh() {
 window.pf.on('app:history', (e) => { S.history.unshift(e); if (S.page === 'home') render(); });
 window.pf.on('app:stats', (s) => { S.stats = s; if (S.page === 'home') render(); });
 window.pf.on('settings:changed', (s) => { S.settings = s; render(); });
-window.pf.on('engine:state', async () => { S.info = await window.pf.invoke('app:info'); engineBadge(); if (S.page === 'settings') render(); });
+window.pf.on('engine:state', async () => { S.info = await window.pf.invoke('app:info'); engineBadge(); if (S.page === 'settings') render(); else if (S.page === 'dictionary') { const st = document.getElementById('sl-restarting'); if (!!st !== !!(SL.state && SL.state.biasing.enabled && S.info.engine === 'loading')) { readForm('sl-add'); render(); } } });
 window.pf.on('models:progress', (p) => { S.dl = p.done ? null : { pct: Math.round(p.pct) }; engineBadge(); if (S.page === 'settings') render(); });
 window.pf.on('meetings:changed', async () => { await loadMeetings(); if (S.page === 'meetings') render(); });
 window.pf.on('meetings:progress', (progress) => { S.meetingProgress = progress; if (S.page === 'meetings') render(); });

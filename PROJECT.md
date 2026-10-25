@@ -111,3 +111,26 @@ UI hook, measurement tools in `.tests/slang/tools/`). Docs: docs/slang-packs.md.
 | Urban Dictionary | never scraped or shipped; the user may paste words (their call under its terms) |
 
 Known problems: real-voice accuracy of the starter pack is unverified; only the Dictionary page UI exists (no Settings entry).
+
+## Added 2026-10-25: add words + bias as a percentage (branch claude/add-words-bias, on the meetings merge)
+
+- Bias is a whole percent everywhere (Dictionary > Bias strength slider/box, per-word Bias box, log line `bias=N%`, docs). The ONE
+  conversion is `src/slang/bias.js` (UMD: main process and renderer): percent = score / 3 x 100, 1..100, default 50 (= 1.5).
+  settings.json keeps `slang.biasing.score` (no version bump; old scores load as is, min clamp is now 0.03 instead of 0.1).
+- Per-word bias: term field `bias` (percent) -> hotwords line `word :score`. Verified in sherpa-onnx 1.13.8 SOURCE only
+  (utils.cc EncodeHotwords/EncodeBase, context-graph.cc); not measured on audio.
+- Add a word (Dictionary) and quick add (Home transcript history, meeting transcripts: select text -> "Add to dictionary", or
+  the row's add button with word buttons). Same service/IPC (`slang:add` now takes {packId} and `bias`; new `slang:undo-add`,
+  `slang:set-bias`). Target packs: My terms or a user pack stored as `<id>.json`; built-in and .csv/.txt packs are refused.
+  Duplicates merge case-insensitively (also heard-as spellings); emoji refused; undo = last add only.
+- Engine restart debounce moved to `hotwords.settleRestart` (same 2.5 s, same condition) so it is testable.
+- Tests: `.tests/addwords/` L1-L4. L4 = REAL renderer files in headless Chromium (Playwright 1.64.1 from a scratch folder,
+  `PF_PLAYWRIGHT=<dir with node_modules/@playwright/test>`, default `../pf-add-words-scratch`), real preload via a require
+  shim, real slang IPC/service/settings/meeting store on a temp folder; only the speech engine is faked. No Electron window.
+  `tools/mutants.js <dir>` = broken-build proof (every family must fail on its mutants).
+
+| Limit | What it means |
+|---|---|
+| Playwright is not a repo dependency | L4 of `.tests/addwords` is skipped (reported UNVERIFIED) without PF_PLAYWRIGHT / the scratch folder |
+| Chromium fires `change` on Enter in a text box | an Enter-only bug in the bias box is invisible to tests (equivalent mutant, see tools/mutants.js) |
+| `.tests/capslock` L3 "Ctrl+Space ... side by side" | failed once in a full parallel run, passes alone (timing under load), with and without this change |

@@ -1,4 +1,5 @@
 'use strict';
+const BIAS = require('./bias');
 /* Slang packs: validate, load, save, flatten into matcher forms. Pure except loadPackFile / savePack, which only
    touch the one directory they are given and never build a path from anything but a sanitised pack id.
 
@@ -67,6 +68,10 @@ function normTerm(raw, builtinSafe = false) {
   if (casing) { if (CASINGS.includes(casing)) out.casing = casing; else warnings.push(`"${term}": unknown casing "${casing}", using the default`); }
   if (matchCase) out.matchCase = true;
   if (allowCommon) out.allowCommon = true;
+  if (raw.bias !== undefined && raw.bias !== null && raw.bias !== '') {      // own hotword strength, whole percent 1..100 (src/slang/bias.js)
+    const b = typeof raw.bias === 'number' || typeof raw.bias === 'string' ? BIAS.normPercent(raw.bias) : null;
+    if (b === null) warnings.push(`"${term}": bias is not a number, using the global bias`); else out.bias = b;
+  }
   return { term: out, warnings };
 }
 

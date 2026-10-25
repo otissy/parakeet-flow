@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- Dictionary: "Add a word" box (word, heard as, pack, optional own bias), duplicates in any case are merged, Undo.
+- "Add to dictionary" from the transcript history on Home and from meeting transcripts (select a word, or the line's button).
+- Hotword bias is shown and set as a percentage (1-100%, default 50%); a word can have its own bias. Old settings load unchanged.
+
 ## 0.2.3 - 2026-10-24
 
 Rebuilt the Windows installer with the correct 0.2.3 package version so installing it upgrades the existing 0.2.2 app

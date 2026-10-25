@@ -8,6 +8,7 @@ const { DEFAULT_DENY } = require('../core/deny');
 const { ACTIONS, DEFAULT_COMMANDS, DEFAULT_NOTE_TRIGGERS } = require('../core/commands');
 const { PROFILES } = require('../core/tone');
 const SN = require('./settings-notes');
+const BIAS = require('../slang/bias');
 
 const DEFAULTS = {
   hotkey: { vks: [0x11, 0x20], label: 'Ctrl+Space' },   // HOLD to talk: either Ctrl + Space; the helper releases Ctrl around corrections (see PfHelper.cs)
@@ -68,7 +69,8 @@ const strList = (v, d) => (Array.isArray(v) ? v.map(String).map((s) => s.trim())
 const pairs = (v, a, b) => (Array.isArray(v)
   ? v.map((p) => ({ [a]: String(p?.[a] ?? '').trim(), [b]: String(p?.[b] ?? '') })).filter((p) => p[a]).slice(0, 500) : []);
 
-const slangCfg = (v) => ({ biasing: { enabled: !!v?.biasing?.enabled, score: Math.min(3, Math.max(0.1, Number.isFinite(+v?.biasing?.score) ? +v.biasing.score : 1.5)) }, enabled: v?.enabled !== false, packs: Object.fromEntries(Object.entries(v?.packs && typeof v.packs === 'object' ? v.packs : {}).filter(([k, b]) => /^[a-z0-9][a-z0-9_-]{0,47}$/.test(k) && typeof b === 'boolean').slice(0, 200)) });
+// biasing.score stays a score on disk (every older settings file loads as is); the UI shows and sets it as a percent (src/slang/bias.js)
+const slangCfg = (v) => ({ biasing: { enabled: !!v?.biasing?.enabled, score: BIAS.normScore(v?.biasing?.score) }, enabled: v?.enabled !== false, packs: Object.fromEntries(Object.entries(v?.packs && typeof v.packs === 'object' ? v.packs : {}).filter(([k, b]) => /^[a-z0-9][a-z0-9_-]{0,47}$/.test(k) && typeof b === 'boolean').slice(0, 200)) });
 
 /** the toggle gesture is ONE non-modifier key */
 function toggleKey(v, d) {
