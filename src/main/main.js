@@ -9,6 +9,7 @@ const argv = process.argv.slice(1);
 const arg = (name) => { const a = argv.find((x) => x.startsWith('--' + name + '=')); return a ? a.slice(name.length + 3) : null; };
 const userDir = arg('user-data') || process.env.PF_USERDATA;
 const squirrel = require('./squirrel');
+const singleInstance = require('./single-instance');
 const { mustExit, userDataDir } = squirrel;
 app.setName('parakeet-flow');
 // always the parakeet-flow folder under AppData/Roaming (models, settings, notes), installed or not, whatever the product name is
@@ -280,11 +281,20 @@ function wireIpc() {
 
 /* ---------------- boot ---------------- */
 const squirrelExit = mustExit(argv);   // Update.exe runs the app with --squirrel-install/-updated/-uninstall/-obsolete: exit at once
-const lock = squirrelExit ? false : app.requestSingleInstanceLock();
+const lock = squirrelExit ? false : app.requestSingleInstanceLock(singleInstance.handoverData());
 if (squirrelExit) squirrel.handle(squirrel.squirrelEvent(argv), { execPath: process.execPath, spawn: require('child_process').spawn, exists: fs.existsSync, log: (t) => log('info', t) }, () => app.exit(0));
-else if (!lock) app.quit();
-else {
-  app.on('second-instance', () => { if (mainWin) { mainWin.show(); mainWin.focus(); } });
+else if (!lock) {
+  // one Parakeet Flow at a time, newest wins: the running copy was told to quit (src/main/single-instance.js);
+  // wait for it to go, then start fresh. If it never leaves, this start exits and the old copy stays (as before).
+  singleInstance.waitForTakeover({ app, log: (t) => log('info', t) })
+    .then((won) => { if (won) singleInstance.relaunchAsNewest({ app, log: (t) => log('info', t) }); else app.quit(); })
+    .catch(() => app.quit());
+} else {
+  app.on('second-instance', singleInstance.onSecondInstance({
+    show: () => { if (mainWin) { mainWin.show(); mainWin.focus(); } },
+    quit: () => { quitting = true; app.quit(); },
+    log: (t) => log('info', t),
+  }));
   app.whenReady().then(async () => {
     session.defaultSession.setPermissionRequestHandler((_wc, perm, cb) => cb(perm === 'media'));
     session.defaultSession.setPermissionCheckHandler((_wc, perm) => perm === 'media');
