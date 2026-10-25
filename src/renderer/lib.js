@@ -75,6 +75,24 @@
     return groups;
   }
 
-  const api = { esc, codeToVk, vkLabel, isModifier, validateHotkey, validateToggleKey, hotkeyLabel, greeting, fmtTime, dayLabel, groupByDay };
+  /** selected transcript text -> what to prefill as a dictionary word: whitespace collapsed, punctuation trimmed from both
+      ends ("riz," -> "riz", "(no cap)." -> "no cap"); capped at 200 characters (the service gives the real length error) */
+  function cleanPick(text) {
+    return String(text ?? '').replace(/[\u0000-\u001f\u007f​-‏‪-‮⁦-⁩]/g, ' ').replace(/\s+/g, ' ')
+      .replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu, '').slice(0, 200).trim();
+  }
+  /** the distinct words of a line, in order, for the quick-add word buttons (letters/digits, inner ' and -), at most `max` */
+  function wordsOf(text, max = 40) {
+    const out = [], seen = new Set();
+    for (const m of String(text ?? '').matchAll(/[\p{L}\p{N}]+(?:['’-][\p{L}\p{N}]+)*/gu)) {
+      const w = m[0], k = w.toLowerCase();
+      if (seen.has(k)) continue;
+      seen.add(k); out.push(w);
+      if (out.length >= max) break;
+    }
+    return out;
+  }
+
+  const api = { esc, codeToVk, vkLabel, isModifier, validateHotkey, validateToggleKey, hotkeyLabel, greeting, fmtTime, dayLabel, groupByDay, cleanPick, wordsOf };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.PFLib = api;
 })(typeof window !== 'undefined' ? window : globalThis);

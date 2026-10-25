@@ -11,9 +11,10 @@ const MAX_FILE = 5 * 1024 * 1024;
 
 /** register(ipcMain, {service, dialog, getWindow, onChange}); dialog is Electron's `dialog` (a fake in tests) */
 function register(ipcMain, { service, dialog, getWindow = () => null, onChange = () => {} }) {
-  const h = (ch, fn) => ipcMain.handle(ch, async (_e, ...a) => { try { const r = await fn(...a); if (r && r.ok) onChange(); return r; } catch (e) { return { ok: false, error: 'Unexpected error: ' + s(e && e.message, 120) }; } });
+  const h = (ch, fn) => ipcMain.handle(ch, async (_e, ...a) => { try { const r = await fn(...a); if (r && r.ok && !r.unchanged) onChange(); return r; } catch (e) { return { ok: false, error: 'Unexpected error: ' + s(e && e.message, 120) }; } });
   const termArg = (t) => ({ term: s(t && t.term, 120), variants: Array.isArray(t && t.variants) ? t.variants.slice(0, 40).map((v) => s(v, 120)) : s(t && t.variants, 2000),
-    category: s(t && t.category, 40), lang: s(t && t.lang, 8), casing: s(t && t.casing, 10), matchCase: !!(t && t.matchCase) });
+    category: s(t && t.category, 40), lang: s(t && t.lang, 8), casing: s(t && t.casing, 10), matchCase: !!(t && t.matchCase),
+    ...(t && t.bias !== undefined && t.bias !== null && t.bias !== '' ? { bias: typeof t.bias === 'number' ? t.bias : s(t.bias, 12) } : {}) });
 
   ipcMain.handle('slang:state', () => service.state());
   ipcMain.handle('slang:terms', (_e, id, o) => service.terms(s(id, 60), { query: s(o && o.query, 80), limit: Math.min(500, +(o && o.limit) || 200), offset: Math.max(0, +(o && o.offset) || 0) }));
@@ -25,7 +26,9 @@ function register(ipcMain, { service, dialog, getWindow = () => null, onChange =
   ipcMain.handle('slang:preview', (_e, text) => service.preview(s(text, 2000), service.getSettings().dictionary.map((d) => d.from)));
   h('slang:set-enabled', (id, on) => service.setEnabled(s(id, 60), !!on));
   h('slang:set-biasing', (on) => service.setBiasing(!!on));
-  h('slang:add', (t) => service.addTerm(termArg(t)));
+  h('slang:set-bias', (pct) => service.setBiasPercent(typeof pct === 'number' ? pct : s(pct, 12)));
+  h('slang:add', (t, o) => service.addTerm(termArg(t), { packId: s(o && o.packId, 60) || 'mine' }));
+  h('slang:undo-add', (token) => service.undoAdd(Number(token)));
   h('slang:update', (old, t) => service.updateTerm(s(old, 120), termArg(t)));
   h('slang:remove', (term) => service.removeTerm(s(term, 120)));
   h('slang:delete-pack', (id) => service.deletePack(s(id, 60)));

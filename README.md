@@ -305,7 +305,8 @@ spelling, case-sensitive, appears in the text.
 | terms the pack made worse | 0 | 0 |
 
 Beam search with sherpa-onnx hotwords (opt-in, below), voice am_michael, pack measured on the other voice: greedy 209 right,
-333 with the pack; hotwords at score 1: 238 / 368; at 1.5: 245 / 384; at 2: 248 / 392; at 3 the model starts inventing words.
+333 with the pack; hotwords at bias 33%: 238 / 368; at 50%: 245 / 384; at 67%: 248 / 392; at 100% the model starts inventing words.
+(The app shows bias as a percent: percent = sherpa-onnx hotwords score / 3 x 100; see docs/slang-packs.md.)
 Neutral sentences (40, no slang): word error rate 0.55% in every setting, no injected terms, the pack changes none of them.
 
 **Hotwords.** sherpa-onnx 1.13.8 does support contextual biasing for this model, with `modified_beam_search` and a bpe

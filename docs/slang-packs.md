@@ -42,6 +42,7 @@ Pack JSON (format 1):
 | `casing` | `smart` (default for lower-case terms), `exact` (default when the term has a capital), `lower`, `upper`, `title`, `keep` |
 | `matchCase` | only act when the text has exactly this case (so `GOAT` leaves the animal "goat" alone) |
 | `allowCommon` | keep a variant that is a very common word (see Limits) |
+| `bias` | optional hotword strength for this term only, a whole percent 1-100 (see Contextual biasing); absent = the global bias |
 
 The term itself is also a match. `tiktok` becomes `TikTok` because the term has a capital; `Rizz` in the middle of a
 sentence becomes `rizz` because the term is lower case.
@@ -100,8 +101,43 @@ vocabulary from the model's own `tokens.txt` and passes the enabled terms. It is
 packs); switching it, or editing packs while it is on, restarts the speech engine once (about 2 s).
 
 Measured on this PC (TTS speech, 507 terms in a carrier sentence, voice `am_michael`, packs written only from the other voice):
-see README "Slang packs" for the table. Score 1 to 2 was best; 3 made the model invent words. Cost: no measurable latency
+see README "Slang packs" for the table. Bias 33% to 67% was best; 100% made the model invent words. Cost: no measurable latency
 difference (about 200 ms per short clip either way), neutral-sentence word error rate unchanged.
+
+### Bias strength is a percentage
+
+Everywhere the app shows or takes the bias (Dictionary > Bias strength, the Bias box when you add a word, the log line
+`hotwords on terms=N bias=50%`), it is a whole percent from 1% to 100%. The one conversion lives in `src/slang/bias.js`:
+
+| percent | sherpa-onnx `hotwords_score` |
+|---|---|
+| 1% (least) | 0.03 |
+| 33% | 1 |
+| 50% (default) | 1.5 |
+| 67% | 2 |
+| 100% (most) | 3 |
+
+`percent = score / 3 x 100`, rounded to a whole percent; `score = percent / 100 x 3`. 0% is not a level: biasing off is the
+switch above it. `settings.json` still stores `slang.biasing.score` (a score), so every older settings file loads unchanged and
+shows as its percentage (an old 0.1 shows as 3%); no settings version change was needed.
+
+**Per-word bias.** A term may carry `"bias": 80` (percent). The hotwords file then gets the line `word :2.4`. Verified in the
+sherpa-onnx 1.13.8 source (`csrc/utils.cc` EncodeHotwords/EncodeBase, `csrc/context-graph.cc`): a whitespace-separated token
+that starts with `:` is that line's boost score, and a line without one uses the global score. Not yet measured on audio.
+A term containing a word that starts with `:`, `#` or `@` is left out of the hotwords file (sherpa-onnx would read it as a marker).
+
+## Adding words
+
+Dictionary > **Add a word**: the word as you want it spelled, optionally what it comes out as now ("heard as", `|` between
+several), which pack (My terms, or one of your own packs saved as `.json`; built-in and `.csv`/`.txt` packs are never
+rewritten), and optionally its own bias. Enter adds. The same word in any case updates the existing entry instead of adding a
+second one (the new spelling wins, heard-as spellings are merged). Refused: empty, no letters or digits, over 80 characters or 8
+words, emoji (speech never produces them), a bias outside 1 to 100. Undo reverts the last add. With biasing on, the speech
+engine restarts once, 2.5 s after the last edit.
+
+**From a transcript.** On Home (transcript history, when it is on) and in a meeting transcript, select a word (double-click it)
+and press "Add to dictionary", or use the line's add button (keyboard: Tab to it, Enter), which offers the words of that line.
+If you correct the spelling, what you selected is kept as "heard as", so the next time it is fixed too.
 
 ## Limits
 

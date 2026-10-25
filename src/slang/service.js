@@ -7,6 +7,11 @@ const fs = require('fs');
 const path = require('path');
 const { compile } = require('./matcher');
 const P = require('./pack');
+const BIAS = require('./bias');
+const { termsOf } = require('./hotwords');
+
+// a word typed or picked by the user must be something speech can produce: emoji never come out of Parakeet
+const EMOJI = /[\p{Extended_Pictographic}\u{1F1E6}-\u{1F1FF}\u{FE0F}\u{200D}]/u;
 
 const MINE = 'mine';
 const MINE_NAME = 'My terms';
@@ -44,9 +49,9 @@ class SlangService {
     this.packs = all; this.version++; this._cache = null;
   }
 
-  _cfg() { const s = (this.getSettings() || {}).slang || {}; return { enabled: s.enabled !== false, packs: s.packs || {}, biasing: s.biasing || { enabled: false, score: 1.5 } }; }
-  /** terms of the enabled packs (hotword biasing) */
-  enabledTerms() { const c = this._cfg(); return c.enabled ? this.packs.filter((p) => c.packs[p.id] !== false).flatMap((p) => p.terms.map((t) => t.term)) : []; }
+  _cfg() { const s = (this.getSettings() || {}).slang || {}; const b = s.biasing || {}; return { enabled: s.enabled !== false, packs: s.packs || {}, biasing: { enabled: !!b.enabled, score: BIAS.normScore(b.score) } }; }
+  /** terms of the enabled packs (hotword biasing): a string, or {term, bias} for a term with its own bias percent */
+  enabledTerms() { const c = this._cfg(); return c.enabled ? termsOf(this.packs.filter((p) => c.packs[p.id] !== false)) : []; }
   isEnabled(id) { const c = this._cfg(); return c.enabled && c.packs[id] !== false; }
   _pack(id) { return this.packs.find((p) => p.id === id); }
 
@@ -55,8 +60,8 @@ class SlangService {
     const c = this._cfg();
     const mine = this._pack(MINE);
     return {
-      enabled: c.enabled, biasing: c.biasing,
-      packs: this.packs.map((p) => ({ id: p.id, name: p.name, description: p.description, language: p.language, builtin: p.builtin, count: p.terms.length,
+      enabled: c.enabled, biasing: { ...c.biasing, percent: BIAS.scoreToPercent(c.biasing.score) },
+      packs: this.packs.map((p) => ({ id: p.id, name: p.name, description: p.description, language: p.language, builtin: p.builtin, editable: this._editable(p), count: p.terms.length,
         variants: p.terms.reduce((n, t) => n + (t.variants || []).length + (t.heard || []).length, 0), enabled: c.packs[p.id] !== false, warnings: (p.warnings || []).slice(0, 8) })),
       mine: { count: mine ? mine.terms.length : 0 },
       problems: this.problems.slice(0, 10),
@@ -66,6 +71,16 @@ class SlangService {
   activeCount() { let n = 0; for (const p of this.packs) if (this.isEnabled(p.id)) n += p.terms.length; return n; }
 
   setBiasing(on) { const c = this._cfg(); this.setSettings({ slang: { ...c, biasing: { ...c.biasing, enabled: !!on } } }); return { ok: true }; }
+  /** the global bias, as the percent the user typed (1..100); stored as its score */
+  setBiasPercent(v) {
+    const r = BIAS.parsePercentInput(v);
+    if (r.error) return { ok: false, error: r.error };
+    if (r.pct === null) return { ok: false, error: 'Type a bias from 1% to 100%.' };
+    const c = this._cfg();
+    if (BIAS.scoreToPercent(c.biasing.score) === r.pct) return { ok: true, percent: r.pct, unchanged: true };
+    this.setSettings({ slang: { ...c, biasing: { ...c.biasing, score: BIAS.percentToScore(r.pct) } } });
+    return { ok: true, percent: r.pct };
+  }
 
   /** terms of one pack for the list view: optional text filter, capped */
   terms(id, { query = '', limit = 200, offset = 0 } = {}) {
@@ -116,20 +131,64 @@ class SlangService {
     this.version++; this._cache = null;
   }
 
-  addTerm(raw) {
-    const n = P.normTerm(raw);
+  /** a pack the Dictionary may add words to: My terms, or one of your own packs stored as <id>.json (built-in packs and
+      .csv/.txt packs are never rewritten) */
+  _editable(p) { return !!p && !p.builtin && (p.id === MINE || p.file === p.id + '.json'); }
+
+  /** add one word (the Dictionary's Add box and "Add to dictionary" from a transcript). raw: {term, variants, bias, ...};
+      opts.packId: My terms (default) or an editable pack of yours. Same spelling in any case = merged into the existing
+      entry, never a second one. Returns {ok, term, merged, packId, packName, undo, alsoIn} or {ok:false, error}. */
+  addTerm(raw, { packId = MINE } = {}) {
+    const r = raw && typeof raw === 'object' ? raw : { term: raw };
+    if (EMOJI.test(String(r.term ?? ''))) return { ok: false, error: 'Emoji cannot be dictated, so a word with an emoji would never match. Leave the emoji out.' };
+    const vs = Array.isArray(r.variants) ? r.variants : String(r.variants ?? '').split('|');
+    if (vs.some((v) => EMOJI.test(String(v ?? '')))) return { ok: false, error: 'Leave emoji out of "heard as" too.' };
+    let bias;
+    if (r.bias !== undefined && r.bias !== null && r.bias !== '') {
+      const b = BIAS.parsePercentInput(r.bias);
+      if (b.error) return { ok: false, error: b.error };
+      bias = b.pct;
+    }
+    const n = P.normTerm({ ...r, bias });
     if (n.error) return { ok: false, error: n.error.charAt(0).toUpperCase() + n.error.slice(1) + '.' };
-    const m = this._mine();
-    if (m.terms.length >= P.LIMITS.terms) return { ok: false, error: 'My terms is full.' };
-    const i = m.terms.findIndex((t) => t.term.toLowerCase() === n.term.term.toLowerCase());
+    const m = packId === MINE ? this._mine() : this._pack(packId);
+    if (!m) return { ok: false, error: 'That pack no longer exists.' };
+    if (!this._editable(m)) return { ok: false, error: m.builtin ? 'Built-in packs cannot be changed. Add the word to My terms instead.' : 'This pack is a .csv or .txt file; add the word to My terms instead.' };
+    const key = n.term.term.toLowerCase();
+    const i = m.terms.findIndex((t) => t.term.toLowerCase() === key);
+    if (i < 0 && m.terms.length >= P.LIMITS.terms) return { ok: false, error: `${m.name} is full.` };
+    const before = i >= 0 ? JSON.parse(JSON.stringify(m.terms[i])) : null;
     if (i >= 0) {
       const old = m.terms[i], add = [...(n.term.variants || []), ...(n.term.heard || [])];
-      const merged = [...new Set([...(old.variants || []), ...add])].slice(0, P.LIMITS.variantsPerTerm);
+      const seenV = new Set([key, ...(old.heard || []).map((v) => v.toLowerCase())]);     // variants differ only by case = the same variant
+      const merged = [...(old.variants || []), ...add].filter((v) => !seenV.has(v.toLowerCase()) && seenV.add(v.toLowerCase())).slice(0, P.LIMITS.variantsPerTerm);
       m.terms[i] = { ...old, ...n.term, variants: merged, heard: old.heard };
       if (!m.terms[i].heard) delete m.terms[i].heard;
+      if (!m.terms[i].variants.length) delete m.terms[i].variants;
     } else m.terms.push(n.term);
-    this._saveMine();
-    return { ok: true, term: n.term.term, merged: i >= 0, warnings: n.warnings };
+    this._savePack(m);
+    this._undo = { token: (this._undoSeq = (this._undoSeq || 0) + 1), packId: m.id, key, before };
+    const alsoIn = this.packs.filter((p) => p.id !== m.id && p.terms.some((t) => t.term.toLowerCase() === key)).map((p) => p.name).slice(0, 3);
+    return { ok: true, term: n.term.term, merged: i >= 0, packId: m.id, packName: m.name, undo: this._undo.token, alsoIn, warnings: n.warnings };
+  }
+  /** undo the LAST add (only that one, and only by its token): a new word is removed, a merged one gets its old entry back */
+  undoAdd(token) {
+    const u = this._undo;
+    if (!u || u.token !== token) return { ok: false, error: 'Nothing to undo.' };
+    this._undo = null;
+    const m = this._pack(u.packId);
+    if (!m) return { ok: false, error: 'That pack no longer exists.' };
+    const i = m.terms.findIndex((t) => t.term.toLowerCase() === u.key);
+    if (u.before) { if (i >= 0) m.terms[i] = u.before; else m.terms.push(u.before); }
+    else if (i >= 0) m.terms.splice(i, 1);
+    else return { ok: false, error: 'That word was already removed.' };
+    this._savePack(m);
+    return { ok: true, term: u.before ? u.before.term : null };
+  }
+  _savePack(p) {
+    if (p.id === MINE) return this._saveMine();
+    P.savePack(this.userDir, p);
+    this.version++; this._cache = null;
   }
   updateTerm(oldTerm, raw) {
     const m = this._mine();
@@ -138,6 +197,7 @@ class SlangService {
     const n = P.normTerm(raw);
     if (n.error) return { ok: false, error: n.error.charAt(0).toUpperCase() + n.error.slice(1) + '.' };
     if (n.term.term.toLowerCase() !== oldTerm.toLowerCase() && m.terms.some((t, k) => k !== i && t.term.toLowerCase() === n.term.term.toLowerCase())) return { ok: false, error: 'That spelling already exists.' };
+    if (n.term.bias == null && m.terms[i].bias != null && (raw == null || raw.bias === undefined)) n.term.bias = m.terms[i].bias;   // the edit row does not show bias: keep it
     m.terms[i] = n.term;
     this._saveMine();
     return { ok: true, warnings: n.warnings };
