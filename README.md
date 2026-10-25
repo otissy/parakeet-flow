@@ -5,9 +5,9 @@ inserted into the focused app once (like Wispr Flow; typing while you speak is a
 via sherpa-onnx). A small floating bar shows the level and the live text; a tray icon and a main window hold
 the settings. The design follows the layout and feel of Wispr Flow without using its name or logo.
 
-## Install (Windows installer, 0.2.3)
+## Install (Windows installer, 0.2.4)
 
-Run `Parakeet Flow Setup 0.2.3.exe`. It installs for your user only (no admin prompt) into
+Run `Parakeet Flow Setup 0.2.4.exe`. It installs for your user only (no admin prompt) into
 `%LOCALAPPDATA%\parakeet-flow`, adds a Start-menu shortcut (Start > otissy > Parakeet Flow) and an entry in
 Settings > Apps. It does NOT start with Windows: no startup entry, no scheduled task, no Run key. "Launch at login"
 exists in Settings and is off until you switch it on.
@@ -54,7 +54,7 @@ The installer is not signed. Windows SmartScreen may say "Windows protected your
 Norton may show a reputation warning (for example IDP.Generic) for a new unsigned installer or for the little helper `pf-helper.exe`
 (built from `src/typer/helper/PfHelper.cs`, shipped inside the install with version info and a manifest; it types text and watches the hotkey).
 What it does, how to verify it, how to restore and exclude only that file, and how to report a false positive: `docs/antivirus.md`.
-Helper SHA-256 (0.2.3): `80dfe320e928d6964202494582ee334b44f982ca0db3c3193a11ab96be67d531`. The app makes no network calls except the model downloads
+Helper SHA-256 (0.2.4): ``. The app makes no network calls except the model downloads
 (and Notion, only if you turned it on).
 
 Update: run the newer Setup; it replaces the app and keeps your data. There is no update server and no
