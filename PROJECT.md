@@ -111,3 +111,5 @@ UI hook, measurement tools in `.tests/slang/tools/`). Docs: docs/slang-packs.md.
 | Urban Dictionary | never scraped or shipped; the user may paste words (their call under its terms) |
 
 Known problems: real-voice accuracy of the starter pack is unverified; only the Dictionary page UI exists (no Settings entry).
+
+- **2026-10-25** One Parakeet Flow at a time, NEWEST WINS (`src/main/single-instance.js`, tests `.tests/single-instance/`, 18 tests): a second start sends `{kind:'parakeet-flow:handover'}` with its lock request; the running copy quits, the new start waits up to 10 s for the lock, then `releaseSingleInstanceLock` + `relaunch` + `exit(0)` so a clean process boots. An older build (sends no data, e.g. 0.2.3) still only makes the running copy show its window. If the running copy never leaves, the new start exits and the old copy stays. Proof: each of 5 deliberately broken variants fails 1-3 tests (`../pf-newest-wins-proof/broken-build-proof.txt`). Not verified: the real Electron lock between two real processes (needs a visible app start; the fake lock models Electron's documented behaviour).
