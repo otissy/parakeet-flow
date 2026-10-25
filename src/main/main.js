@@ -354,6 +354,8 @@ else if (!lock) {
     controller.attach();
     typer.on('refused', () => { if (controller.session) controller.session.live._halt('refused'); });
     typer.on('exit', () => log('error', 'helper exited'));
+    typer.on('restarted', () => { log('info', 'helper restarted, keybinds restored'); typer.queryForeground(); });
+    typer.on('giveup', () => log('error', 'helper keeps exiting, not restarting it again until the app is restarted'));
     controller.on('pill', (p) => send(pillWin, 'pill:state', p));
     controller.on('note', (n) => send(pillWin, 'pill:state', { state: controller.pillState, text: '', ...n }));
     controller.on('level', (v) => send(pillWin, 'pill:level', v));

@@ -313,9 +313,12 @@ function render() {
   const pages = { home, meetings: meetingsPage, dictionary: () => pairsPage({ title: 'Dictionary', blurb: 'Replace a word or name every time it is dictated. Case-insensitive, whole words only.', listKey: 'dictionary', a: 'from', b: 'to', phA: 'Heard as', phB: 'Replace with' }) + slangSection(),
     snippets: () => pairsPage({ title: 'Snippets', blurb: 'Say a short phrase, get a longer text. Say only the phrase to replace the whole line.', listKey: 'snippets', a: 'trigger', b: 'expansion', phA: 'When I say', phB: 'Type this', multi: false }),
     style, settings: settingsPage, notes: notesPage };
+  const wait = pageWaiting();
+  if (wait) { main.innerHTML = wait; document.querySelectorAll('.nav').forEach((n) => n.classList.toggle('on', n.dataset.page === S.page)); bindBoot(); return; }
   const y = main.scrollTop;
   const act = document.activeElement, keepId = act && main.contains(act) && act.id ? act.id : '', caret = keepId && typeof act.selectionStart === 'number' ? act.selectionStart : null;
-  main.innerHTML = S.settings ? pages[S.page]() : '';
+  try { main.innerHTML = S.settings ? pages[S.page]() : bootCard(); }
+  catch (err) { main.innerHTML = errorCard('This page could not be drawn', err); bindBoot(); return; }   // never a blank page
   main.scrollTop = y;
   if (keepId) { const el = document.getElementById(keepId); if (el) { el.focus({ preventScroll: true }); if (caret !== null && typeof el.setSelectionRange === 'function') { try { el.setSelectionRange(caret, caret); } catch (_) { /* not a text field */ } } } }
   notifyCapture();
@@ -349,7 +352,7 @@ window.addEventListener('keyup', async (e) => {
   await save(toggleTarget ? { toggleKey: { vks, label: L.hotkeyLabel(vks) } } : { hotkey: { vks, label: L.hotkeyLabel(vks) } });
 });
 
-async function loadDevices() { try { S.devices = (await navigator.mediaDevices.enumerateDevices()).filter((d) => d.kind === 'audioinput' && d.deviceId !== 'default' && d.deviceId !== 'communications'); } catch (_) { S.devices = []; } }
+async function loadDevices() { try { S.devices = (await withLimit(navigator.mediaDevices.enumerateDevices(), 'The microphone list', 4000)).filter((d) => d.kind === 'audioinput' && d.deviceId !== 'default' && d.deviceId !== 'communications'); } catch (_) { S.devices = []; } }
 
 function engineBadge() {
   const el = $('#engine'), i = S.info || {};
@@ -357,10 +360,59 @@ function engineBadge() {
   el.className = 'engine ' + cls; el.lastElementChild.textContent = txt;
 }
 
+/* ---------- boot ----------
+   The page used to stay blank until EVERY startup call had answered, one after the other, and a single
+   failed or slow call (the engine loading, a stuck audio device list) left it blank for good. Now:
+   a loading card shows at once, the main page paints as soon as the settings arrive, the slower parts
+   (extras, dictionary data, microphones) fill in as they land, and a failure only affects its own part. */
+const BOOT = { extras: 'loading', slang: 'loading', err: { extras: '', slang: '' }, slowTimer: 0 };
+function bootCard() {
+  return '<div class="boot"><div class="boot-spin"></div><p id="boot-msg">Loading Parakeet Flow…</p></div>';
+}
+function errorCard(title, err) {
+  const msg = String((err && err.message) || err || 'Unknown error').replace(/^Error invoking remote method '[^']*': (Error: )?/, '').slice(0, 300);
+  return `<div class="boot"><h2>${L.esc(title)}</h2><p class="note">${L.esc(msg)}</p><button class="btn primary" id="boot-retry">Try again</button></div>`;
+}
+function bindBoot() { const b = document.getElementById('boot-retry'); if (b) b.onclick = () => { S.page = S.page || 'home'; refresh(); }; }
+/* Pages that need the slower data show a card until it is here (or says why it is not). */
+function pageWaiting() {
+  if (!S.settings) return null;                                   // render() draws the boot card itself
+  const need = { settings: 'extras', notes: 'extras', dictionary: 'slang' }[S.page];
+  if (!need || BOOT[need] === 'ready') return null;
+  if (BOOT[need] === 'failed') return errorCard('Could not load this page', BOOT.err[need]) ;
+  return bootCard();
+}
+function withLimit(promise, label, ms) {
+  let timer;
+  return Promise.race([promise, new Promise((_, reject) => { timer = setTimeout(() => reject(new Error(label + ' did not answer in ' + Math.round(ms / 1000) + ' s')), ms); })]).finally(() => clearTimeout(timer));
+}
 async function refresh() {
-  await loadExtra(); await loadSlang();
-  [S.settings, S.stats, S.history, S.info] = await Promise.all([window.pf.invoke('settings:get'), window.pf.invoke('stats:get'), window.pf.invoke('history:get'), window.pf.invoke('app:info')]);
+  BOOT.extras = BOOT.slang = 'loading';
+  if (!S.settings) { main.innerHTML = bootCard(); }
+  clearTimeout(BOOT.slowTimer);
+  BOOT.slowTimer = setTimeout(() => { const m = document.getElementById('boot-msg'); if (m) m.textContent = 'Still starting. The speech engine is loading, which can take a minute on a cold start…'; }, 6000);
+  // 1. the four calls the main page needs; the page paints as soon as the settings are in
+  const [settings, stats, history, info] = await Promise.allSettled([window.pf.invoke('settings:get'), window.pf.invoke('stats:get'), window.pf.invoke('history:get'), window.pf.invoke('app:info')]);
+  clearTimeout(BOOT.slowTimer);
+  if (settings.status !== 'fulfilled' || !settings.value) {
+    S.settings = null;
+    main.innerHTML = errorCard('Parakeet Flow could not load its settings', settings.reason || 'The app answered with nothing.'); bindBoot();
+    return;
+  }
+  S.settings = settings.value;
+  if (stats.status === 'fulfilled' && stats.value) S.stats = stats.value;
+  if (history.status === 'fulfilled' && Array.isArray(history.value)) S.history = history.value;
+  if (info.status === 'fulfilled') S.info = info.value;
   engineBadge(); render();
+  // 2. the slower parts, each on its own, each with a time limit
+  const part = async (key, label, fn) => {
+    try { await withLimit(fn(), label, 20000); BOOT[key] = 'ready'; BOOT.err[key] = ''; }
+    catch (err) { BOOT[key] = 'failed'; BOOT.err[key] = err; }
+    render();
+  };
+  part('extras', 'The extra settings', loadExtra);
+  part('slang', 'The dictionary data', loadSlang);
+  loadDevices().then(() => { if (S.page === 'settings') render(); });
 }
 window.pf.on('app:history', (e) => { S.history.unshift(e); if (S.page === 'home') render(); });
 window.pf.on('app:stats', (s) => { S.stats = s; if (S.page === 'home') render(); });
@@ -378,4 +430,4 @@ window.pf.on('test:set', (t) => {
   if (t.page) { S.page = t.page; } if (t.state) Object.assign(S, t.state); if (t.x) Object.assign(X, t.x); render();
   if (t.scrollTo) { const el = document.querySelector(t.scrollTo); if (el) { if (t.center) el.scrollIntoView({ block: 'center' }); else main.scrollTop = el.offsetTop - 12; } }
 });
-loadDevices().then(refresh);
+refresh();

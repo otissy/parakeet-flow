@@ -45,16 +45,47 @@ function buildHelper(binDir) {
 }
 
 class Win32Typer extends EventEmitter {
-  constructor({ binDir, test = false }) {
+  /* restart: when the helper dies by itself (not through close()), start a new one and give it back the
+     hotkeys, so a crashed helper never leaves dictation without its keybind. On by default for the real
+     app, off for the test-mode helper. Gives up after 8 quick deaths in a minute ('giveup'). */
+  constructor({ binDir, test = false, restart = !test, restartDelayMs = 400 }) {
     super();
     this.exe = buildHelper(binDir);
+    this.test = test; this.restart = restart; this.restartDelayMs = restartDelayMs;
     this.fg = null; this.nextId = 1; this.buf = ''; this.newline = 'auto'; this.pasting = new Map();
-    this.proc = spawn(this.exe, test ? ['--test'] : [], { stdio: ['pipe', 'pipe', 'ignore'], windowsHide: true });
+    this.cfg = {}; this.closed = false; this.deaths = []; this.restarts = 0; this.timer = null;
+    this._spawn();
+  }
+  _spawn() {
+    this.buf = '';
+    const proc = spawn(this.exe, this.test ? ['--test'] : [], { stdio: ['pipe', 'pipe', 'ignore'], windowsHide: true });
+    this.proc = proc;
     this.ready = new Promise((res) => { this._ready = res; });
-    this.proc.stdout.setEncoding('utf8');
-    this.proc.stdout.on('data', (d) => this._data(d));
-    this.proc.on('exit', () => this.emit('exit'));
-    this.proc.stdin.on('error', () => {});
+    proc.stdout.setEncoding('utf8');
+    proc.stdout.on('data', (d) => { if (proc === this.proc) this._data(d); });
+    proc.on('exit', () => {
+      if (proc !== this.proc) return;                    // an old helper that was already replaced
+      this.emit('exit');
+      if (!this.closed && this.restart) this._scheduleRestart();
+    });
+    proc.stdin.on('error', () => {});
+  }
+  _scheduleRestart() {
+    const now = Date.now();
+    this.deaths = this.deaths.filter((t) => now - t < 60000); this.deaths.push(now);
+    if (this.deaths.length > 8) { this.emit('giveup'); return; }
+    const delay = Math.min(15000, this.restartDelayMs * 2 ** (this.deaths.length - 1));
+    this.timer = setTimeout(() => { this.timer = null; if (!this.closed) { this.restarts++; this._spawn(); } }, delay);
+    if (this.timer.unref) this.timer.unref();
+  }
+  /** after a restart: put the keybinds back as they were */
+  _replay() {
+    const c = this.cfg;
+    if (c.hotkey) this._send('HOTKEY ' + c.hotkey.join('+'));
+    if (c.hotkey2) this._send('HOTKEY2 ' + c.hotkey2.join('+'));
+    if (c.claim !== undefined) this._send('CLAIM ' + (c.claim ? 1 : 0));
+    if (c.toggle !== undefined) this._send('TOGGLE ' + (c.toggle | 0));
+    this._send('FG');
   }
   _data(d) {
     this.buf += d;
@@ -62,7 +93,7 @@ class Win32Typer extends EventEmitter {
     while ((i = this.buf.indexOf('\n')) >= 0) {
       const line = this.buf.slice(0, i).replace(/\r$/, ''); this.buf = this.buf.slice(i + 1);
       const a = line.split(' ');
-      if (a[0] === 'READY') this._ready();
+      if (a[0] === 'READY') { this._ready(); if (this.restarts) { this._replay(); this.emit('restarted'); } }
       else if (a[0] === 'KEY') this.emit('key', { down: a[1] === 'down', at: Date.now() });
       else if (a[0] === 'TOGGLE') this.emit('toggle', { at: Date.now() });
       else if (a[0] === 'KEY2') this.emit('key2', { down: a[1] === 'down', at: Date.now() });
@@ -78,15 +109,15 @@ class Win32Typer extends EventEmitter {
     }
   }
   _send(s) { if (this.proc.stdin.writable) this.proc.stdin.write(s + '\n'); }
-  setHotkey(vks) { this._send('HOTKEY ' + vks.join('+')); }
+  setHotkey(vks) { this.cfg.hotkey = vks.slice(); this._send('HOTKEY ' + vks.join('+')); }
   /** the second chord (note mode): modifiers + exactly one plain key; an empty list switches it off */
-  setHotkey2(vks) { this._send('HOTKEY2 ' + (vks || []).join('+')); }
+  setHotkey2(vks) { this.cfg.hotkey2 = (vks || []).slice(); this._send('HOTKEY2 ' + (vks || []).join('+')); }
   /** 'auto' | 'shift-enter' | 'ctrl-j': which key a newline in typed text presses (see newline.js) */
   setNewline(mode) { this.newline = ['shift-enter', 'ctrl-j'].includes(mode) ? mode : 'auto'; }
   /** swallow the chord's non-modifier key (Ctrl+Space) while its modifiers are held; never for a lone-key hotkey */
-  setClaim(on) { this._send('CLAIM ' + (on ? 1 : 0)); }
+  setClaim(on) { this.cfg.claim = !!on; this._send('CLAIM ' + (on ? 1 : 0)); }
   /** the toggle key (CapsLock = 0x14): one 'toggle' event per fresh press. CapsLock is swallowed (down, repeat, up) so Windows never flips it; 0 = off, key back to normal */
-  setToggleKey(vk) { this._send('TOGGLE ' + (vk | 0)); }
+  setToggleKey(vk) { this.cfg.toggle = vk | 0; this._send('TOGGLE ' + (vk | 0)); }
   /** tests only (helper started with test:true): inject a key event; with hwnd it is refused unless that window is foreground */
   press(vk, down, hwnd) { this._send(`PRESS ${vk} ${down ? 'down' : 'up'}${hwnd ? ' ' + hwnd : ''}`); }
   /** tests only: raw helper command (SIM, CAPTURE, SIMMID, NORELEASE, DUMP) */
@@ -119,7 +150,7 @@ class Win32Typer extends EventEmitter {
   insert(text, { hwnd, method = 'burst' } = {}) { return method === 'paste' || method === 'paste-insert' ? this.paste(text, { hwnd, key: method === 'paste-insert' ? 'insert' : 'v' }) : this.type(text, { hwnd }); }
   /** one Enter press (only for the opt-in "press Enter after I finish"); refused unless <hwnd> is the foreground window */
   enter({ hwnd } = {}) { this._send(`ENTER ${this.nextId++} ${hwnd || 0}`); return true; }
-  close() { try { this._send('QUIT'); this.proc.kill(); } catch (_) { /* gone */ } }
+  close() { this.closed = true; if (this.timer) { clearTimeout(this.timer); this.timer = null; } try { this._send('QUIT'); this.proc.kill(); } catch (_) { /* gone */ } }
 }
 
 module.exports = { Win32Typer, buildHelper, compileHelper, sourceHash, BUNDLED };
