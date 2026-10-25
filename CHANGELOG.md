@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.5 - 2026-10-25
+
+- The main window is never blank any more: it shows a loading card at once, draws the page as soon as the settings arrive, fills in the slower parts as they land, explains a slow start, and shows an error card with Try again when something fails (before, one slow or failed startup call left it empty).
+- The keyboard helper is restarted if it ever exits by itself, and the hotkey, note chord, toggle key and claim are given back to it, so a crashed helper no longer leaves dictation without its keybind.
+- The installer now includes the MCP server's and the AI runtime's dependencies (0.2.4 shipped without mcp/node_modules and llm-runtime/node_modules).
+
 ## 0.2.4 - 2026-10-25
 
 - Meetings: a Meetings page records the microphone and the main display's audio locally and produces a speaker-labelled transcript, an editable summary and action items (nothing is sent anywhere).
