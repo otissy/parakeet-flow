@@ -20,8 +20,8 @@ identifiable; it does not guarantee a scanner will like it.
 
 SHA-256 of the 0.2.2 helper shipped in `Parakeet Flow Setup 0.2.2.exe`: `3606ef1734592dec450167e0d0f97cdc8ff492dc3768678f3da9688aebbe5c74`
 SHA-256 of that installer: `096f961cb01477ff8eee9540132b7c49f3004687e974bbb906665c0ecd27b9ab`
-SHA-256 of the 0.2.61 helper shipped in `Parakeet Flow Setup 0.2.61.exe`: `d259444f80e5a8fbc73bfad7b6a679f7b842ce23d7341d9faadbdde32566db9e`
-SHA-256 of that installer: `10a8c01b1641901a890870ad828f17be9cd1dfc34d16b02d1cc9e60c23ce3f76`
+SHA-256 of the 0.2.61 helper shipped in `Parakeet Flow Setup 0.2.61.exe`: `7353e16f3383b95ae7fab6a0df6f9bbb66352c9a0294f1147e09e5ae459d19fd`
+SHA-256 of that installer: `a54782fa75bfa508ba70fafb3f4aa9a3a1eaa3b67a7bf1bf3cb6551f680b92df`
 (The compiler does not produce identical bytes twice, so every rebuild has its own hash; the hash of the shipped file is
 recorded here and in the README for each release.)
 
