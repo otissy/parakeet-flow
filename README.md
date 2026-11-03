@@ -36,7 +36,7 @@ deleted after processing; incomplete staging files are cleaned up at the next la
 Notion or a remote transcription service.
 
 On first use, Meetings downloads NVIDIA's NeMo-Speech.cpp 0.2.0 Windows runtime and the Parakeet TDT v3 and
-Nemotron-3-Diarization models (about 930 MB total with an NVIDIA GPU; model/runtime files are SHA-256 checked).
+Nemotron-3-Diarization models (about 930 MB total with an NVIDIA GPU). The runtime archive is checked against a pinned size and SHA-256. The two models are fetched by the runtime's own `nemo-speech pull` command, which this app does not hash-check.
 The RTX/CUDA runtime is selected when `nvidia-smi` detects an NVIDIA GPU; otherwise the CPU runtime is used.
 The existing optional local Qwen model is used for summaries and action items; if it is not installed, download it
 from Settings > AI cleanup and use the meeting's summary retry action.
@@ -197,6 +197,9 @@ itself, so the real Claude Code prompt has been verified only by the user's own 
   { "mcpServers": { "parakeet-flow": { "command": "node", "args": ["C:\\path\\to\\parakeet-flow\\mcp\\server.js"] } } }
   ```
 
+  No Node on the PC? The installed `Parakeet Flow.exe` can run the server itself with `ELECTRON_RUN_AS_NODE=1`; see
+  "Without Node on the PC" in `mcp/README.md`.
+
   (You run these yourself; the app does not touch Claude's settings. Settings > Connect to Claude shows your exact path with a Copy
   button.) Then ask Claude "sync my parakeet notes": the project skill `.claude/skills/sync-parakeet-notes/SKILL.md` tells it to find
   your Notes database in Notion, create one entry per note (title, text, date, tags), and call `note_mark_synced`. Tools:
@@ -317,7 +320,8 @@ modeling unit only (the app builds the vocabulary from `tokens.txt`). Off by def
 Proof: `pf-proof/slang-*.png` (Dictionary page at 1000x680), `slang-dictation.json` (off versus on through the real VAD + Parakeet).
 ## Tests
 
-    node ~/.claude/skills/plan/ladder.js            # whole suite (asr, typing, app)
+    npm test                                        # every suite in .tests, one file at a time
+    npx playwright-core install chromium            # once, for the headless browser tests (.tests/boot L4)
     electron .tests/app/real-typing.js             # one short real typing test into its own window (visible ~8 s)
 
 Fixtures (`.tests/fixtures/*.wav`) are synthesised with the Kokoro model files of claude-voice and are not

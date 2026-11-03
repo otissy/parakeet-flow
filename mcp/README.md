@@ -17,6 +17,28 @@ claude mcp add parakeet-flow -- node "C:\path\to\parakeet-flow\mcp\server.js"
 (or a `.mcp.json` next to your project: see the README at the repo root). Nothing here runs those commands for you. Use
 the exact path shown in parakeet-flow's Settings > Connect to Claude (MCP), which has a copy button.
 
+### Without Node on the PC (installed app)
+
+The installed app carries everything the server needs: `Parakeet Flow.exe` runs `server.js` as plain Node when
+`ELECTRON_RUN_AS_NODE=1` is set, and the server's `node_modules` are in the install. No `npm` step is needed.
+
+```
+claude mcp add parakeet-flow -e ELECTRON_RUN_AS_NODE=1 -- "%LOCALAPPDATA%\parakeet-flow\app-0.2.61\Parakeet Flow.exe" "%LOCALAPPDATA%\parakeet-flow\app-0.2.61\resources\app\mcp\server.js"
+```
+
+or in `.mcp.json` (write out the full path, JSON does not expand `%LOCALAPPDATA%`):
+
+```json
+{ "mcpServers": { "parakeet-flow": {
+  "command": "C:\\Users\\<you>\\AppData\\Local\\parakeet-flow\\app-0.2.61\\Parakeet Flow.exe",
+  "args": ["C:\\Users\\<you>\\AppData\\Local\\parakeet-flow\\app-0.2.61\\resources\\app\\mcp\\server.js"],
+  "env": { "ELECTRON_RUN_AS_NODE": "1" } } } }
+```
+
+The path holds the version number, so point it at the new `app-<version>` folder after every update. With the variable
+set the exe opens no window and does not touch a running copy of the app. Checked on the 0.2.61 build with a PATH that has
+no Node: `initialize` and `tools/list` answer normally.
+
 Without the app running the server still works: it reads and writes `%APPDATA%\parakeet-flow\notes.jsonl`.
 A different data folder: `--data-dir=<absolute path>` or the `PF_USERDATA` environment variable.
 
