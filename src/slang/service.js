@@ -211,6 +211,22 @@ class SlangService {
     return { ok: true };
   }
 
+  /* ---------- customization sync (src/sync) ---------- */
+  /** the words of My terms, as they are stored */
+  mineTerms() { const m = this._pack(MINE); return m ? m.terms : []; }
+  /** words from a linked install: {upsert: [raw term], remove: [lowercase term]}. Validated like any import; a term that does not pass is skipped */
+  applySyncedTerms({ upsert = [], remove = [] }) {
+    const m = this._mine();
+    for (const key of remove) { const i = m.terms.findIndex((t) => t.term.toLowerCase() === key); if (i >= 0) m.terms.splice(i, 1); }
+    for (const raw of upsert) {
+      const n = P.normTerm(raw);
+      if (n.error) continue;
+      const i = m.terms.findIndex((t) => t.term.toLowerCase() === n.term.term.toLowerCase());
+      if (i >= 0) m.terms[i] = n.term; else if (m.terms.length < P.LIMITS.terms) m.terms.push(n.term);
+    }
+    this._saveMine();
+  }
+
   /* ---------- import / export ---------- */
   _freeId(base) {
     let id = base, n = 2;

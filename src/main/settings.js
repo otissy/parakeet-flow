@@ -40,6 +40,8 @@ const DEFAULTS = {
   // MCP server (mcp/server.js): whether clients may read recent dictation (off); terminal typing: which key a new line presses, Enter after finish (off)
   mcp: SN.MCP_DEFAULTS,
   typing: SN.TYPING_DEFAULTS,
+  // customization sync with the user's own Supabase project (src/sync): off until switched on; URL, key and tokens live in secrets.json
+  sync: { enabled: false },
 };
 
 const flt = (v, lo, hi, d) => (Number.isFinite(+v) && v !== '' && v !== null ? Math.min(hi, Math.max(lo, +v)) : d);
@@ -114,6 +116,7 @@ function normalize(s) {
     },
     mcp: SN.normMcp(s?.mcp),
     typing: SN.normTyping(s?.typing),
+    sync: { enabled: s?.sync?.enabled === true },
   };
 }
 
@@ -138,7 +141,7 @@ class Store {
     this.history = readJson(this.files.history, []);
   }
   get() { return this.settings; }
-  set(patch) { this.settings = normalize({ ...this.settings, ...patch }); writeJson(this.files.settings, this.settings); return this.settings; }
+  set(patch) { this.settings = normalize({ ...this.settings, ...patch }); writeJson(this.files.settings, this.settings); if (this.onSet) this.onSet(); return this.settings; }
 
   /** counts only, never text */
   addUsage({ words, speechSec, date = new Date() }) {
