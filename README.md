@@ -5,9 +5,9 @@ inserted into the focused app once (like Wispr Flow; typing while you speak is a
 via sherpa-onnx). A small floating bar shows the level and the live text; a tray icon and a main window hold
 the settings. The design follows the layout and feel of Wispr Flow without using its name or logo.
 
-## Install (Windows installer, 0.2.4)
+## Install (Windows installer, 0.2.61)
 
-Run `Parakeet Flow Setup 0.2.4.exe`. It installs for your user only (no admin prompt) into
+Run `Parakeet Flow Setup 0.2.61.exe`. It installs for your user only (no admin prompt) into
 `%LOCALAPPDATA%\parakeet-flow`, adds a Start-menu shortcut (Start > otissy > Parakeet Flow) and an entry in
 Settings > Apps. It does NOT start with Windows: no startup entry, no scheduled task, no Run key. "Launch at login"
 exists in Settings and is off until you switch it on.

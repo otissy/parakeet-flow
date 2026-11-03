@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.61 - unreleased (local test build)
+
+- The installer now carries the Visual C++ runtime (msvcp140, vcruntime140, vcruntime140_1) next to the app: the optional local AI model no longer needs the redistributable on the PC.
+- README install section names the current version.
+
 ## 0.2.6 - 2026-11-03
 
 - 0.2.6 — rebuild of 0.2.5 (same features); build output folder configurable (PF_BUILDS environment variable, default D:/builds/parakeet-flow).
