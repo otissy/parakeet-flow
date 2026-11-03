@@ -11,6 +11,7 @@ const badge = (txt, cls = '') => `<span class="badge ${cls}">${L.esc(txt)}</span
 async function loadExtra() {
   [X.llm, X.notion, X.notes, X.mcp] = await Promise.all([window.pf.invoke('llm:status'), window.pf.invoke('notion:status'), window.pf.invoke('notes:list'), window.pf.invoke('mcp:info')]);
   X.sync = await window.pf.invoke('sync:status').catch(() => null);
+  X.update = await window.pf.invoke('update:status').catch(() => null);
 }
 
 function secCommands() {
@@ -129,7 +130,25 @@ function secTyping() {
   </div>`;
 }
 
-function extraSettings() { return secCommands() + secTone() + secTranslate() + secCleanup() + secNotes() + secRouting() + secMcp() + secExport() + secTyping() + secSync(); }
+function extraSettings() { return secCommands() + secTone() + secTranslate() + secCleanup() + secNotes() + secRouting() + secMcp() + secExport() + secTyping() + secSync() + secUpdates(); }
+
+function updateLine(u) {
+  if (!u.installed) return 'Updates work only in the installed app, so this copy never checks.';
+  if (u.state === 'ready') return 'A new version is ready. It installs the next time you quit, or restart now.';
+  if (u.state === 'downloading') return 'Downloading a new version in the background.';
+  if (u.state === 'checking') return 'Checking…';
+  if (X.updateAsked && u.lastFailed) return 'Could not check right now. It tries again later.';
+  if (u.lastCheckAt) return 'You have the latest version. Last checked ' + new Date(u.lastCheckAt).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) + '.';
+  return 'Not checked yet.';
+}
+function secUpdates() {
+  const u = X.update;
+  if (!u) return '';
+  return `<h2 id="sec-updates">Updates</h2><div class="card" style="padding:4px 18px">
+    <div class="srow"><div class="l"><b>Check for updates automatically</b><div>On by default. Shortly after start and every few hours, the app asks github.com for the latest Parakeet Flow release. That is a normal web request holding the app name, its version and the PC type, and GitHub sees your IP address. Nothing you dictated and none of your settings go with it. A new version downloads in the background and installs the next time you quit. This is separate from Sync.</div></div><div class="c">${toggle('up-auto', S.settings.updates.auto)}</div></div>
+    <div class="srow"><div class="l"><b>Version ${L.esc(u.version)}</b><div id="up-line">${L.esc(updateLine(u))}</div></div><div class="c">${u.state === 'ready' ? '<button class="btn primary" id="up-restart">Restart to update</button>' : `<button class="btn" id="up-check" ${u.installed ? '' : 'disabled'}>Check now</button>`}</div></div>
+  </div>`;
+}
 
 function relTime(ms) {
   const s = Math.max(0, Math.round(ms / 1000));
@@ -157,6 +176,9 @@ function bindExtra() {
   bindSync();
   const q = (id) => document.getElementById(id);
   const on = (id, fn) => { const e = q(id); if (e) e.onclick = fn; };
+  on('up-auto', () => save({ updates: { auto: !S.settings.updates.auto } }));
+  on('up-check', async () => { X.updateAsked = true; await window.pf.invoke('update:check'); X.update = await window.pf.invoke('update:status'); render(); });
+  on('up-restart', () => window.pf.invoke('update:restart'));
   const val = (id, fn) => { const e = q(id); if (e) e.onchange = () => fn(e.value); };
   const s = S.settings;
   // voice commands
@@ -250,5 +272,6 @@ window.addEventListener('keyup', async (e) => {
   render();
 });
 
+window.pf.on('update:changed', async () => { X.update = await window.pf.invoke('update:status').catch(() => null); if (S.page === 'settings') render(); });
 window.pf.on('notes:changed', async () => { X.notes = await window.pf.invoke('notes:list'); X.notion = await window.pf.invoke('notion:status'); if (S.page === 'notes') render(); });
 window.pf.on('llm:progress', async (p) => { X.dlLlm = p.done ? null : { pct: Math.round(p.pct) }; if (p.done) await loadExtra(); if (S.page === 'settings') render(); });

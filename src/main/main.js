@@ -41,6 +41,7 @@ const { NemoRuntime } = require('../meetings/runtime');
 const { MeetingService } = require('../meetings/service');
 const { SyncService } = require('../sync/service');
 const syncIpc = require('../sync/ipc');
+const { Updater, isInstalled } = require('./updater');
 
 const R = (f) => path.join(__dirname, '..', 'renderer', f);
 const PRELOAD = path.join(__dirname, 'preload.js');
@@ -49,7 +50,7 @@ const OFF = process.env.PF_OFFSCREEN ? -6000 : 0;   // tests: render windows far
 
 let store, typer, controller, asr = null, tray = null, mainWin = null, pillWin = null, capWin = null, meetingCaptureWin = null, mic;
 let outbox, noteService, notion, secrets, slang, llmWorker = null, llmService, llmState = { runtime: false, model: 'unknown', error: '' };
-let meetingStore = null, meetingService = null, sync = null, slangChanged = () => {};
+let meetingStore = null, meetingService = null, sync = null, slangChanged = () => {}, updater = null, trayMenu = null;
 let engine = { state: 'loading', error: '' };
 let quitting = false, modelsDir, modelsOk = false;
 
@@ -110,9 +111,11 @@ function createTray() {
     { label: 'Dictation enabled', type: 'checkbox', checked: controller ? controller.enabled : true, click: (i) => controller.setEnabled(i.checked) },
     { label: 'Whisper mode', type: 'checkbox', checked: !!(store && store.get().whisper.enabled), click: (i) => patchSettings({ whisper: { ...store.get().whisper, enabled: i.checked } }) },
     { label: 'Translate Dutch <-> English (experimental)', type: 'checkbox', checked: !!(store && store.get().translate.enabled), click: (i) => patchSettings({ translate: { ...store.get().translate, enabled: i.checked } }) },
+    ...(updater && updater.status().state === 'ready' ? [{ type: 'separator' }, { label: 'Restart to update', click: () => updater.restartToUpdate() }] : []),
     { type: 'separator' },
     { label: 'Quit', click: () => { quitting = true; app.quit(); } },
   ]);
+  trayMenu = menu;
   tray.setContextMenu(menu());
   tray.on('click', () => { mainWin.show(); mainWin.focus(); });
   tray.on('right-click', () => tray.setContextMenu(menu()));
@@ -272,6 +275,10 @@ function wireIpc() {
   // the hotword list is read when the engine starts: a changed list or bias restarts it (once, after the edits settle)
   slangChanged = require('../slang/hotwords').settleRestart({ shouldRestart: () => store.get().slang.biasing.enabled || !!asr?.opts?.hotwords, restart: () => startEngine(), ms: 2500 });
   slangIpc.register(ipcMain, { service: slang, dialog, getWindow: () => mainWin, onChange: () => { slangChanged(); sync.notifyLocalChange(); } });
+  const fromMain = (event) => { if (event.sender !== mainWin?.webContents) throw new Error('Update action is not allowed from this page'); };
+  ipcMain.handle('update:status', (event) => { fromMain(event); return updater.status(); });
+  ipcMain.handle('update:check', (event) => { fromMain(event); return updater.checkNow(); });
+  ipcMain.handle('update:restart', (event) => { fromMain(event); return updater.restartToUpdate(); });
   syncIpc.register(ipcMain, { service: sync, isMainWindow: (event) => event.sender === mainWin?.webContents });
   ipcMain.handle('login:set', (_e, on) => {
     if (!process.env.PF_NO_LOGIN_ITEM) app.setLoginItemSettings({ openAtLogin: !!on });
@@ -350,7 +357,15 @@ else if (!lock) {
         slangChanged();
       },
     });
-    store.onSet = () => sync.notifyLocalChange();
+    // updates from the latest GitHub release: only an installed copy ever loads autoUpdater or contacts anything (src/main/updater.js)
+    updater = new Updater({
+      installed: isInstalled({ isPackaged: app.isPackaged, execPath: process.execPath, exists: fs.existsSync }),
+      getAutoUpdater: () => require('electron').autoUpdater,
+      version: app.getVersion(), isAuto: () => store.get().updates.auto, isBusy: () => !!controller?.session, log, firstRun: squirrel.squirrelEvent(argv) === 'firstrun',
+      beforeQuit: () => { quitting = true; },
+      onChange: () => { send(mainWin, 'update:changed'); if (tray && trayMenu) tray.setContextMenu(trayMenu()); },
+    });
+    store.onSet = () => { sync.notifyLocalChange(); updater.settingsChanged(); };
     wireIpc();
     createCapture();
     createMeetingCapture();
@@ -382,11 +397,12 @@ else if (!lock) {
     controller.on('notes', () => send(mainWin, 'notes:changed'));
     send(pillWin, 'pill:flags', controller.flags());
     sync.start();
+    updater.start();
     writeMcpStatus(); setInterval(writeMcpStatus, 15000).unref();
     controller.on('result', (r) => { log('info', `dictation done words=${r.words} chars=${r.chars} finals=${r.finals} insertions=${r.insertions} duplicateFinals=${r.duplicateFinals}`); send(mainWin, 'app:stats', store.summary()); });
 
-    if (process.env.PF_TEST_HOOK) require(process.env.PF_TEST_HOOK)({ app, get: () => ({ store, typer, controller, mainWin, pillWin, asr: () => asr, mic, engine: () => engine, meetings: meetingService, sync }) });
+    if (process.env.PF_TEST_HOOK) require(process.env.PF_TEST_HOOK)({ app, get: () => ({ store, typer, controller, mainWin, pillWin, asr: () => asr, mic, engine: () => engine, meetings: meetingService, sync, updater }) });
   });
-  app.on('before-quit', () => { quitting = true; try { fs.unlinkSync(path.join(app.getPath('userData'), MCP_STATUS_FILE)); } catch (_) { /* none */ } if (meetingService) { try { meetingService.close(); } catch (e) { log('error', 'meeting shutdown failed: ' + String(e.message || e).slice(0, 120)); } } if (typer) typer.close(); if (llmWorker) llmWorker.stop('quit'); if (notion) notion.stop(); if (sync) sync.stop(); });
+  app.on('before-quit', () => { quitting = true; try { fs.unlinkSync(path.join(app.getPath('userData'), MCP_STATUS_FILE)); } catch (_) { /* none */ } if (meetingService) { try { meetingService.close(); } catch (e) { log('error', 'meeting shutdown failed: ' + String(e.message || e).slice(0, 120)); } } if (typer) typer.close(); if (llmWorker) llmWorker.stop('quit'); if (notion) notion.stop(); if (sync) sync.stop(); if (updater) updater.stop(); });
   app.on('window-all-closed', () => { /* stay in the tray */ });
 }

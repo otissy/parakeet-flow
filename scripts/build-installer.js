@@ -95,9 +95,26 @@ function main(argv) {
     const p = path.join(sq, f), st = fs.statSync(p);
     log(`${f}  ${st.size} bytes${f.endsWith('.exe') ? '  sha256 ' + sha256(p) : ''}`);
   }
+  const rel = checkReleaseFolder(sq);
+  log(`RELEASES names ${rel.map((x) => x.file).join(', ')}: name, size and SHA1 match. Upload RELEASES, that nupkg and the Setup exe to the release, under these exact names.`);
   log('unsigned: Windows SmartScreen or Norton may warn on first run (see README)');
   return 0;
 }
 
+/** auto-update fetches <feed>/RELEASES, then <feed>/<the name inside it>: that name must be the asset's name. GitHub turns spaces in an asset name into dots, so the name may hold none */
+function checkReleaseFolder(dir) {
+  const { parseReleases } = require('../src/main/updater');
+  const rows = parseReleases(fs.readFileSync(path.join(dir, 'RELEASES'), 'utf8'));
+  if (!rows.length) throw new Error('RELEASES holds no release');
+  for (const r of rows) {
+    const p = path.join(dir, r.file);
+    if (!/^[A-Za-z0-9._-]+$/.test(r.file)) throw new Error(r.file + ': GitHub would rename this asset');
+    if (!fs.existsSync(p)) throw new Error(r.file + ' is named in RELEASES but not in the folder');
+    if (fs.statSync(p).size !== r.size) throw new Error(r.file + ': size differs from RELEASES');
+    if (crypto.createHash('sha1').update(fs.readFileSync(p)).digest('hex') !== r.sha1) throw new Error(r.file + ': SHA1 differs from RELEASES');
+  }
+  return rows;
+}
+
 if (require.main === module) { try { process.exit(main(process.argv.slice(2))); } catch (e) { log('build-installer: ' + e.message); process.exit(1); } }
-module.exports = { outputDir, ensure7z, preflight, removeBundledHelper, ensureVcRuntime, VCRUNTIME };
+module.exports = { checkReleaseFolder, outputDir, ensure7z, preflight, removeBundledHelper, ensureVcRuntime, VCRUNTIME };

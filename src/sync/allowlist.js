@@ -31,7 +31,7 @@ const LOCAL_ONLY = Object.freeze({
   deny: 'safety list per PC', snippets: 'may hold personal text', userName: 'personal',
   'notes.notion.enabled': 'account', 'notes.notion.targetType': 'account', 'notes.notion.targetId': 'account', 'notes.notion.titleProperty': 'account',
   'notes.export.enabled': 'file path', 'notes.export.folder': 'file path',
-  'sync.enabled': 'sync itself is switched per PC',
+  'sync.enabled': 'sync itself is switched per PC', 'updates.auto': 'network choice per PC',
 });
 
 const TERM_FIELDS = Object.freeze(['term', 'variants', 'heard', 'category', 'lang', 'casing', 'matchCase', 'allowCommon', 'bias']);

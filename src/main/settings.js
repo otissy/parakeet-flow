@@ -42,6 +42,8 @@ const DEFAULTS = {
   typing: SN.TYPING_DEFAULTS,
   // customization sync with the user's own Supabase project (src/sync): off until switched on; URL, key and tokens live in secrets.json
   sync: { enabled: false },
+  // ask GitHub for a newer version (src/main/updater.js, installed copies only); Settings says what that request holds
+  updates: { auto: true },
 };
 
 const flt = (v, lo, hi, d) => (Number.isFinite(+v) && v !== '' && v !== null ? Math.min(hi, Math.max(lo, +v)) : d);
@@ -117,6 +119,7 @@ function normalize(s) {
     mcp: SN.normMcp(s?.mcp),
     typing: SN.normTyping(s?.typing),
     sync: { enabled: s?.sync?.enabled === true },
+    updates: { auto: s?.updates?.auto !== false },
   };
 }
 
