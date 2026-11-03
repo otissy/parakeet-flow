@@ -1,6 +1,6 @@
 'use strict';
-/* Builds the Squirrel.Windows installer into a FRESH folder: D:\builds\parakeet-flow\<version> (override with
-   PF_BUILDS). Never reuses a folder and never touches win-unpacked of an earlier build: electron-builder fails with
+/* Builds the Squirrel.Windows installer into a FRESH folder: D:\builds\parakeet-flow\<version> (override with the PF_BUILDS
+   environment variable, e.g. C:/builds/parakeet-flow on a PC without D:). Never reuses a folder and never touches win-unpacked of an earlier build: electron-builder fails with
    EPERM when it tries to delete a previous D:\builds\...\win-unpacked. Squirrel's temp (it unpacks the whole app)
    is kept on the same drive next to the output. Publishes nothing: no GitHub, no feed.
    Usage: node scripts/build-installer.js [--suffix=<text>]   (suffix is appended to the folder, e.g. for a re-run) */

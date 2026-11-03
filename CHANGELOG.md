@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.6 - 2026-11-03
+
+- 0.2.6 — rebuild of 0.2.5 (same features); build output folder configurable (PF_BUILDS environment variable, default D:/builds/parakeet-flow).
+
 ## 0.2.5 - 2026-10-25
 
 - The main window is never blank any more: it shows a loading card at once, draws the page as soon as the settings arrive, fills in the slower parts as they land, explains a slow start, and shows an error card with Try again when something fails (before, one slow or failed startup call left it empty).
