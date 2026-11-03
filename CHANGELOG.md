@@ -4,6 +4,10 @@
 
 - The installer now carries the Visual C++ runtime (msvcp140, vcruntime140, vcruntime140_1) next to the app: the optional local AI model no longer needs the redistributable on the PC.
 - README install section names the current version.
+- Optional customization sync between your own PCs (Settings > Sync, off by default): each install has its own ID, installs link with a single-use code, and only an allowlist of customization goes to a Supabase project you own. The installer holds no database address or key. Dictated text, notes, meetings, tokens and logs never leave the PC, and while sync is off the app makes no network call for it. See docs/sync-setup.md.
+- MCP server dependencies updated for audit findings (body-parser, fast-uri, qs). The docs now show how to run the server with the installed exe, so Node is not needed on the PC.
+- README corrected: the NeMo runtime archive is SHA-256 checked, the meeting models are not.
+- `npm test` works from a clean clone and runs the suites one at a time.
 
 ## 0.2.6 - 2026-11-03
 

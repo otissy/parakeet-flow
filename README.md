@@ -2,7 +2,7 @@
 
 Hold a key and talk: the live words show in a small bar, and when you let go the finished, punctuated text is
 inserted into the focused app once (like Wispr Flow; typing while you speak is an opt-in experiment). Everything runs on this PC (Parakeet TDT 0.6B v3, int8,
-via sherpa-onnx). A small floating bar shows the level and the live text; a tray icon and a main window hold
+via sherpa-onnx); the only things that can leave it are the optional Notion sync and the optional customization sync below, both off until you switch them on. A small floating bar shows the level and the live text; a tray icon and a main window hold
 the settings. The design follows the layout and feel of Wispr Flow without using its name or logo.
 
 ## Install (Windows installer, 0.2.61)
@@ -55,7 +55,7 @@ Norton may show a reputation warning (for example IDP.Generic) for a new unsigne
 (built from `src/typer/helper/PfHelper.cs`, shipped inside the install with version info and a manifest; it types text and watches the hotkey).
 What it does, how to verify it, how to restore and exclude only that file, and how to report a false positive: `docs/antivirus.md`.
 Helper SHA-256 (0.2.61): `d259444f80e5a8fbc73bfad7b6a679f7b842ce23d7341d9faadbdde32566db9e`. The app makes no network calls except the model downloads
-(and Notion, only if you turned it on).
+(and Notion and customization sync, only if you turned them on).
 
 Update: run the newer Setup; it replaces the app and keeps your data. There is no update server and no
 auto-update.
@@ -208,6 +208,27 @@ itself, so the real Claude Code prompt has been verified only by the user's own 
 - **Markdown export** for apps without MCP (an Obsidian vault, any folder): Settings > Markdown export. One `.md` per note with
   front matter (title, id, created, tags, source), always the same file name for the same note.
 - The built-in Notion sync with your own integration token (above) is unchanged and optional.
+
+## Sync your customization between PCs (optional, off by default)
+
+Settings > Sync keeps your customization the same on your own installs, through a Supabase project **you** own. The installer and this
+repo contain no database address or key: you paste the project URL and publishable key once per PC. Setup, the table layout and the security
+rules: `docs/sync-setup.md`.
+
+| | |
+|---|---|
+| **What goes** | Only settings on an explicit allowlist (`src/sync/allowlist.js`): tone, voice commands and note phrases, translate and cleanup preferences, typing preferences, filler words, hotkeys; your Dictionary rows; your words in My terms with their bias percent; which slang packs are on. Also a random install ID, the app version, and, as with any connection, your IP address, which Supabase can see. |
+| **What never goes** | Dictated text, transcript history, notes, meetings, audio, logs, the Notion token and every other secret. Also anything tied to one PC or person: microphone, GPU and threads, whisper mode, file paths, window positions, your name, snippets, the never-type-into list, Notion settings. A new setting stays local until someone adds it to the allowlist. |
+| **Where it goes** | Only to the Supabase project you entered, over HTTPS, in one table row that only this install and the installs you linked can read or change. It is stored there unencrypted (Supabase encrypts its disks, but the project's owner can read the row). |
+| **When** | Never while the switch is off: no network call at all. On: a few seconds after a change and every 5 minutes. Switching off stops the calls; what was already uploaded stays in your project until you delete it there. |
+
+Each install has its own ID. To link two PCs, press **Create link code** on one and enter the code under **Join with a code** on the other (6 characters, single use, 10 minutes).
+**Unlink** keeps everything on the PC and stops sharing. Link only your own installs: linked installs can change each other's customization.
+
+Per key, the newest edit wins, by the PCs' clocks. Before the first pull from a project or group, a copy of your customization is saved in `%APPDATA%\parakeet-flow\sync-backups`
+(**Restore backup** puts it back), and when two PCs changed the same key, Settings > Sync lists what was replaced. Offline, the app works as usual: changes wait in
+`sync-state.json` and go up when the server is back. Tokens and the key are stored encrypted with Windows (safeStorage, `secrets.json`), never in `settings.json`; a secret or
+service-role key is refused.
 
 ## How it works
 

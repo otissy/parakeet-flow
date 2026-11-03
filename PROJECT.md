@@ -11,7 +11,7 @@ Tray + click-through floating pill. Everything local. Built and tested 2026-10-1
 ## How to run and test
 
 - run: `npm start` (uses node_modules/electron 31.7.7)
-- test: `node ~/.claude/skills/plan/ladder.js .tests/<feature>` (node:test, TAP via ladder)
+- test: `npm test` (all suites, one file at a time), or `node --test --test-concurrency=1 ".tests/<feature>/*.test.js"`; the browser tests need `npx playwright-core install chromium` once
 - models: downloaded once into `%APPDATA%\parakeet-flow\models`, SHA-256 verified (see README)
 
 ## Limits
@@ -37,6 +37,7 @@ Tray + click-through floating pill. Everything local. Built and tested 2026-10-1
 
 - model URLs, sizes, SHA-256 -> `src/asr/model-store.js`
 - settings defaults -> `src/main/settings.js`
+- what customization sync may send -> `src/sync/allowlist.js`
 
 ## Added 2026-10-13: commands, tone, translate, whisper, local-model cleanup, notes
 Tests: .tests/{commands,tone,cleanup,notes,whisper,offparity}; .tests/features-e2e holds the shared Electron hook and the manual
@@ -137,3 +138,20 @@ Known problems: real-voice accuracy of the starter pack is unverified; only the 
 - **2026-10-25** One Parakeet Flow at a time, NEWEST WINS (`src/main/single-instance.js`, tests `.tests/single-instance/`, 18 tests): a second start sends `{kind:'parakeet-flow:handover'}` with its lock request; the running copy quits, the new start waits up to 10 s for the lock, then `releaseSingleInstanceLock` + `relaunch` + `exit(0)` so a clean process boots. An older build (sends no data, e.g. 0.2.3) still only makes the running copy show its window. If the running copy never leaves, the new start exits and the old copy stays. Proof: each of 5 deliberately broken variants fails 1-3 tests (`../pf-newest-wins-proof/broken-build-proof.txt`). Not verified: the real Electron lock between two real processes (needs a visible app start; the fake lock models Electron's documented behaviour).
 
 - **2026-11-03** Dependency check of 0.2.6 (branch claude/verify-deps): node-llama-cpp's DLLs import msvcp140/vcruntime140/vcruntime140_1, which 0.2.6 did not ship (a PC without the VC++ redistributable could not load the local AI model). 0.2.61 ships them next to the exe (build-installer copies them from System32 into build-extra/vcruntime; `.tests/squirrel/l4-imports.test.js` reads every native file of the built package). sherpa-onnx and Electron import only Windows DLLs. `npm test` points at `.claude/skills/plan/ladder.js`, which is not in the repo: run `node --test --test-concurrency=1 ".tests/<dir>/*.test.js"` (parallel files share %TEMP%\pf-cs-bin and race on the helper compile). boot L4 needs `playwright-core` (not declared; use NODE_PATH to a folder that has it). Real-engine/ASR L4 tests are skipped without the Kokoro files in ~/.claude/claude-voice. Squirrel install/uninstall cannot be redirected with LOCALAPPDATA/APPDATA (the known-folder API ignores them), so it needs a PC without an install.
+
+## Added 2026-11-03: customization sync (0.2.61, branch claude/verify-deps)
+
+Code in `src/sync/`: `allowlist.js` (what may go; the only upload builder), `merge.js` (per-key last write wins), `client.js` (Supabase REST, key refusal, codes), `service.js` (cycle, retry, backup), `ipc.js`. UI `src/renderer/sync-ui.js`. SQL `supabase/migrations`, setup `docs/sync-setup.md`. Design copied from parakeet-check, re-implemented in JS, main process only.
+
+| Limit | What it means |
+|---|---|
+| Off is enforced in one place | every network path goes through `SyncService._client()`, which returns null while `settings.sync.enabled` is false; `.tests/sync/l3` patches net, tls, http, https, dns and fetch and expects zero calls |
+| A new setting is local by default | `.tests/sync/l2` fails until the setting is on `SETTING_PATHS` or `LOCAL_ONLY` |
+| No database address or key in the repo | `.tests/sync/l4-ui` greps tracked files. Keep the real project ref out of docs, tests and this file. Live test: `PF_SYNC_TEST_URL`, `PF_SYNC_TEST_KEY`, `PF_SYNC_TEST_IDS` |
+| First-scan timestamps | a value equal to the default gets t=0 (loses to any customization, never a conflict); another value gets the mtime settings.json had before the switch, so a fresh PC does not overwrite an old one |
+| Clocks decide | per-key last write wins uses PC clocks; a time more than 5 minutes ahead is pulled back to now |
+| A row needs both PCs to poll | after a code, the creator polls every 20 s until someone joined (at most 10 min); the joiner polls for 2 min; otherwise every 5 min |
+| Refresh tokens are single use | one client instance per service and one refresh at a time; only `refresh_token_not_found` / `user_not_found` make a new identity |
+| Not synced on purpose | snippets (may hold personal text), never-type-into list, whisper settings (depend on the mic), user pack contents (only My terms and pack on/off) |
+| `npm audit` left over | mcp: zod 3 (fix is a major; stdio server fed only by the local MCP client). llm-runtime: simple-git via node-llama-cpp, latest 3.22.2 still wants ^3.36 (only used to fetch llama.cpp sources; the app calls getLlama with build:'never', skipDownload:true). Electron 31 itself has many advisories (a major upgrade; pages are local files) |
+| NeMo models | hash-pinned only for the runtime archive; `nemo-speech pull` fetches the models and the app does not check them |
