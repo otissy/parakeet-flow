@@ -2,7 +2,7 @@
 
 Hold a key and talk: the live words show in a small bar, and when you let go the finished, punctuated text is
 inserted into the focused app once (like Wispr Flow; typing while you speak is an opt-in experiment). Everything runs on this PC (Parakeet TDT 0.6B v3, int8,
-via sherpa-onnx); the only things that can leave it are the optional Notion sync and the optional customization sync below, both off until you switch them on. A small floating bar shows the level and the live text; a tray icon and a main window hold
+via sherpa-onnx). Your words stay here: what can leave the PC is only the optional Notion sync and the optional customization sync below, both off until you switch them on. The installed app also asks GitHub for updates (on by default, see Updates below). A small floating bar shows the level and the live text; a tray icon and a main window hold
 the settings. The design follows the layout and feel of Wispr Flow without using its name or logo.
 
 ## Install (Windows installer, 0.2.61)
@@ -54,11 +54,21 @@ The installer is not signed. Windows SmartScreen may say "Windows protected your
 Norton may show a reputation warning (for example IDP.Generic) for a new unsigned installer or for the little helper `pf-helper.exe`
 (built from `src/typer/helper/PfHelper.cs`, shipped inside the install with version info and a manifest; it types text and watches the hotkey).
 What it does, how to verify it, how to restore and exclude only that file, and how to report a false positive: `docs/antivirus.md`.
-Helper SHA-256 (0.2.61): `7353e16f3383b95ae7fab6a0df6f9bbb66352c9a0294f1147e09e5ae459d19fd`. The app makes no network calls except the model downloads
-(and Notion and customization sync, only if you turned them on).
+Helper SHA-256 (0.2.61): `7353e16f3383b95ae7fab6a0df6f9bbb66352c9a0294f1147e09e5ae459d19fd`. The app makes no network calls except the model downloads,
+the update check (installed copies, on by default, see below) and Notion and customization sync, only if you turned them on.
 
-Update: run the newer Setup; it replaces the app and keeps your data. There is no update server and no
-auto-update.
+## Updates
+
+From 0.2.61 the installed app updates itself from this repo's latest GitHub release, through Squirrel (Electron's autoUpdater). Earlier versions do not: run the newer Setup once, it replaces the app and keeps your data.
+
+- **When:** one minute after start (10 minutes after a fresh install), then every 4 hours. A new version downloads in the background, then installs the next time you quit; the tray and Settings > Updates offer **Restart to update**. It never restarts by itself and never during a dictation.
+- **What it sends:** normal web requests to github.com (and GitHub's download host) for `RELEASES` and, if newer, the package. Those requests hold the app name, the installed version and the PC type (`?id=...&localVersion=...&arch=...`), and GitHub sees your IP address. Nothing you dictated, no settings, no install ID.
+- **Off:** Settings > Updates > **Check for updates automatically** (default on). Off means no automatic request; **Check now** still works when you press it. This switch has nothing to do with Sync: with Sync off, this request can still happen.
+- **Only installed copies:** `npm start` and a `win-unpacked` folder never check. Failures show nothing in the window and go to `logs\app.log` (no dictated text, as always).
+- The update itself is not signed; Squirrel checks the package's SHA1 and size against `RELEASES` from the same release.
+
+Publishing a release (by hand, nothing here publishes): upload `RELEASES`, `parakeet-flow-<version>-full.nupkg` and the Setup exe from `squirrel-windows` to a GitHub release under those exact names, and do not mark it pre-release or draft (`/releases/latest` skips those). `scripts/build-installer.js` checks that `RELEASES` names that nupkg with the right size and hash.
+
 
 Uninstall: Settings > Apps > Parakeet Flow > Uninstall (or `%LOCALAPPDATA%\parakeet-flow\Update.exe --uninstall`).
 It removes the app, the shortcut and the Settings entry. Squirrel cannot delete the file it runs from, so an empty-ish `%LOCALAPPDATA%\parakeet-flow` (Update.exe, 1.9 MB, plus a `.dead` marker) stays; delete that folder by hand if you want it gone. `%APPDATA%\parakeet-flow` (models, settings,
@@ -220,7 +230,7 @@ rules: `docs/sync-setup.md`.
 | **What goes** | Only settings on an explicit allowlist (`src/sync/allowlist.js`): tone, voice commands and note phrases, translate and cleanup preferences, typing preferences, filler words, hotkeys; your Dictionary rows; your words in My terms with their bias percent; which slang packs are on. Also a random install ID, the app version, and, as with any connection, your IP address, which Supabase can see. |
 | **What never goes** | Dictated text, transcript history, notes, meetings, audio, logs, the Notion token and every other secret. Also anything tied to one PC or person: microphone, GPU and threads, whisper mode, file paths, window positions, your name, snippets, the never-type-into list, Notion settings. A new setting stays local until someone adds it to the allowlist. |
 | **Where it goes** | Only to the Supabase project you entered, over HTTPS, in one table row that only this install and the installs you linked can read or change. It is stored there unencrypted (Supabase encrypts its disks, but the project's owner can read the row). |
-| **When** | Never while the switch is off: no network call at all. On: a few seconds after a change and every 5 minutes. Switching off stops the calls; what was already uploaded stays in your project until you delete it there. |
+| **When** | Never while the switch is off: sync makes no network call at all (the update check above is separate). On: a few seconds after a change and every 5 minutes. Switching off stops the calls; what was already uploaded stays in your project until you delete it there. |
 
 Each install has its own ID. To link two PCs, press **Create link code** on one and enter the code under **Join with a code** on the other (6 characters, single use, 10 minutes).
 **Unlink** keeps everything on the PC and stops sharing. Link only your own installs: linked installs can change each other's customization.

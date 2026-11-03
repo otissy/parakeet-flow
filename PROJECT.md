@@ -155,3 +155,15 @@ Code in `src/sync/`: `allowlist.js` (what may go; the only upload builder), `mer
 | Not synced on purpose | snippets (may hold personal text), never-type-into list, whisper settings (depend on the mic), user pack contents (only My terms and pack on/off) |
 | `npm audit` left over | mcp: zod 3 (fix is a major; stdio server fed only by the local MCP client). llm-runtime: simple-git via node-llama-cpp, latest 3.22.2 still wants ^3.36 (only used to fetch llama.cpp sources; the app calls getLlama with build:'never', skipDownload:true). Electron 31 itself has many advisories (a major upgrade; pages are local files) |
 | NeMo models | hash-pinned only for the runtime archive; `nemo-speech pull` fetches the models and the app does not check them |
+
+## Added 2026-11-03: auto-update (0.2.61)
+
+`src/main/updater.js`: Electron autoUpdater, feed `https://github.com/otissy/parakeet-flow/releases/latest/download`. Inert unless `isInstalled` (packaged, in app-<version>, Update.exe above): autoUpdater is not even loaded. Tests: `.tests/updater` (L2 fake autoUpdater and clock; L4 the real Squirrel.exe renamed Update.exe in a temp folder against a GitHub-shaped server on 127.0.0.1, redirect included).
+
+| Limit | What it means |
+|---|---|
+| Only a real release proves | real update 0.2.61 -> next on an installed copy: GitHub's redirect for RELEASES and the nupkg, Electron's autoUpdater events from a real Update.exe, applying into app-<new>, shortcut and pinned icon afterwards, Restart to update, the tray item, Norton's reaction to the update, and that the old folder is cleaned up later |
+| 0.2.6 cannot update itself | it has no updater: move to 0.2.61 by Setup |
+| Release asset names | build-installer's `checkReleaseFolder` fails the build if RELEASES and the nupkg disagree; GitHub renames spaces to dots, so the Setup exe's asset gets dots (harmless, the feed never fetches it) |
+| A version must be newer as NuGet sees it | 0.2.62 after 0.2.61; a draft or pre-release is not `latest` |
+| Check request | Squirrel adds `?id=&localVersion=&arch=` (seen in the L4 test); README and Settings say so |
