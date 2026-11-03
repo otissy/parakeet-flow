@@ -34,6 +34,21 @@ function ensure7z() {
   log('created electron-winstaller/vendor/7z.exe');
 }
 
+/** node-llama-cpp's DLLs import msvcp140 / vcruntime140 / vcruntime140_1 (Visual C++ 2015-2022 runtime), which Electron and the
+    installer do not carry: a clean PC without the VC++ redistributable could not load the local AI model. They are shipped app-local
+    (next to Parakeet Flow.exe, package.json build.extraFiles) from this PC's System32 copies. Microsoft permits that for these files. */
+const VCRUNTIME = ['msvcp140.dll', 'vcruntime140.dll', 'vcruntime140_1.dll'];
+const VCRUNTIME_DIR = path.join(ROOT, 'build-extra', 'vcruntime');
+function ensureVcRuntime(sysDir = path.join(process.env.WINDIR || 'C:\Windows', 'System32')) {
+  fs.mkdirSync(VCRUNTIME_DIR, { recursive: true });
+  for (const f of VCRUNTIME) {
+    const from = path.join(sysDir, f);
+    if (!fs.existsSync(from)) throw new Error(`${f} not found in ${sysDir}: install the Visual C++ 2015-2022 x64 redistributable on the build PC`);
+    fs.copyFileSync(from, path.join(VCRUNTIME_DIR, f));
+    log(`${f} ${fs.statSync(from).size} bytes  sha256 ${sha256(from)}`);
+  }
+}
+
 function preflight() {
   const need = [
     ['assets/icon.ico', 'run: npm run icon'],
@@ -48,6 +63,7 @@ function preflight() {
   ];
   for (const [f, hint] of need) if (!fs.existsSync(path.join(ROOT, f))) throw new Error(`missing ${f}: ${hint}`);
   ensure7z();
+  ensureVcRuntime();
 }
 
 /** the shipped helper is a build product: removed before and after, so a stale src/typer/helper/bin can never be used by a later dev run or test */
@@ -84,4 +100,4 @@ function main(argv) {
 }
 
 if (require.main === module) { try { process.exit(main(process.argv.slice(2))); } catch (e) { log('build-installer: ' + e.message); process.exit(1); } }
-module.exports = { outputDir, ensure7z, preflight, removeBundledHelper };
+module.exports = { outputDir, ensure7z, preflight, removeBundledHelper, ensureVcRuntime, VCRUNTIME };

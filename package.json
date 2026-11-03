@@ -40,6 +40,7 @@
       "!**/node_modules/**/{test,tests,__tests__,docs,example,examples}/**",
       ".claude/skills/sync-parakeet-notes/SKILL.md"
     ],
+    "extraFiles": [{ "from": "build-extra/vcruntime", "to": ".", "filter": ["*.dll"] }],
     "win": {
       "target": [
         "squirrel"

@@ -5,3 +5,4 @@ models/
 proof/*.wav
 .tests/fixtures/*.wav
 src/typer/helper/bin/
+build-extra/
