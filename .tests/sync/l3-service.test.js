@@ -232,6 +232,15 @@ test('a local backup is written before the first pull, holds what was here, and 
   assert.equal(A.store.get().tone.enabled, true, 'a restore is a new edit and wins everywhere');
 });
 
+test('an install reading back only its own upload makes no backup', async () => {
+  const a = on();
+  await a.sync.syncNow();
+  await a.sync.syncNow();
+  a.sync.stop();
+  assert.equal(a.server.db.rows.length, 1);
+  assert.equal(a.sync.status().backup, '');
+});
+
 test('both PCs changed one key offline: newest wins, the other value is listed visibly, other keys survive', async () => {
   let clock = 2000000;
   const server = fakeServer();

@@ -232,7 +232,7 @@ class SyncService {
       if (row && Number(row.doc?.schema) > 1) throw new Error('This project holds customization from a newer app version. Update this app to sync.');
       const remote = sanitizeRemote(row ? row.doc : null, this.now());
       if (s.scope !== scope) { s.scope = scope; s.synced = {}; }
-      if (Object.keys(remote).length && s.backupScope !== scope) {    // before the first pull from this project or group
+      if (s.backupScope !== scope && Object.values(remote).some((e) => e.by !== me)) {    // before the first pull of another install's values in this project or group
         this._backup(scope);
         s.backupScope = scope;
       }

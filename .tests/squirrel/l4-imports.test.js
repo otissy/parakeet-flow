@@ -8,7 +8,7 @@ const assert = require('node:assert');
 const fs = require('fs');
 const path = require('path');
 const root = path.join(__dirname, '..', '..');
-const built = path.join(process.env.PF_BUILDS || 'D:/builds/parakeet-flow', require(path.join(root, 'package.json')).version, 'win-unpacked');
+const built = path.join(process.env.PF_BUILT_DIR || path.join(process.env.PF_BUILDS || 'D:/builds/parakeet-flow', require(path.join(root, 'package.json')).version), 'win-unpacked');
 const VC = /^(msvcp|vcruntime|msvcr|concrt|vcomp|vccorlib|mfc)\d*/i;
 
 function imports(file) {

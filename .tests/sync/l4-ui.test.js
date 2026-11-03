@@ -168,3 +168,22 @@ test('the repo holds no database address or key: no project URL or publishable k
   }
   assert.deepStrictEqual(hits, []);
 });
+
+const builtDir = process.env.PF_BUILT_DIR || path.join(process.env.PF_BUILDS || 'D:/builds/parakeet-flow', require(path.join(root, 'package.json')).version);
+const appDir = path.join(builtDir, 'win-unpacked', 'resources', 'app');
+test('the built package carries the sync code and no database address or key', { skip: fs.existsSync(path.join(appDir, 'src')) ? false : 'no build at ' + appDir }, () => {
+  assert.ok(fs.existsSync(path.join(appDir, 'src', 'sync', 'allowlist.js')));
+  assert.ok(fs.existsSync(path.join(appDir, 'src', 'renderer', 'sync-ui.js')));
+  const hits = [];
+  (function walk(d) {
+    for (const e of fs.readdirSync(d, { withFileTypes: true })) {
+      const p = path.join(d, e.name);
+      if (e.isDirectory()) { if (e.name !== 'node_modules') walk(p); } else if (/\.(js|json|html|css|md|sql)$/i.test(e.name)) {
+        const s = fs.readFileSync(p, 'utf8');
+        if (/[a-z0-9]{20}\.supabase\.co|sb_publishable_[A-Za-z0-9_-]{16,}|sb_secret_[A-Za-z0-9_-]{16,}/.test(s)) hits.push(path.relative(appDir, p));
+      }
+    }
+  })(appDir);
+  assert.deepStrictEqual(hits, []);
+  assert.ok(!fs.existsSync(path.join(appDir, '.tests')), 'tests are not shipped');
+});

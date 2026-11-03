@@ -44,7 +44,7 @@ test('--squirrel-firstrun boots the whole app; npm start script strips ELECTRON_
 });
 
 /* the BUILT package (D:/builds/parakeet-flow/<version>/win-unpacked, made by npm run installer) must hold what the source tree holds */
-const builtApp = path.join(process.env.PF_BUILDS || 'D:/builds/parakeet-flow', require(path.join(root, 'package.json')).version, 'win-unpacked', 'resources', 'app');
+const builtApp = path.join(process.env.PF_BUILT_DIR || path.join(process.env.PF_BUILDS || 'D:/builds/parakeet-flow', require(path.join(root, 'package.json')).version), 'win-unpacked', 'resources', 'app');
 test('built package contains src/slang, every starter pack, the MCP server, the licence files and the shipped helper', { skip: fs.existsSync(builtApp) ? false : 'no built package for this version yet (run npm run installer; UNVERIFIED)' }, () => {
   const walk = (d, o = []) => { for (const e of fs.readdirSync(d, { withFileTypes: true })) { const p = path.join(d, e.name); if (e.isDirectory()) walk(p, o); else o.push(p); } return o; };
   const src = walk(path.join(root, 'src', 'slang'));
