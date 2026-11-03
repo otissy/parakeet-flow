@@ -54,4 +54,4 @@ async function feedRealtime(a, push, chunk = 512) {
   return t0;
 }
 
-module.exports = { FIX, MODEL_DIR, VAD, modelsPresent, ensureFixtures, readWav, onsetSec, feedRealtime, sleep };
+module.exports = { FIX, CV, MODEL_DIR, VAD, modelsPresent, ensureFixtures, readWav, onsetSec, feedRealtime, sleep };
