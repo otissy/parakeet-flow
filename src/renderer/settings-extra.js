@@ -10,6 +10,7 @@ const badge = (txt, cls = '') => `<span class="badge ${cls}">${L.esc(txt)}</span
 
 async function loadExtra() {
   [X.llm, X.notion, X.notes, X.mcp] = await Promise.all([window.pf.invoke('llm:status'), window.pf.invoke('notion:status'), window.pf.invoke('notes:list'), window.pf.invoke('mcp:info')]);
+  X.sync = await window.pf.invoke('sync:status').catch(() => null);
 }
 
 function secCommands() {
@@ -128,7 +129,7 @@ function secTyping() {
   </div>`;
 }
 
-function extraSettings() { return secCommands() + secTone() + secTranslate() + secCleanup() + secNotes() + secRouting() + secMcp() + secExport() + secTyping(); }
+function extraSettings() { return secCommands() + secTone() + secTranslate() + secCleanup() + secNotes() + secRouting() + secMcp() + secExport() + secTyping() + secSync(); }
 
 function relTime(ms) {
   const s = Math.max(0, Math.round(ms / 1000));
@@ -153,6 +154,7 @@ function notesPage() {
 }
 
 function bindExtra() {
+  bindSync();
   const q = (id) => document.getElementById(id);
   const on = (id, fn) => { const e = q(id); if (e) e.onclick = fn; };
   const val = (id, fn) => { const e = q(id); if (e) e.onchange = () => fn(e.value); };

@@ -39,6 +39,8 @@ const llmStore = require('../llm/llm-store');
 const { MeetingStore } = require('../meetings/store');
 const { NemoRuntime } = require('../meetings/runtime');
 const { MeetingService } = require('../meetings/service');
+const { SyncService } = require('../sync/service');
+const syncIpc = require('../sync/ipc');
 
 const R = (f) => path.join(__dirname, '..', 'renderer', f);
 const PRELOAD = path.join(__dirname, 'preload.js');
@@ -47,7 +49,7 @@ const OFF = process.env.PF_OFFSCREEN ? -6000 : 0;   // tests: render windows far
 
 let store, typer, controller, asr = null, tray = null, mainWin = null, pillWin = null, capWin = null, meetingCaptureWin = null, mic;
 let outbox, noteService, notion, secrets, slang, llmWorker = null, llmService, llmState = { runtime: false, model: 'unknown', error: '' };
-let meetingStore = null, meetingService = null;
+let meetingStore = null, meetingService = null, sync = null, slangChanged = () => {};
 let engine = { state: 'loading', error: '' };
 let quitting = false, modelsDir, modelsOk = false;
 
@@ -268,8 +270,9 @@ function wireIpc() {
     meetingService.captureError(error).catch((failure) => log('error', 'meeting capture failure: ' + String(failure.message || failure).slice(0, 120)));
   });
   // the hotword list is read when the engine starts: a changed list or bias restarts it (once, after the edits settle)
-  const slangChanged = require('../slang/hotwords').settleRestart({ shouldRestart: () => store.get().slang.biasing.enabled || !!asr?.opts?.hotwords, restart: () => startEngine(), ms: 2500 });
-  slangIpc.register(ipcMain, { service: slang, dialog, getWindow: () => mainWin, onChange: slangChanged });
+  slangChanged = require('../slang/hotwords').settleRestart({ shouldRestart: () => store.get().slang.biasing.enabled || !!asr?.opts?.hotwords, restart: () => startEngine(), ms: 2500 });
+  slangIpc.register(ipcMain, { service: slang, dialog, getWindow: () => mainWin, onChange: () => { slangChanged(); sync.notifyLocalChange(); } });
+  syncIpc.register(ipcMain, { service: sync, isMainWindow: (event) => event.sender === mainWin?.webContents });
   ipcMain.handle('login:set', (_e, on) => {
     if (!process.env.PF_NO_LOGIN_ITEM) app.setLoginItemSettings({ openAtLogin: !!on });
     return store.set({ launchAtLogin: !!on });
@@ -333,6 +336,21 @@ else if (!lock) {
     } catch (error) {
       log('error', 'meeting storage unavailable: ' + String(error.message || error).slice(0, 120));
     }
+    // customization sync: off by default, and then no timer and no network (src/sync/service.js)
+    sync = new SyncService({
+      dir: app.getPath('userData'), store, secrets, slang, version: app.getVersion(), log,
+      isBusy: () => !!controller?.session,
+      onStatus: () => send(mainWin, 'sync:changed'),
+      onApplied: () => {          // the same steps as a change made in Settings
+        const s = store.get();
+        if (typer) applyTyperSettings(s);
+        if (controller) controller.applySettings();
+        send(mainWin, 'settings:changed', s);
+        writeMcpStatus();
+        slangChanged();
+      },
+    });
+    store.onSet = () => sync.notifyLocalChange();
     wireIpc();
     createCapture();
     createMeetingCapture();
@@ -363,11 +381,12 @@ else if (!lock) {
     controller.on('flags', (f) => send(pillWin, 'pill:flags', f));
     controller.on('notes', () => send(mainWin, 'notes:changed'));
     send(pillWin, 'pill:flags', controller.flags());
+    sync.start();
     writeMcpStatus(); setInterval(writeMcpStatus, 15000).unref();
     controller.on('result', (r) => { log('info', `dictation done words=${r.words} chars=${r.chars} finals=${r.finals} insertions=${r.insertions} duplicateFinals=${r.duplicateFinals}`); send(mainWin, 'app:stats', store.summary()); });
 
-    if (process.env.PF_TEST_HOOK) require(process.env.PF_TEST_HOOK)({ app, get: () => ({ store, typer, controller, mainWin, pillWin, asr: () => asr, mic, engine: () => engine, meetings: meetingService }) });
+    if (process.env.PF_TEST_HOOK) require(process.env.PF_TEST_HOOK)({ app, get: () => ({ store, typer, controller, mainWin, pillWin, asr: () => asr, mic, engine: () => engine, meetings: meetingService, sync }) });
   });
-  app.on('before-quit', () => { quitting = true; try { fs.unlinkSync(path.join(app.getPath('userData'), MCP_STATUS_FILE)); } catch (_) { /* none */ } if (meetingService) { try { meetingService.close(); } catch (e) { log('error', 'meeting shutdown failed: ' + String(e.message || e).slice(0, 120)); } } if (typer) typer.close(); if (llmWorker) llmWorker.stop('quit'); if (notion) notion.stop(); });
+  app.on('before-quit', () => { quitting = true; try { fs.unlinkSync(path.join(app.getPath('userData'), MCP_STATUS_FILE)); } catch (_) { /* none */ } if (meetingService) { try { meetingService.close(); } catch (e) { log('error', 'meeting shutdown failed: ' + String(e.message || e).slice(0, 120)); } } if (typer) typer.close(); if (llmWorker) llmWorker.stop('quit'); if (notion) notion.stop(); if (sync) sync.stop(); });
   app.on('window-all-closed', () => { /* stay in the tray */ });
 }
