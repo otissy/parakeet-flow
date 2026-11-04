@@ -306,8 +306,7 @@ else if (!lock) {
     log: (t) => log('info', t),
   }));
   app.whenReady().then(async () => {
-    session.defaultSession.setPermissionRequestHandler((_wc, perm, cb) => cb(perm === 'media'));
-    session.defaultSession.setPermissionCheckHandler((_wc, perm) => perm === 'media');
+    require('./permissions').install(session.defaultSession);
     store = new Store(app.getPath('userData'));
     modelsDir = process.env.PF_MODELS || path.join(app.getPath('userData'), 'models');
     outbox = new Outbox(path.join(app.getPath('userData'), 'notes.jsonl'));
