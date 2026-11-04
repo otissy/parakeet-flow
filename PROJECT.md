@@ -180,3 +180,7 @@ Code in `src/sync/`: `allowlist.js` (what may go; the only upload builder), `mer
 | Confirmations are native window.confirm | the same as deleting a meeting; tests answer them through Playwright's dialog event |
 | Faint text | #7a7a86 is about 4:1 on cards: better, but under the 4.5:1 of WCAG AA for small text |
 | Clean-PATH proof | `.tests/squirrel/l4-imports.test.js` reads the imports of every native file of the built package; the built exe then runs with PATH=System32 only, loads the native addons and boots |
+
+## Added 2026-11-04: own icon set (0.2.62)
+
+`src/renderer/icons.js` holds every in-app icon: `PFIcons.svg(name, { label, cls })`, and `<i data-icon="name">` in a page is swapped when the file loads. 24 grid, filled, one path per icon, evenodd for cut-outs, currentColor, aria-hidden unless a label is passed. The select arrow is a data URI from the same file (`--ic-chevron`, colour fixed to --muted because a CSS background cannot use currentColor). Not icons and left alone: arrow-key names in `<kbd>` (text), status dots, the boot spinner, the app and tray icons. Test: `.tests/ux/l4-icons.test.js`.

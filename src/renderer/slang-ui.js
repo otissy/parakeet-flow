@@ -110,7 +110,7 @@ function termRow(t, mine) {
   if (mine && SL.edit === t.term) {
     return `<div class="trow"><input type="text" id="sl-ed-term" value="${L.esc(t.term)}" style="flex:0 0 38%"><input type="text" id="sl-ed-var" value="${L.esc(vs.join(' | '))}" placeholder="heard as, separated by |"><button class="btn primary small" id="sl-ed-save" data-old="${L.esc(t.term)}">Save</button><button class="btn small" id="sl-ed-cancel">Cancel</button></div>`;
   }
-  const act = mine ? `<button class="iconbtn" data-sl-edit="${L.esc(t.term)}" title="Edit"><svg viewBox="0 0 16 16"><path d="M3 13h2.5L13 5.5 10.5 3 3 10.5zM9.5 4l2.5 2.5"/></svg></button><button class="iconbtn danger" data-sl-del="${L.esc(t.term)}" title="Remove">${ICON_DEL}</button>` : '';
+  const act = mine ? `<button class="iconbtn" data-sl-edit="${L.esc(t.term)}" title="Edit">${PFIcons.svg('edit')}</button><button class="iconbtn danger" data-sl-del="${L.esc(t.term)}" title="Remove">${ICON_DEL}</button>` : '';
   return `<div class="trow"><div class="a"><b>${L.esc(t.term)}</b> ${meta}</div><div class="b" style="width:46%;justify-content:flex-start;color:var(--muted);flex-wrap:wrap">${vs.length ? L.esc(vs.slice(0, 6).join(' | ')) + (vs.length > 6 ? ' ...' : '') : '<span class="note">spelling only</span>'}${act}</div></div>`;
 }
 
@@ -278,7 +278,7 @@ function renderQa() {
   const { pop } = qaNodes();
   if (!SL.qa) { pop.hidden = true; return; }
   const words = SL.qa.words.length ? `<div class="qa-words" role="group" aria-label="Words in this line">${SL.qa.words.map((w) => `<button type="button" class="chipbtn" data-qa-word="${L.esc(w)}">${L.esc(w)}</button>`).join('')}</div>` : '';
-  pop.innerHTML = `<div class="qa-head"><b>Add to dictionary</b><button type="button" class="iconbtn" id="qa-close" title="Close" aria-label="Close"><svg viewBox="0 0 16 16"><path d="M4 4l8 8M12 4l-8 8"/></svg></button></div>${words}${addWordForm('qa')}`;
+  pop.innerHTML = `<div class="qa-head"><b>Add to dictionary</b><button type="button" class="iconbtn" id="qa-close" title="Close" aria-label="Close">${PFIcons.svg('close')}</button></div>${words}${addWordForm('qa')}`;
   pop.hidden = false;
   const r = SL.qa.rect || { left: 40, top: 40, bottom: 40 };
   const w = Math.min(640, window.innerWidth - 16);

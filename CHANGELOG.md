@@ -4,6 +4,7 @@
 
 Fixes from a UX review of 0.2.61:
 
+- Icons: every icon inside the app is new, drawn for this app as filled shapes in one colour on a 24 grid (sidebar, small buttons, flow bar, list arrows, translate arrows), all in `src/renderer/icons.js`. No icon library, no download. App icon and tray icon unchanged. The dimmed "add to dictionary" button went from 55% to 70% opacity so its icon reaches 3:1 contrast.
 - First run: Home has a Download card with progress, and holding the key without a model tells you where to go.
 - Keyboard: every sidebar page and every switch can be reached with Tab, and switches have a name for screen readers.
 - Sync: the Project row comes first and the switch says why it is disabled. Answers appear under the button you pressed. A refused key leaves the box. Server errors read as sentences. A badge in the header says Off, On, Syncing, Offline or Failed. Sync and Updates moved under Privacy.

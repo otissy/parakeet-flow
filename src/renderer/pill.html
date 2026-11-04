@@ -5,16 +5,17 @@
 </head><body>
 <div id="stage">
   <div id="pill" class="idle">
-    <button id="cancel" class="btn" title="Cancel (Esc)" aria-label="Cancel"><svg viewBox="0 0 12 12"><path d="M2.5 2.5l7 7M9.5 2.5l-7 7"/></svg></button>
+    <button id="cancel" class="btn" title="Cancel (Esc)" aria-label="Cancel"><i data-icon="close"></i></button>
     <div id="body">
       <canvas id="wave" width="120" height="28"></canvas>
-      <div id="mark" aria-hidden="true"></div>
+      <div id="mark" aria-hidden="true"><i data-icon="check" class="ok"></i><i data-icon="close" class="no"></i></div>
       <div id="text"></div>
     </div>
-    <button id="stop" class="btn" title="Stop" aria-label="Stop"><svg viewBox="0 0 12 12"><rect x="2.5" y="2.5" width="7" height="7" rx="1.5"/></svg></button>
+    <button id="stop" class="btn" title="Stop" aria-label="Stop"><i data-icon="stop"></i></button>
   </div>
   <div id="note"></div>
   <div id="flags" aria-live="polite"></div>
 </div>
+<script src="icons.js"></script>
 <script src="pill.js"></script>
 </body></html>

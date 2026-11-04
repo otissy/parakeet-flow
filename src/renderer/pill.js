@@ -50,7 +50,7 @@ function draw(now) {
   if (!idleish) raf = requestAnimationFrame(draw);
 }
 
-const TARGET = { swap: 'NL \u21C4 EN', en: '\u2192 EN', nl: '\u2192 NL' };
+const TARGET = { swap: `NL ${PFIcons.svg('swap', { label: 'and' })} EN`, en: `${PFIcons.svg('arrow', { label: 'to' })} EN`, nl: `${PFIcons.svg('arrow', { label: 'to' })} NL` };
 /** always-on chips under the bar: whisper mode, translate (experimental), local cleanup */
 function setFlags(f) {
   const chips = [];

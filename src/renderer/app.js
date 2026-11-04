@@ -5,9 +5,9 @@ const main = $('#main');
 let meetingStatusTimer = null;
 const S = { page: 'home', settings: null, stats: { words: 0, wpm: 0, streak: 0 }, history: [], info: null, devices: [], dl: null, capturing: null, hkError: '', meetings: [], meetingStatus: null, meetingProgress: null, recordingId: null, processingId: null, selectedMeetingId: null, meetingsError: '', meetingStatusError: '', meetingsBusy: false, meetingsActionError: '', meetingsLoading: false };
 
-const ICON_COPY = '<svg viewBox="0 0 16 16"><rect x="5.5" y="5.5" width="8" height="8" rx="1.8"/><path d="M10.5 5.5V4a1.5 1.5 0 00-1.5-1.5H4A1.5 1.5 0 002.5 4v5A1.5 1.5 0 004 10.5h1.5"/></svg>';
-const ICON_DEL = '<svg viewBox="0 0 16 16"><path d="M3.5 4.5h9M6.5 4.5V3h3v1.5M5 4.5l.5 8h5l.5-8"/></svg>';
-const ICON_ADDWORD = '<svg viewBox="0 0 16 16"><path d="M3 3.5h6.5a1.5 1.5 0 011.5 1.5v3M3 3.5V12a1.5 1.5 0 001.5 1.5H8M12.5 10v4.5M10.25 12.25h4.5"/></svg>';
+const ICON_COPY = PFIcons.svg('copy');
+const ICON_DEL = PFIcons.svg('delete');
+const ICON_ADDWORD = PFIcons.svg('addword');
 
 async function save(patch) { S.settings = await window.pf.invoke('settings:set', patch); render(); }
 
@@ -46,7 +46,7 @@ function home() {
 function pairsPage({ title, blurb, listKey, a, b, phA, phB, multi }) {
   const list = S.settings[listKey];
   return `<div class="wrap"><h1>${title}</h1><div class="sub">${blurb}</div>
-    <div class="add"><input type="text" id="add-a" placeholder="${phA}" autocomplete="off"><span class="arrow">→</span>${multi ? `<textarea id="add-b" rows="1" placeholder="${phB}"></textarea>` : `<input type="text" id="add-b" placeholder="${phB}" autocomplete="off">`}<button class="btn primary" id="add-go">Add</button></div>
+    <div class="add"><input type="text" id="add-a" placeholder="${phA}" autocomplete="off"><span class="arrow">${PFIcons.svg('arrow')}</span>${multi ? `<textarea id="add-b" rows="1" placeholder="${phB}"></textarea>` : `<input type="text" id="add-b" placeholder="${phB}" autocomplete="off">`}<button class="btn primary" id="add-go">Add</button></div>
     <div class="card pairs" style="padding:4px 14px">${list.length ? list.map((p, i) => `<div class="row"><div class="a">${L.esc(p[a])}</div><div class="b">${L.esc(p[b])}</div><button class="iconbtn danger" data-del="${i}" title="Remove">${ICON_DEL}</button></div>`).join('') : '<div class="empty">Nothing yet.</div>'}</div></div>`;
 }
 
