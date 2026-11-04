@@ -63,7 +63,7 @@ test('off by default: says what goes and what never goes; the switch waits for a
   const { page, errors } = await open(BASE);
   const t = await page.locator('#sync-card').innerText();
   assert.match(t, /Off by default/);
-  assert.match(t, /Dictated text, notes, meetings, tokens and logs never leave this PC/);
+  assert.match(t, /Sync never sends dictated text, transcript history, notes, meetings, audio, snippets, your Notion token or logs/);
   for (const id of ['#sy-on', '#sy-code', '#sy-join-go', '#sy-now', '#sy-join']) assert.ok(await page.locator(id).isDisabled(), id);
   assert.equal(await page.locator('#sy-unlink').count(), 0);
   assert.match(t, /Sync is off/);

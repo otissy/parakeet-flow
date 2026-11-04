@@ -33,7 +33,7 @@ function home() {
     `<div class="row" data-qa-line><div class="time">${L.fmtTime(e.ts)}</div><div class="tx" data-qa-src>${L.esc(e.text)}</div><button class="iconbtn" data-qa-row title="Add a word from this line to the dictionary" aria-label="Add a word from this line to the dictionary">${ICON_ADDWORD}</button><button class="iconbtn" data-copy="${L.esc(e.id)}" title="Copy">${ICON_COPY}</button></div>`).join('')}</div>`).join('');
   return `<div class="wrap">
     <h1>${L.esc(L.greeting(new Date().getHours(), s.userName))}</h1>
-    <div class="sub">Everything runs on this computer. Nothing is sent anywhere.</div>
+    <div class="sub">Speech recognition runs on this computer and your audio is never sent. What can leave it: the installed app's update check to GitHub (on by default) and, only if you turn them on, notes to Notion and customization to your Supabase project. Details in Settings > Privacy.</div>
     ${modelCard()}<div class="card hint"><div><div class="t">${L.esc(hint)}</div><div class="s">${s.typing && s.typing.live ? 'Words are typed as you speak. ' : 'Your words show in the bar while you talk and the finished text goes in once when you let go. '}Press Esc to cancel.</div></div></div>
     <div class="stats">
       <div class="card stat"><div class="n">${st.words.toLocaleString('en')}</div><div class="l">Words dictated</div></div>
@@ -64,7 +64,7 @@ function settingsPage() {
   const s = S.settings, i = S.info || {};
   const devs = [['', 'System default'], ...S.devices.map((d, n) => [d.deviceId, d.label || 'Microphone ' + (n + 1)])];
   const gpuOk = !!i.gpuAvailable;
-  return `<div class="wrap"><h1>Settings</h1><div class="sub">Hold-to-talk, microphone, speech engine and privacy.</div>
+  return `<div class="wrap"><h1>Settings</h1><div class="sub">Hold-to-talk, microphone, speech engine, privacy, sync and updates.</div>
   <h2>Dictation</h2><div class="card" style="padding:4px 18px">
     <div class="srow"><div class="l"><b>Hold to talk</b><div>${S.capturing && S.capTarget === 'hold' ? 'Press the key or combination, then let go. Esc cancels.' : 'Default Ctrl+Space. Press and hold to talk, release to stop. While it is used for dictation the chord is swallowed; Ctrl or Space alone still work. Avoid keys OBS or your games use.'}</div>${S.hkError && S.capTarget === 'hold' ? `<div style="color:var(--bad)">${L.esc(S.hkError)}</div>` : ''}</div>
       <div class="c">${S.capturing && S.capTarget === 'hold' ? `<span class="chip" id="cap">${S.capturing.length ? keys(S.capturing) : 'Listening…'}</span>` : keys(s.hotkey.vks)}<button class="btn" id="hk-change">${S.capturing && S.capTarget === 'hold' ? 'Cancel' : 'Change'}</button>${S.capturing && S.capTarget === 'hold' ? '' : '<button class="btn" id="hk-reset">Reset</button>'}</div></div>
@@ -91,6 +91,14 @@ function settingsPage() {
   </div>
   ${extraSettings()}
   <h2>Privacy</h2><div class="card" style="padding:4px 18px">
+    <div class="srow col" id="privacy-leaves"><div class="l"><b>What leaves this PC</b><div>Your audio never does: speech recognition runs here. These do:</div></div>
+      <ul class="leaves">
+        <li><b>Update check</b>, installed app, on by default: a request to github.com with the app name, its version and the PC type. GitHub sees your IP address. See Updates.</li>
+        <li><b>Downloads you start</b> (speech model, local AI model, meeting components): requests to the hosts they come from, which see your IP address.</li>
+        <li><b>Notion</b>, only if you turn it on: your notes, sent to Notion with your token.</li>
+        <li><b>Sync</b>, only if you turn it on: your customization, the install ID and the app version, to your Supabase project. See Sync.</li>
+        <li><b>Claude (MCP)</b>, only if you connect it: the connected client can read your notes, and your recent transcripts if you share them.</li>
+      </ul></div>
     <div class="srow"><div class="l"><b>Keep transcript history</b><div>Off by default. Stored only on this computer.</div></div><div class="c">${s.historyEnabled ? '<button class="btn danger" id="hist-clear">Clear</button>' : ''}${toggle('hist', s.historyEnabled)}</div></div>
     <div class="srow"><div class="l"><b>Start with Windows</b><div>Off. Turning it on adds a login item for this app.</div></div><div class="c">${toggle('login', s.launchAtLogin)}</div></div>
     <div class="srow"><div class="l"><b>Your name</b><div>Used in the greeting on Home.</div></div><div class="c"><input type="text" id="uname" value="${L.esc(s.userName)}" maxlength="40"></div></div>

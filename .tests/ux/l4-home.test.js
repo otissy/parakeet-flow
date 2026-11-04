@@ -39,3 +39,11 @@ for (const [name, info] of [['ready', { engine: 'ready', modelsOk: true }], ['lo
     await page.close();
   });
 }
+
+test('finding 6: Home says what can leave the PC, and no longer that nothing does', async () => {
+  const { page } = await open(browser);
+  const t = await page.locator('.sub').first().innerText();
+  assert.doesNotMatch(t, /Nothing is sent/);
+  for (const w of [/audio is never sent/, /GitHub/, /on by default/, /Notion/, /Supabase/, /only if you turn them on/, /Settings > Privacy/]) assert.match(t, w);
+  await page.close();
+});
