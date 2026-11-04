@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.2.62 - unreleased (local test build)
+## 0.2.62
 
 Fixes from a UX review of 0.2.61:
 
@@ -14,7 +14,7 @@ Fixes from a UX review of 0.2.61:
 - GPU can no longer be chosen (this build runs on the CPU). The dead Language box is gone. Aggressive/Stable moved under "Type while I speak". The CapsLock text names the tray item as it is called.
 - Updates says when automatic checks are off. Faint text has more contrast.
 
-## 0.2.61 - unreleased (local test build)
+## 0.2.61 (not released on its own, included in 0.2.62)
 
 - The installer now carries the Visual C++ runtime (msvcp140, vcruntime140, vcruntime140_1) next to the app: the optional local AI model no longer needs the redistributable on the PC.
 - README install section names the current version.
