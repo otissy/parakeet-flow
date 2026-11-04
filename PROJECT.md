@@ -184,3 +184,22 @@ Code in `src/sync/`: `allowlist.js` (what may go; the only upload builder), `mer
 ## Added 2026-11-04: own icon set (0.2.62)
 
 `src/renderer/icons.js` holds every in-app icon: `PFIcons.svg(name, { label, cls })`, and `<i data-icon="name">` in a page is swapped when the file loads. 24 grid, filled, one path per icon, evenodd for cut-outs, currentColor, aria-hidden unless a label is passed. The select arrow is a data URI from the same file (`--ic-chevron`, colour fixed to --muted because a CSS background cannot use currentColor). Not icons and left alone: arrow-key names in `<kbd>` (text), status dots, the boot spinner, the app and tray icons. Test: `.tests/ux/l4-icons.test.js`.
+
+## Added 2026-11-04: Electron 45 (0.2.63, branch claude/electron-update)
+
+Electron 31.7.7 -> 45.2.2 (Chromium 156, Node 24.22), electron-builder 26.18.0, electron-winstaller stays 5.4.0. Support policy: the latest three stable majors (45, 44, 43 on this date); 45 end of life about 2027-04-27. Installer about 213 MB, app folder 319 MB (was 252 MB).
+
+| Limit | What it means |
+|---|---|
+| Desktop capture is its own permission since 45 | `display-capture`, no longer `media`. With media only, meeting capture failed with "Permission denied" on the real page. `src/main/permissions.js`, `.tests/app/l2-permissions.test.js` |
+| Synchronous safeStorage is deprecated in 45, REMOVED in 46 (tentatively 2027-01-05) | `src/main/secret.js` still uses it and logs deprecation lines on stderr. Move to the async calls before Electron 46. `decryptStringAsync` returns an object with `result`. Every caller of `secrets.get` then becomes async |
+| `console-message` positional arguments are deprecated | three test hooks (.tests/app/e2e-hook.js, features-e2e/hook.js, slang/hook.js) still use them; they will stop reporting console errors when Electron removes them |
+| `electron_wer.dll` | must carry the exe's name; electron-builder leaves it, `scripts/after-pack.js` renames it. The app does not start crashReporter |
+| `npm audit --omit=dev` at the root | shows 0 before and after because Electron is a devDependency. Use the full `npm audit`: high 3 -> 0, moderate 16 -> 15 (build tooling). llm-runtime and mcp are unchanged (see the audit row above) |
+| Real Squirrel update without touching the install | Update.exe works on its own folder, so a scratch root is possible (root folder not named parakeet-flow), but two things reach outside it: the app's --squirrel-updated hook calls ..\\Update.exe --createShortcut (real Start menu), and Update writes HKCU Uninstall\\<folder name>. Proof run: when the nupkg was requested, the running Update.exe was renamed and whoami.exe put in its place; afterwards the stray key was deleted. Not run: the Start-menu shortcut step, and quitAndInstall (it restarts through Update.exe; an env that did not survive would start a copy on the real userData) |
+
+Measured with the packaged 0.2.62-icons and 0.2.63, scratch userData, 3 runs each, medians: engine ready 3953 ms -> 3749 ms; working set 20 s after ready 1252 MB -> 1406 MB; private bytes 980 MB -> 1040 MB. One old run reported a working set of 6 MB (trimmed by Windows) and was left out. The first run on a new folder takes longer.
+
+Proved on the 0.2.63 build with PATH=System32: engine ready, shipped helper, dummy Notion and Sync tokens written by 0.2.62 readable, new writes readable, dictation capture and meeting capture through the real pages with `--use-fake-device-for-media-stream` (no real microphone), node-llama-cpp in its worker generating text, mcp/server.js through the exe with ELECTRON_RUN_AS_NODE. Squirrel: 0.2.62's own autoUpdater, local feed shaped like GitHub, to app-0.2.63, then that copy's autoUpdater reports no update. Same screens old and new. Not run: real microphone, real hotkeys, the real lock between two copies, a real GitHub release.
+
+The real-speech tests skip without `.tests/fixtures/*.wav` (ignored by git). gen-audio.py needs a claude-voice venv that is not on this PC; for this work the same sentences were made with kokoro-say.exe (voice af_heart) and the fixtures were removed afterwards.
