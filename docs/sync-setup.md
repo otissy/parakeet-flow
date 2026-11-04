@@ -50,7 +50,7 @@ The app only holds the public key, which anyone could extract. That is fine beca
 | Table | Read | Write |
 |---|---|---|
 | `customization` | own row, own group's row | insert and update `doc` of those rows; no delete; the database stamps `version`, `updated_at`, `updated_by` |
-| `installs` | own and linked installs | own row only. The app sends an empty name and machine, and its version |
+| `installs` | own and linked installs | own row only. The app sends its version and an empty machine. The name is empty unless the user typed one under This PC's name |
 | `groups`, `group_members` | own group only | only through the functions below |
 | `link_codes` | nobody | only through the functions below |
 

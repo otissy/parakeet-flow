@@ -94,7 +94,7 @@ function settingsPage() {
         <li><b>Update check</b>, installed app, on by default: a request to github.com with the app name, its version and the PC type. GitHub sees your IP address. See Updates.</li>
         <li><b>Downloads you start</b> (speech model, local AI model, meeting components): requests to the hosts they come from, which see your IP address.</li>
         <li><b>Notion</b>, only if you turn it on: your notes, sent to Notion with your token.</li>
-        <li><b>Sync</b>, only if you turn it on: your customization, the install ID and the app version, to your Supabase project. See Sync.</li>
+        <li><b>Sync</b>, only if you turn it on: your customization, the install ID, the app version and the name you gave this PC, if any, to your Supabase project. See Sync.</li>
         <li><b>Claude (MCP)</b>, only if you connect it: the connected client can read your notes, and your recent transcripts if you share them.</li>
       </ul></div>
     <div class="srow"><div class="l"><b>Keep transcript history</b><div>Off by default. Stored only on this computer.</div></div><div class="c">${s.historyEnabled ? '<button class="btn danger" id="hist-clear">Clear</button>' : ''}${toggle('hist', s.historyEnabled)}</div></div>

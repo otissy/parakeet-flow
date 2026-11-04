@@ -9,6 +9,7 @@ function register(ipcMain, { service, isMainWindow }) {
   });
   h('sync:status', () => service.status());
   h('sync:configure', (o) => service.configure({ url: s(o && o.url, 300), key: s(o && o.key, 2000) }));
+  h('sync:set-name', (name) => service.setName(s(name, 100)));
   h('sync:set-enabled', (on) => service.setEnabled(on === true));
   h('sync:now', async () => ({ ok: await service.syncNow() }));
   h('sync:create-code', () => service.createCode());

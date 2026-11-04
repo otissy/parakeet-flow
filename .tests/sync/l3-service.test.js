@@ -443,3 +443,36 @@ test('bad join codes give a message and do not touch the network when they canno
   assert.equal(a.server.calls.length, n);
   assert.match((await a.sync.join('ZZZ-ZZZ')).error, /invalid/);
 });
+
+/* ---------- finding 12: a name per install ---------- */
+test('no name is sent by default; a typed name goes up, shows on the linked install, and clearing it sends null again', async () => {
+  const server = fakeServer();
+  const a = makeInstall({ fetchImpl: server.fetchImpl, url: 'https://x.supabase.co', key: 'sb_publishable_abc', enabled: true });
+  const b = makeInstall({ fetchImpl: server.fetchImpl, url: 'https://x.supabase.co', key: 'sb_publishable_abc', enabled: true });
+  await a.sync.syncNow(); await b.sync.syncNow();
+  const ida = a.sync.status().installId;
+  assert.equal(server.db.installs.get(ida).name, null);
+  assert.equal(server.db.installs.get(ida).machine, null);
+  const code = await a.sync.createCode();
+  assert.equal((await b.sync.join(code.code)).ok, true);
+  assert.equal(a.sync.setName('  Desk\nPC  ').ok, true);
+  a.sync.stop();
+  assert.equal(a.sync.status().name, 'Desk PC');
+  await a.sync.syncNow();
+  assert.equal(server.db.installs.get(ida).name, 'Desk PC');
+  assert.equal(server.db.installs.get(ida).machine, null, 'the machine column stays empty');
+  await b.sync.syncNow();
+  assert.equal(b.sync.status().members.find((m) => m.id === ida).name, 'Desk PC');
+  a.sync.setName(''); a.sync.stop();
+  await a.sync.syncNow();
+  assert.equal(server.db.installs.get(ida).name, null);
+  a.sync.stop(); b.sync.stop();
+});
+
+test('a name set while sync is off contacts nothing', () => {
+  const server = fakeServer();
+  const a = makeInstall({ fetchImpl: server.fetchImpl, url: 'https://x.supabase.co', key: 'sb_publishable_abc' });
+  a.sync.setName('Desk PC');
+  assert.equal(a.sync.status().name, 'Desk PC');
+  assert.equal(server.calls.length, 0);
+});

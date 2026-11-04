@@ -84,3 +84,21 @@ test('finding 11: a refused code leaves the Join box; a network failure keeps it
   assert.deepStrictEqual(await calls(net.page), [['sync:join', 'ABC-234']]);
   await net.page.close();
 });
+
+test('finding 12: a linked install shows its name above the ID; without one it says so; a typed name is saved', async () => {
+  const members = [{ id: 'a', isMe: true, version: 'v', name: 'Me', machine: '' },
+    { id: 'bbbbbbbb-0000-4000-8000-000000000001', isMe: false, version: 'parakeet-flow 0.2.62', name: 'Desk PC', machine: '' },
+    { id: 'bbbbbbbb-0000-4000-8000-000000000002', isMe: false, version: 'parakeet-flow 0.2.62', name: '', machine: 'OLD-LAPTOP' },
+    { id: 'bbbbbbbb-0000-4000-8000-000000000003', isMe: false, version: 'parakeet-flow 0.2.61', name: '', machine: '' }];
+  const { page } = await open(browser, { goto: 'settings', sync: { ...SYNC_ON, linked: true, members } });
+  const t = await page.locator('#sync-card').innerText();
+  assert.match(t, /Desk PC\s+bbbbbbbb-0000-4000-8000-000000000001/);
+  assert.match(t, /OLD-LAPTOP\s+bbbbbbbb-0000-4000-8000-000000000002/);
+  assert.match(t, /Unnamed install\s+bbbbbbbb-0000-4000-8000-000000000003/);
+  assert.match(t, /Left empty, no name is sent/);
+  await page.fill('#sy-name', 'Laptop');
+  await page.locator('#sy-name').blur();
+  await page.waitForTimeout(60);
+  assert.deepStrictEqual(await calls(page), [['sync:set-name', 'Laptop']]);
+  await page.close();
+});

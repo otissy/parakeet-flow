@@ -49,7 +49,7 @@ function fakeServer() {
     if (rest === 'rpc/list_group') {
       const g = db.members.get(me);
       const ids = g ? [...db.members.entries()].filter(([, v]) => v === g).map(([k]) => k) : [me];
-      return json(200, ids.map((id) => ({ install_id: id, version: db.installs.get(id)?.version, joined_at: null, is_me: id === me })));
+      return json(200, ids.map((id) => ({ install_id: id, name: db.installs.get(id)?.name, machine: db.installs.get(id)?.machine, version: db.installs.get(id)?.version, joined_at: null, is_me: id === me })));
     }
     if (rest === 'rpc/create_link_code') { const code = 'ABC' + String(234 + db.codes.size).replace(/[01]/g, '2'); db.codes.set(code, me); return json(200, [{ code, expires_at: new Date(Date.now() + 600000).toISOString() }]); }
     if (rest === 'rpc/join_with_code') {

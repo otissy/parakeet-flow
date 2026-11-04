@@ -20,7 +20,7 @@ const MAX_CONFLICTS = 50;
 const SECRET = 'sync';
 
 const defaultsFlat = A.flatten(normalize(JSON.parse(JSON.stringify(DEFAULTS))));
-const fresh = () => ({ keys: {}, synced: {}, scope: '', backupScope: '', registered: '', scanned: false, lastSyncAt: 0, lastError: '', pulled: 0, pushed: 0, conflicts: [], backup: '', members: [] });
+const fresh = () => ({ name: '', keys: {}, synced: {}, scope: '', backupScope: '', registered: '', scanned: false, lastSyncAt: 0, lastError: '', pulled: 0, pushed: 0, conflicts: [], backup: '', members: [] });
 
 class SyncService {
   constructor({ dir, store, secrets, slang, version = '', log = () => {}, onApplied = () => {}, onStatus = () => {}, isBusy = () => false, fetchImpl, now = () => Date.now(), pollMs = POLL_MS, debounceMs = DEBOUNCE_MS }) {
@@ -89,6 +89,16 @@ class SyncService {
       if (fs.existsSync(this.file)) this._save();
     }
     if (this.enabled()) this._later(0);
+    this.onStatus();
+    return { ok: true };
+  }
+
+  /** the name the user typed for this install, shown on their linked installs. Empty = no name is sent. Goes up on the next cycle */
+  setName(raw) {
+    this.state.name = String(raw ?? '').replace(/[\u0000-\u001f\u007f]/g, ' ').trim().slice(0, 40);
+    this.state.registered = '';
+    this._save();
+    if (this.enabled() && this._cred()) this._later(0);
     this.onStatus();
     return { ok: true };
   }
@@ -208,10 +218,11 @@ class SyncService {
   }
 
   async _register(client) {
-    const stamp = client.installId + '|' + this.version;
+    const name = this.state.name || null;
+    const stamp = client.installId + '|' + this.version + (name ? '|' + name : '');
     if (this.state.registered === stamp) return;
-    // name and machine stay empty on purpose: this PC's name is not customization
-    await client.rest('POST', 'installs?on_conflict=id', { body: [{ id: client.installId, name: null, machine: null, version: ('parakeet-flow ' + this.version).slice(0, 40) }], prefer: 'resolution=merge-duplicates,return=minimal' });
+    // the Windows computer name is never sent. A name goes only if the user typed one for this install (setName)
+    await client.rest('POST', 'installs?on_conflict=id', { body: [{ id: client.installId, name, machine: null, version: ('parakeet-flow ' + this.version).slice(0, 40) }], prefer: 'resolution=merge-duplicates,return=minimal' });
     this.state.registered = stamp;
   }
 
@@ -264,7 +275,7 @@ class SyncService {
       }
       s.synced = Object.fromEntries(Object.entries(s.keys).map(([k, e]) => [k, e.t]));
       const members = await client.rpc('list_group');
-      s.members = Array.isArray(members) ? members.slice(0, 50).map((x) => ({ id: String(x.install_id), version: String(x.version || ''), isMe: !!x.is_me, joinedAt: x.joined_at || null })) : [];
+      s.members = Array.isArray(members) ? members.slice(0, 50).map((x) => ({ id: String(x.install_id), name: String(x.name || '').slice(0, 80), machine: String(x.machine || '').slice(0, 80), version: String(x.version || ''), isMe: !!x.is_me, joinedAt: x.joined_at || null })) : [];
       return { pulled, pushed, conflicts: conflictCount };
     }
     throw new Error('Another install kept writing at the same time; will try again.');
@@ -313,7 +324,7 @@ class SyncService {
     const c = this._cred(), s = this.state;
     return {
       enabled: this.enabled(), configured: !!(c && c.url && c.key), encryption: !!(this.secrets && this.secrets.available()),
-      url: c ? c.url : '', installId: c?.session?.installId || '',
+      url: c ? c.url : '', installId: c?.session?.installId || '', name: s.name || '',
       linked: s.scope.startsWith('group:'), members: s.members,
       lastSyncAt: s.lastSyncAt, lastError: s.lastError, nextRetryAt: this.nextRetryAt, pulled: s.pulled, pushed: s.pushed,
       waiting: Object.entries(s.keys).filter(([k, e]) => e.t !== s.synced[k] && e.t > 0).length,
