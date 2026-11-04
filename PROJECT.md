@@ -10,7 +10,7 @@ Tray + click-through floating pill. Everything local. Built and tested 2026-10-1
 
 ## How to run and test
 
-- run: `npm start` (uses node_modules/electron 31.7.7)
+- run: `npm start` (uses node_modules/electron 45.2.2)
 - test: `npm test` (all suites, one file at a time), or `node --test --test-concurrency=1 ".tests/<feature>/*.test.js"`; the browser tests need `npx playwright-core install chromium` once
 - models: downloaded once into `%APPDATA%\parakeet-flow\models`, SHA-256 verified (see README)
 
@@ -18,10 +18,10 @@ Tray + click-through floating pill. Everything local. Built and tested 2026-10-1
 
 | Limit | What it means |
 |---|---|
-| Node 26.11 on PATH, Electron 31.7.7 (Node 20) | native addons must be N-API; sherpa-onnx-node 1.13.8 is |
+| Node on PATH may differ from Electron 45.2.2 (Node 24) | native addons must be N-API; sherpa-onnx-node 1.13.8 is |
 | `sherpa-onnx-win-x64` is CPU-only | GPU provider cannot be verified here; setting falls back to CPU |
 | Parakeet TDT is an offline model | partials = re-decode of the growing VAD segment, not streaming |
-| `npm i electron` postinstall extracted only `locales/` here | dist/ was unpacked by hand from the hash-checked cache zip |
+| Electron has no postinstall since 42 | `npx install-electron` (or the first `npm start`) downloads and checks dist/; `npm install --ignore-scripts` is unaffected |
 | RTX 3050 shared with Rocket League + OBS | default CPU int8; keep CPU use modest |
 | no key-up in `globalShortcut` | a C# helper (compiled from our own source with .NET Framework csc) polls GetAsyncKeyState |
 | PowerShell tool is broken in this agent shell | use Bash; Norton flags `powershell.exe` (approved once), so the app never spawns it |
@@ -50,11 +50,11 @@ Settings and new keys: commands, tone, translate, whisper, cleanup, notes (no to
 
 What was wrong, diagnosed on this PC with the real app and the real data folder (offscreen windows, real microphone through the production capture path, real models, hotkey moved to F15 during the run): the app ran correctly from source and from the packaged build. Engine ready in about 1.8 s, the Behringer input delivered audio, dictation into an in-memory typer gave the full test sentence, the local model loaded. Not reproduced: a failure of the engine, microphone, native modules or windows (three monitors, one at negative x; the pill and window open on the primary screen). What the user saw is unknown. Causes that were real: the app had no installer, shortcut or uninstaller (only `npm start`); `npm start` dies silently when ELECTRON_RUN_AS_NODE is set in the shell (now cleared by scripts/start.js); a second start while a copy sits in the tray only shows its window. Not verifiable here: real hardware key events for the hotkey, Norton's reaction to the installer on other PCs.
 
-Build recipe: `npm install --ignore-scripts`, `npm --prefix llm-runtime install --omit=optional --ignore-scripts`, `npm run installer` (writes D:/builds/parakeet-flow/<version>/squirrel-windows: Setup exe, nupkg, RELEASES). Proof: `node scripts/prove-install.js <Setup.exe> --out=<dir> --hook=scripts/proof-hook.js`.
+Build recipe: `npm install --ignore-scripts`, `npx install-electron`, `npm --prefix llm-runtime install --omit=optional --ignore-scripts`, `npm run installer` (writes D:/builds/parakeet-flow/<version>/squirrel-windows: Setup exe, nupkg, RELEASES). Proof: `node scripts/prove-install.js <Setup.exe> --out=<dir> --hook=scripts/proof-hook.js`.
 
 | Limit | What it means |
 |---|---|
-| electron-builder 26.15.3 / electron-winstaller 5.4.0 | winstaller needs vendor/7z.exe from its script/select-7z-arch.js (scripts/build-installer.js runs it from inside that package; a relative-path script) |
+| electron-builder 26.18.0 / electron-winstaller 5.4.0 | winstaller needs vendor/7z.exe from its script/select-7z-arch.js (scripts/build-installer.js runs it from inside that package; a relative-path script) |
 | Output folder | EPERM when electron-builder deletes an old win-unpacked: every build goes to a NEW folder (D:/builds/parakeet-flow/<version>[-suffix]); build-installer refuses an existing one. Squirrel temp = D:/builds/parakeet-flow/tmp |
 | asar off | sherpa-onnx native .node/.dll, llm-runtime (ESM, loaded by a worker) and the helper's .cs source must be real files; same choice as rl-screenswitcher. Installer 165 MB (no models) |
 | Squirrel makes no shortcuts by itself | the app calls Update.exe --createShortcut (Start menu only) on --squirrel-install/-updated; src/main/squirrel.js |
@@ -153,7 +153,7 @@ Code in `src/sync/`: `allowlist.js` (what may go; the only upload builder), `mer
 | A row needs both PCs to poll | after a code, the creator polls every 20 s until someone joined (at most 10 min); the joiner polls for 2 min; otherwise every 5 min |
 | Refresh tokens are single use | one client instance per service and one refresh at a time; only `refresh_token_not_found` / `user_not_found` make a new identity |
 | Not synced on purpose | snippets (may hold personal text), never-type-into list, whisper settings (depend on the mic), user pack contents (only My terms and pack on/off) |
-| `npm audit` left over | mcp: zod 3 (fix is a major; stdio server fed only by the local MCP client). llm-runtime: simple-git via node-llama-cpp, latest 3.22.2 still wants ^3.36 (only used to fetch llama.cpp sources; the app calls getLlama with build:'never', skipDownload:true). Electron 31 itself has many advisories (a major upgrade; pages are local files) |
+| `npm audit` left over | mcp: zod 3 (fix is a major; stdio server fed only by the local MCP client). llm-runtime: simple-git via node-llama-cpp, latest 3.22.2 still wants ^3.36 (only used to fetch llama.cpp sources; the app calls getLlama with build:'never', skipDownload:true). Electron: see 2026-11-04 Electron 45 below. `npm audit --omit=dev` at the root never lists Electron (it is a devDependency there): run the full `npm audit` |
 | NeMo models | hash-pinned only for the runtime archive; `nemo-speech pull` fetches the models and the app does not check them |
 
 ## Added 2026-11-03: auto-update (0.2.61)

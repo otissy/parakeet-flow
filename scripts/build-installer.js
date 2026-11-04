@@ -52,7 +52,7 @@ function ensureVcRuntime(sysDir = path.join(process.env.WINDIR || 'C:\Windows', 
 function preflight() {
   const need = [
     ['assets/icon.ico', 'run: npm run icon'],
-    ['node_modules/electron/dist/electron.exe', 'electron dist is incomplete (see README)'],
+    ['node_modules/electron/dist/electron.exe', 'run: npx install-electron'],
     ['node_modules/sherpa-onnx-node/package.json', 'run: npm install'],
     ['llm-runtime/node_modules/node-llama-cpp/dist/index.js', 'run: npm --prefix llm-runtime install --omit=optional --ignore-scripts'],
     ['llm-runtime/node_modules/@node-llama-cpp/win-x64/package.json', 'run: npm --prefix llm-runtime install --omit=optional --ignore-scripts'],

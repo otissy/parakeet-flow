@@ -95,11 +95,11 @@ Building the installer yourself (needs Node, the repo's `node_modules`, `llm-run
 
 ## Run (from source)
 
-    npm install            # electron@31.7.7, sherpa-onnx-node@1.13.8 (exact pins)
+    npm install            # electron@45.2.2, sherpa-onnx-node@1.13.8 (exact pins)
     npm start              # first run: Settings > Speech engine > Download (about 670 MB, SHA-256 checked)
 
-If `npm install` leaves `node_modules/electron/dist` nearly empty (it did here), unzip the cached
-`electron-v31.7.7-win32-x64.zip` into it and write `electron.exe` to `node_modules/electron/path.txt`.
+Electron no longer downloads during `npm install` (since Electron 42): `npm start` fetches it on first use, or run
+`npx install-electron` yourself. It is checked against the checksums in the package.
 
 Two gestures. **Ctrl+Space (either Ctrl) = hold to talk**: press and hold starts, release stops (there is no double-tap).
 **CapsLock = toggle**: one press starts dictation hands-free (the pill shows stop and cancel buttons), the next press
@@ -370,8 +370,8 @@ an English voice: it proves the pipeline, not Dutch word accuracy.
 | silero_vad.onnx (k2-fsa/sherpa-onnx release asr-models) | 643,854 | 9e2449e1087496d8d4caba907f23e0bd3f78d91fa552479bb9c23ac09cbb1fd6 |
 | Qwen3-0.6B-Q8_0.gguf (huggingface.co/Qwen/Qwen3-0.6B-GGUF, Apache-2.0) | 639,446,688 | 9465e63a22add5354d9bb4b99e90117043c7124007664907259bd16d043bb031 |
 | llama-addon.node (@node-llama-cpp/win-x64 3.22.1) | | e0c2ccf0433a9b0a382334b332dc900728a0e293c00e6f21429e44e3d3cbdc5f |
-| electron-v31.7.7-win32-x64.zip | 110,740,332 | e91986dd243d55947e6c5d3fad21795562ec21fa0eec5e95f7e28c830571467f |
+| electron-v45.2.2-win32-x64.zip | 158,037,212 | a234388419ccbcb18dd2feec856e4ae1832499e200837f23f8e653bd51ff3be5 |
 
-npm: electron 31.7.7, sherpa-onnx-node 1.13.8, sherpa-onnx-win-x64 1.13.8 (23 MB, sha512 in package-lock.json).
+npm: electron 45.2.2, sherpa-onnx-node 1.13.8, sherpa-onnx-win-x64 1.13.8 (23 MB, sha512 in package-lock.json).
 The Parakeet hashes match the pins in rl-screenswitcher's model-store; the Silero hash was recorded at first
 download (no upstream hash published).
