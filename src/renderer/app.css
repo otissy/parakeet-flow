@@ -30,6 +30,8 @@ h1 { font-size: 26px; font-weight: 600; letter-spacing: -.01em; }
 h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .09em; color: var(--muted); font-weight: 600; margin: 30px 0 10px; }
 
 .card { background: var(--card); border: 1px solid var(--line); border-radius: var(--r); padding: 16px 18px; }
+.model-card { display: flex; align-items: center; gap: 16px; margin-top: 22px; border-color: var(--accent); } .model-card .grow { flex: 1; min-width: 0; } .model-card b { font-weight: 500; font-size: 15px; } .model-card .btn { flex: none; }
+.model-card + .hint { margin-top: 12px; }
 .hint { display: flex; align-items: center; gap: 16px; margin-top: 22px; background: linear-gradient(135deg, #1e1c2e, #1b1b20 60%); border-color: #2d2a47; }
 .hint .t { font-size: 15px; } .hint .s { color: var(--muted); font-size: 13px; margin-top: 2px; }
 kbd { font: 600 12.5px "Segoe UI", sans-serif; background: #2a2a33; border: 1px solid #3a3a45; border-bottom-width: 2px; border-radius: 7px; padding: 3px 9px; color: #fff; margin: 0 1px; }

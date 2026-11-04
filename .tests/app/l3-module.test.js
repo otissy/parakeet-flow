@@ -112,7 +112,18 @@ test('engine not ready: red pill, no session', () => {
   c.attach(); const pills = []; c.on('pill', (p) => pills.push(p));
   typer.key(true);
   assert.equal(pills.at(-1).state, 'error'); assert.match(pills.at(-1).note, /not ready/);
+  assert.match(pills.at(-1).note, /Open Settings > Speech engine/);
 });
+
+for (const [state, want] of [['missing', /not downloaded\. Open Settings > Speech engine/], ['loading', /still loading/], ['error', /not ready\. Open Settings > Speech engine/]]) {
+  test(`engine ${state}: the pill says what to do`, () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'pf-ctl-'));
+    const typer = new EvTyper({}); const c = new Controller({ getAsr: () => null, engineState: () => state, typer, store: new Store(dir), mic: new FakeMic() });
+    c.attach(); const pills = []; c.on('pill', (x) => pills.push(x));
+    typer.key(true);
+    assert.equal(pills.at(-1).state, 'error'); assert.match(pills.at(-1).note, want);
+  });
+}
 
 test('disabled from the tray: keys ignored', () => {
   const { c, typer, mic } = rig();

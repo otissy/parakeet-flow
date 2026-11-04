@@ -10,6 +10,7 @@ const { LABELS } = require('../core/commands');
 const { decideRoute } = require('../core/routing');
 const { NoteSink } = require('../core/note-sink');
 const NOTE_SAVED = 'Saved as note';
+const NOT_READY = { missing: 'Speech model not downloaded. Open Settings > Speech engine', loading: 'Speech model is still loading. Try again in a moment', other: 'Speech model not ready. Open Settings > Speech engine' };
 
 /** whisper mode: scale the samples (clipped to +-1). Returns the same array when gain is 1. */
 function amplify(a, gain) {
@@ -23,9 +24,9 @@ const rmsOf = (a) => { let s = 0; for (let i = 0; i < a.length; i++) s += a[i] *
 
 class Controller extends EventEmitter {
   /** llm: LlmService-like or null; notes: {save(text)} or null (both optional: with them absent the controller behaves as before) */
-  constructor({ getAsr, typer, store, mic, ownPid = process.pid, now = Date.now, doneFlashMs = 900, llm = null, notes = null, slang = null }) {
+  constructor({ getAsr, typer, store, mic, ownPid = process.pid, now = Date.now, doneFlashMs = 900, llm = null, notes = null, slang = null, engineState = () => '' }) {
     super();
-    Object.assign(this, { getAsr, typer, store, mic, ownPid, now, doneFlashMs, llm, notes, slang });
+    Object.assign(this, { getAsr, typer, store, mic, ownPid, now, doneFlashMs, llm, notes, slang, engineState });
     this.carry = null; this.gain = 1; this.flash = '';
     this.enabled = true; this.capturing = false; this.session = null; this.lastLevelAt = 0; this.level = 0; this.pillState = 'idle';
     this.fsm = new HotkeyFsm({ onAction: (a) => this._action(a) });
@@ -105,7 +106,7 @@ class Controller extends EventEmitter {
 
   _start(mode, opts = {}) {
     const asr = this.getAsr();
-    if (!asr) { this._pill('error', { note: 'Speech model not ready' }); this.fsm.reset(); return; }
+    if (!asr) { this._pill('error', { note: NOT_READY[this.engineState()] || NOT_READY.other }); this.fsm.reset(); return; }
     const s = this.store.get();
     // where does this dictation go: typed, or kept as a note (note-mode chord, or the desktop / no window / own window fallback)
     const route = decideRoute({ fg: this.typer.foreground(), gesture: opts.gesture, autoRoute: !!(this.notes && s.notes.autoRoute), ownPid: this.ownPid });

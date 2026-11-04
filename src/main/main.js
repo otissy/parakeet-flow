@@ -383,7 +383,7 @@ else if (!lock) {
 
     const fake = arg('fake-mic') || process.env.PF_FAKE_MIC;
     mic = fake ? new WavMic({ file: fake }) : new RendererMic({ ipcMain, getWindow: () => capWin, getSettings: () => store.get() });
-    controller = new Controller({ getAsr: () => (engine.state === 'ready' ? asr : null), typer, store, mic, llm: llmService, notes: notesApi, slang });
+    controller = new Controller({ getAsr: () => (engine.state === 'ready' ? asr : null), engineState: () => engine.state, typer, store, mic, llm: llmService, notes: notesApi, slang });
     controller.attach();
     typer.on('refused', () => { if (controller.session) controller.session.live._halt('refused'); });
     typer.on('exit', () => log('error', 'helper exited'));

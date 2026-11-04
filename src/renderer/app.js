@@ -16,9 +16,16 @@ function seg(id, opts, val) { return `<div class="seg" id="${id}">${opts.map(([v
 function keys(vks) { return vks.map((v) => `<kbd>${L.esc(L.vkLabel(v))}</kbd>`).join('<span class="note"> + </span>'); }
 
 /* ---------- pages ---------- */
+/** the speech model is missing or failed its check, or a download is running: dictation cannot work until this is done */
+function modelNeeded() { const i = S.info || {}; return !!S.dl || i.engine === 'missing' || (i.engine === 'error' && !i.modelsOk); }
+function modelCard() {
+  if (!modelNeeded()) return '';
+  const i = S.info || {};
+  return `<div class="card model-card" id="model-card"><div class="grow"><b>Download the speech model to start dictating</b><div class="note">Parakeet TDT 0.6B v3 (int8), about 670 MB, downloaded once and checked against its SHA-256.</div>${i.engine === 'error' && !S.dl && i.error ? `<div class="note" style="color:var(--bad)" role="alert">${L.esc(i.error)}</div>` : ''}${S.dl ? `<div class="progress"><i style="width:${S.dl.pct}%"></i></div>` : ''}</div><button class="btn primary" id="dl-home" ${S.dl ? 'disabled' : ''}>${S.dl ? S.dl.pct + '%' : 'Download'}</button></div>`;
+}
 function home() {
   const s = S.settings, st = S.stats;
-  const hint = `Hold ${s.hotkey.label} to dictate${s.toggleOn ? `, or press ${s.toggleKey.label} to start and stop` : ''}`;
+  const hint = `Hold ${s.hotkey.label} to dictate${s.toggleOn ? `, or press ${s.toggleKey.label} to start and stop` : ''}${modelNeeded() ? ' once the model is ready' : ''}`;
   let hist;
   if (!s.historyEnabled) hist = `<div class="card empty">History is off, so nothing you dictate is kept.<br><br><button class="btn" id="hist-on">Turn on history</button></div>`;
   else if (!S.history.length) hist = `<div class="card empty">Nothing here yet. Dictate something and it shows up here.</div>`;
@@ -27,7 +34,7 @@ function home() {
   return `<div class="wrap">
     <h1>${L.esc(L.greeting(new Date().getHours(), s.userName))}</h1>
     <div class="sub">Everything runs on this computer. Nothing is sent anywhere.</div>
-    <div class="card hint"><div><div class="t">${L.esc(hint)}</div><div class="s">${s.typing && s.typing.live ? 'Words are typed as you speak. ' : 'Your words show in the bar while you talk and the finished text goes in once when you let go. '}Press Esc to cancel.</div></div></div>
+    ${modelCard()}<div class="card hint"><div><div class="t">${L.esc(hint)}</div><div class="s">${s.typing && s.typing.live ? 'Words are typed as you speak. ' : 'Your words show in the bar while you talk and the finished text goes in once when you let go. '}Press Esc to cancel.</div></div></div>
     <div class="stats">
       <div class="card stat"><div class="n">${st.words.toLocaleString('en')}</div><div class="l">Words dictated</div></div>
       <div class="card stat"><div class="n">${st.wpm || '–'}<span class="u">${st.wpm ? 'wpm' : ''}</span></div><div class="l">Average speed</div></div>
@@ -238,7 +245,8 @@ function bind() {
     try { const st = await navigator.mediaDevices.getUserMedia({ audio: true }); st.getTracks().forEach((t) => t.stop()); } catch (_) { /* no permission or no device */ }
     await loadDevices(); render();
   });
-  on('dl', () => window.pf.invoke('models:download'));
+  const download = () => { S.dl = { pct: 0 }; engineBadge(); render(); window.pf.invoke('models:download'); };
+  on('dl', download); on('dl-home', download);
   bindExtra();
   if (S.page === 'dictionary') bindSlang();
   on('hk-reset', () => { S.hkError = ''; save({ hotkey: { vks: [0x11, 0x20], label: 'Ctrl+Space' } }); });
@@ -417,8 +425,8 @@ async function refresh() {
 window.pf.on('app:history', (e) => { S.history.unshift(e); if (S.page === 'home') render(); });
 window.pf.on('app:stats', (s) => { S.stats = s; if (S.page === 'home') render(); });
 window.pf.on('settings:changed', (s) => { S.settings = s; render(); });
-window.pf.on('engine:state', async () => { S.info = await window.pf.invoke('app:info'); engineBadge(); if (S.page === 'settings') render(); else if (S.page === 'dictionary') { const st = document.getElementById('sl-restarting'); if (!!st !== !!(SL.state && SL.state.biasing.enabled && S.info.engine === 'loading')) { readForm('sl-add'); render(); } } });
-window.pf.on('models:progress', (p) => { S.dl = p.done ? null : { pct: Math.round(p.pct) }; engineBadge(); if (S.page === 'settings') render(); });
+window.pf.on('engine:state', async () => { S.info = await window.pf.invoke('app:info'); engineBadge(); if (S.page === 'settings' || S.page === 'home') render(); else if (S.page === 'dictionary') { const st = document.getElementById('sl-restarting'); if (!!st !== !!(SL.state && SL.state.biasing.enabled && S.info.engine === 'loading')) { readForm('sl-add'); render(); } } });
+window.pf.on('models:progress', (p) => { S.dl = p.done ? null : { pct: Math.round(p.pct) }; engineBadge(); if (S.page === 'settings' || S.page === 'home') render(); });
 window.pf.on('meetings:changed', async () => { await loadMeetings(); if (S.page === 'meetings') render(); });
 window.pf.on('meetings:progress', (progress) => { S.meetingProgress = progress; if (S.page === 'meetings') render(); });
 window.pf.on('meetings:state', (state) => {
