@@ -59,3 +59,18 @@ test('finding 10: Settings names the tray item as it is called', async () => {
   assert.doesNotMatch(t, /pause dictation in the tray/);
   await page.close();
 });
+
+test('finding 14: with automatic checks off the line says so, in every idle state', async () => {
+  const { UPDATE } = require('./util');
+  const off = { updates: { auto: false } };
+  const a = await settings({ settings: off });
+  assert.match(await a.page.locator('#up-line').innerText(), /Automatic checks are off/);
+  assert.doesNotMatch(await a.page.locator('#up-line').innerText(), /Not checked yet/);
+  await a.page.close();
+  const b = await settings({ settings: off, update: { ...UPDATE, lastCheckAt: Date.now() } });
+  assert.match(await b.page.locator('#up-line').innerText(), /latest version.*Automatic checks are off/);
+  await b.page.close();
+  const on = await settings();
+  assert.equal(await on.page.locator('#up-line').innerText(), 'Not checked yet.');
+  await on.page.close();
+});

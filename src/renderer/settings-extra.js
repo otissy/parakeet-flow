@@ -138,9 +138,11 @@ function updateLine(u) {
   if (u.state === 'ready') return 'A new version is ready. It installs the next time you quit, or restart now.';
   if (u.state === 'downloading') return 'Downloading a new version in the background.';
   if (u.state === 'checking') return 'Checking…';
-  if (X.updateAsked && u.lastFailed) return 'Could not check right now. It tries again later.';
-  if (u.lastCheckAt) return 'You have the latest version. Last checked ' + new Date(u.lastCheckAt).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) + '.';
-  return 'Not checked yet.';
+  const auto = S.settings.updates.auto;
+  const off = auto ? '' : ' Automatic checks are off.';
+  if (X.updateAsked && u.lastFailed) return (auto ? 'Could not check right now. It tries again later.' : 'Could not check right now.') + off;
+  if (u.lastCheckAt) return 'You have the latest version. Last checked ' + new Date(u.lastCheckAt).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) + '.' + off;
+  return auto ? 'Not checked yet.' : 'Automatic checks are off. Check now still works.';
 }
 function secUpdates() {
   const u = X.update;
