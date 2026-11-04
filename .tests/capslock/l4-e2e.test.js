@@ -29,7 +29,7 @@ test('hard kill of the helper (crash): the process is gone, no hook survives', a
 test('the app process is killed hard (crash): the helper notices stdin closing and exits by itself', async () => {
   const script = path.join(os.tmpdir(), 'pf-caps-parent.js');
   fs.writeFileSync(script, `const {Win32Typer}=require(${JSON.stringify(path.join(root, 'src/typer/win32-typer.js'))});
-(async()=>{const t=new Win32Typer({binDir:${JSON.stringify(BIN)}});await t.ready;t.setToggleKey(0x14);t.setClaim(true);console.log('HELPER '+t.proc.pid);setInterval(()=>{},1000);})();`);
+(async()=>{const t=new Win32Typer({binDir:${JSON.stringify(BIN)}});await t.ready;t.setToggleKey(0x7e);console.log('HELPER '+t.proc.pid);setInterval(()=>{},1000);})();`);
   const parent = spawn(process.execPath, [script], { stdio: ['ignore', 'pipe', 'inherit'] });
   let out = '';
   const pid = await new Promise((res, rej) => { parent.stdout.on('data', (d) => { out += d; const m = /HELPER (\d+)/.exec(out); if (m) res(+m[1]); }); setTimeout(() => rej(new Error('no helper pid')), 8000); });

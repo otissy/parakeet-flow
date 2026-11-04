@@ -33,6 +33,7 @@ test('--squirrel-firstrun boots the whole app; npm start script strips ELECTRON_
     "fs.writeFileSync(process.env.REP,JSON.stringify({ud:app.getPath('userData'),wins:require('electron').BrowserWindow.getAllWindows().length,erm:process.env.ELECTRON_RUN_AS_NODE||null}));",
     'app.exit(0);})();};',
   ].join('\n'));
+  require('../features-e2e/safe-keys').seedSafeKeys(ud);
   // through scripts/start.js with the poisoned variable set: it must still start
   const env = clean({ ELECTRON_RUN_AS_NODE: '1', PF_OFFSCREEN: '1', PF_NO_LOGIN_ITEM: '1', PF_TEST_HOOK: hook, REP: rep, PF_MODELS: path.join(ud, 'none') });
   const c = spawn(process.execPath, [path.join(root, 'scripts', 'start.js'), '--squirrel-firstrun', '--user-data=' + ud], { env, stdio: 'ignore' });

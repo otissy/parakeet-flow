@@ -19,6 +19,7 @@ const baseOk = U.modelsPresent() && fs.existsSync(electron);
 function runHook(mode, extra = {}) {
   const userData = fs.mkdtempSync(path.join(os.tmpdir(), 'pf-slang-'));
   const report = path.join(userData, 'report.json');
+  require('../features-e2e/safe-keys').seedSafeKeys(userData);
   const env = { ...process.env, PF_USERDATA: userData, PF_MODELS: path.join(process.env.APPDATA, 'parakeet-flow', 'models'), PF_OFFSCREEN: '1', PF_NO_LOGIN_ITEM: '1',
     PF_TEST_HOOK: path.join(__dirname, 'hook.js'), PF_MODE: mode, PF_REPORT: report, PF_PROOF_DIR: proof, PF_FIXTURES: U.FIX, ...extra };
   delete env.ELECTRON_RUN_AS_NODE;

@@ -10,6 +10,7 @@ const electron = path.join(root, 'node_modules', 'electron', 'dist', 'electron.e
 function runApp(mode, extraEnv = {}, { timeoutMs = 200000 } = {}) {
   const userData = fs.mkdtempSync(path.join(os.tmpdir(), 'pf-feat-'));
   const report = path.join(userData, 'report.json');
+  require('./safe-keys').seedSafeKeys(userData);
   const env = { ...process.env, PF_USERDATA: userData, PF_MODELS: path.join(process.env.APPDATA, 'parakeet-flow', 'models'), PF_OFFSCREEN: '1', PF_NO_LOGIN_ITEM: '1',
     PF_TEST_HOOK: path.join(__dirname, 'hook.js'), PF_MODE: mode, PF_REPORT: report, PF_PROOF_DIR: process.env.PF_PROOF_DIR || path.join(root, '..', 'pf-proof'), ...extraEnv };
   delete env.ELECTRON_RUN_AS_NODE;

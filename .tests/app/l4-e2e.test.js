@@ -17,6 +17,7 @@ const proof = process.env.PF_PROOF_DIR || path.join(root, '..', 'pf-proof');
 test('app boots, dictates a pause utterance, hands-free, Esc, and renders every page', { skip, timeout: 240000 }, () => {
   const userData = fs.mkdtempSync(path.join(os.tmpdir(), 'pf-e2e-'));
   const report = path.join(userData, 'report.json');
+  require('../features-e2e/safe-keys').seedSafeKeys(userData);
   const env = { ...process.env, PF_USERDATA: userData, PF_MODELS: path.join(process.env.APPDATA, 'parakeet-flow', 'models'),
     PF_AUDIO: path.join(U.FIX, 'en-pause.wav'), PF_FAKE_MIC: path.join(U.FIX, 'en-pause.wav'), PF_OFFSCREEN: '1', PF_NO_LOGIN_ITEM: '1',
     PF_TEST_HOOK: path.join(__dirname, 'e2e-hook.js'), PF_PROOF_DIR: proof, PF_REPORT: report };
