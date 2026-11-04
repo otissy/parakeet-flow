@@ -45,6 +45,34 @@ class SyncHttpError extends Error {
   constructor(message, { status = 0, code = '' } = {}) { super(message); this.name = 'SyncHttpError'; this.status = status; this.code = code; }
 }
 
+/** the words of the link-code functions (supabase/migrations/0001_install_links.sql) as sentences; anything else gets a capital and a full stop */
+const SERVER_WORDS = {
+  'invalid, used or expired code': 'That code is invalid, used or expired. Create a new code on the other PC.',
+  'too many wrong codes, wait 10 minutes': 'Too many wrong codes. Wait 10 minutes and try again.',
+  "that is this install's own code: join it from another install": "That is this install's own code. Enter it on the other PC.",
+  'install not registered': 'This install is not registered yet. Press Sync now, then try again.',
+};
+function serverWords(raw) {
+  const t = String(raw ?? '').trim();
+  if (SERVER_WORDS[t]) return SERVER_WORDS[t];
+  if (!t) return 'Could not join.';
+  return t[0].toUpperCase() + t.slice(1) + (/[.!?]$/.test(t) ? '' : '.');
+}
+
+/** what a person reads for a failure. Status and code stay on the error for the log. Errors written for people pass through */
+function syncErrorText(e) {
+  const msg = String((e && e.message) || 'Sync failed.');
+  if (!(e instanceof SyncHttpError) || !e.status) return msg;
+  const s = e.status;
+  if (/anonymous|signups/i.test(msg)) return 'Anonymous sign-ins are off in this Supabase project. Turn them on in its Authentication settings.';
+  if (s === 401) return `The server refused this install's sign-in. Check the publishable key (error ${s}).`;
+  if (s === 403) return `The server refused this request. Check the project's setup in docs/sync-setup.md (error ${s}).`;
+  if (s === 404) return `This project has no sync tables yet. Run the setup in docs/sync-setup.md (error ${s}).`;
+  if (s === 408 || s === 429) return `The server is busy (error ${s}).`;
+  if (s >= 500) return `The server had a problem (error ${s}).`;
+  return `The server refused the request (error ${s}).`;
+}
+
 class SupabaseClient {
   /** session: {installId, access, refresh, expiresAt}; onSession(session): save it (called before the new tokens are used) */
   constructor({ url, key, session = {}, onSession = () => {}, onIdentityLost = () => {}, fetchImpl = (...a) => fetch(...a), timeoutMs = 15000, nowS = () => Math.floor(Date.now() / 1000) }) {
@@ -113,4 +141,4 @@ class SupabaseClient {
   rpc(name, args = {}) { return this.rest('POST', 'rpc/' + name, { body: args }); }
 }
 
-module.exports = { SupabaseClient, SyncHttpError, checkPublicKey, checkUrl, normalizeCode, formatCode, CODE_ALPHABET, CODE_LEN };
+module.exports = { SupabaseClient, SyncHttpError, serverWords, syncErrorText, checkPublicKey, checkUrl, normalizeCode, formatCode, CODE_ALPHABET, CODE_LEN };

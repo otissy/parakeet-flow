@@ -505,3 +505,30 @@ test('a refusal by the server is a failure, not offline', async () => {
   assert.notEqual(a.sync.status().lastError, '');
   assert.equal(a.sync.status().offline, false);
 });
+
+/* ---------- finding 17: server errors as sentences ---------- */
+test('a wrong code reads as a sentence that says what to do', async () => {
+  const server = fakeServer();
+  const a = makeInstall({ fetchImpl: server.fetchImpl, url: 'https://x.supabase.co', key: 'sb_publishable_abc', enabled: true });
+  const r = await a.sync.join('ZZZ-ZZZ');
+  assert.equal(r.error, 'That code is invalid, used or expired. Create a new code on the other PC.');
+  assert.equal(r.refused, true);
+  a.sync.stop();
+});
+
+test('server failures read as sentences; nothing technical from the body reaches the screen; the status stays visible', async () => {
+  for (const [status, body, want] of [[401, '{"message":"Invalid API key"}', /publishable key \(error 401\)/], [403, '{"message":"permission denied for table installs"}', /refused this request.*error 403/], [404, '{"code":"PGRST205","message":"Could not find the table"}', /no sync tables.*error 404/], [500, '{"message":"xx"}', /had a problem \(error 500\)/], [429, '', /busy \(error 429\)/], [422, '{"message":"xx"}', /refused the request \(error 422\)/]]) {
+    const a = makeInstall({ fetchImpl: async () => ({ ok: false, status, text: async () => body }), url: 'https://x.supabase.co', key: 'sb_publishable_abc', enabled: true });
+    await a.sync.syncNow(); a.sync.stop();
+    const t = a.sync.status().lastError;
+    assert.match(t, want);
+    assert.doesNotMatch(t, /permission denied|PGRST|Invalid API key|answered/);
+    assert.match(t, /^[A-Z].*\.$/, t);
+  }
+});
+
+test('anonymous sign-ins off: the sentence says where to turn them on', async () => {
+  const a = makeInstall({ fetchImpl: async () => ({ ok: false, status: 422, text: async () => '{"msg":"Anonymous sign-ins are disabled"}' }), url: 'https://x.supabase.co', key: 'sb_publishable_abc', enabled: true });
+  await a.sync.syncNow(); a.sync.stop();
+  assert.match(a.sync.status().lastError, /Anonymous sign-ins are off.*Authentication settings/);
+});

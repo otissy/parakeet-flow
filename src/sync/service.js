@@ -7,7 +7,7 @@
    The state file doubles as the offline queue: an edit made while offline is stamped there and goes up on the next good cycle. */
 const fs = require('fs');
 const path = require('path');
-const { SupabaseClient, checkPublicKey, checkUrl, normalizeCode, formatCode } = require('./client');
+const { SupabaseClient, serverWords, syncErrorText, checkPublicKey, checkUrl, normalizeCode, formatCode } = require('./client');
 const A = require('./allowlist');
 const { merge, sanitizeRemote, differs, same } = require('./merge');
 const { normalize, DEFAULTS } = require('../main/settings');
@@ -210,7 +210,7 @@ class SyncService {
     } catch (e) {
       const wait = BACKOFF_MS[Math.min(this.fails, BACKOFF_MS.length - 1)];
       this.fails++; this.nextRetryAt = this.now() + wait;
-      this.state.lastError = String(e.message || 'Sync failed').slice(0, 200);
+      this.state.lastError = syncErrorText(e).slice(0, 200);
       this.state.offline = e.code === 'network';
       this._save();
       this.log('error', `sync failed status=${e.status ?? 'none'} retry_ms=${wait}`);
@@ -296,7 +296,7 @@ class SyncService {
       this.waitForJoin = !this.state.scope.startsWith('group:');
       if (this.waitForJoin) { this.fastUntil = this.now() + CODE_LIFE_MS; this._later(LINK_POLL_MS); }
       return { ok: true, code: formatCode(row.code), expiresAt: row.expires_at };
-    } catch (e) { return { ok: false, error: String(e.message).slice(0, 200) }; }
+    } catch (e) { return { ok: false, error: syncErrorText(e).slice(0, 200) }; }
   }
   async join(raw) {
     const code = normalizeCode(raw);
@@ -306,11 +306,11 @@ class SyncService {
     try {
       await this._register(c); this._save();
       const v = await c.rpc('join_with_code', { raw_code: code });
-      if (!v || v.ok !== true) return { ok: false, refused: true, error: String((v && v.error) || 'Could not join.').slice(0, 200) };
+      if (!v || v.ok !== true) return { ok: false, refused: true, error: serverWords(v && v.error).slice(0, 200) };
       this.fastUntil = this.now() + JOINED_POLL_FOR_MS;
       await this.syncNow();
       return { ok: true };
-    } catch (e) { return { ok: false, error: String(e.message).slice(0, 200) }; }
+    } catch (e) { return { ok: false, error: syncErrorText(e).slice(0, 200) }; }
   }
   async unlink() {
     const c = this._client();
@@ -319,7 +319,7 @@ class SyncService {
       await c.rpc('leave_group');
       await this.syncNow();     // keeps every local value; this install goes on with its own row
       return { ok: true };
-    } catch (e) { return { ok: false, error: String(e.message).slice(0, 200) }; }
+    } catch (e) { return { ok: false, error: syncErrorText(e).slice(0, 200) }; }
   }
 
   /** what the Sync section shows. No network, no secret: the key itself and the tokens never go to a page */
