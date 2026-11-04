@@ -5,9 +5,9 @@ inserted into the focused app once (like Wispr Flow; typing while you speak is a
 via sherpa-onnx). Your words stay here: what can leave the PC is only the optional Notion sync and the optional customization sync below, both off until you switch them on. The installed app also asks GitHub for updates (on by default, see Updates below). A small floating bar shows the level and the live text; a tray icon and a main window hold
 the settings. The design follows the layout and feel of Wispr Flow without using its name or logo.
 
-## Install (Windows installer, 0.2.62)
+## Install (Windows installer, 0.2.63)
 
-Run `Parakeet Flow Setup 0.2.62.exe`. It installs for your user only (no admin prompt) into
+Run `Parakeet Flow Setup 0.2.63.exe`. It installs for your user only (no admin prompt) into
 `%LOCALAPPDATA%\parakeet-flow`, adds a Start-menu shortcut (Start > otissy > Parakeet Flow) and an entry in
 Settings > Apps. It does NOT start with Windows: no startup entry, no scheduled task, no Run key. "Launch at login"
 exists in Settings and is off until you switch it on.

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.63
+
+- Security update: Electron 31.7.7 to 45.2.2 (Chromium 156, Node 24). This clears the known Electron security advisories. Your settings, models, notes and saved tokens carry over.
+- Meeting capture keeps working: Electron 45 asks separately for desktop capture, and the app now allows it next to the microphone.
+- The installer is larger because Chromium grew.
+
 ## 0.2.62
 
 Fixes from a UX review of 0.2.61:
