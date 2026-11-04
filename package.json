@@ -25,6 +25,7 @@
     "productName": "Parakeet Flow",
     "asar": false,
     "electronDist": "node_modules/electron/dist",
+    "afterPack": "scripts/after-pack.js",
     "files": [
       "package.json",
       "LICENSE",
