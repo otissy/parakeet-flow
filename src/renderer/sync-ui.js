@@ -21,6 +21,21 @@ function syncStatusLine(st) {
   return parts.join(' ');
 }
 
+const SYNC_CONFIRM = {
+  unlink: 'Unlink this PC? It stops sharing customization with your linked installs, and linking it again takes a new code. If only one other install is linked, that link ends too. Your customization stays on this PC.',
+  restore: 'Restore the backup? It replaces your current customization on this PC, and words and rows added since the backup are removed. This also reaches your linked installs. There is no undo.',
+  project: 'Switch to a different Supabase project? This PC drops its link and its list of linked installs, and gets a new install ID in the new project. Your customization stays on this PC, and what was uploaded stays in the old project.',
+};
+/** a valid URL (the main process checks it again) for another project than the saved one */
+function changesProject(raw, st) {
+  if (!st.url) return false;
+  try {
+    const u = new URL(String(raw).trim());
+    const allowed = u.protocol === 'https:' || (u.protocol === 'http:' && ['127.0.0.1', 'localhost'].includes(u.hostname));
+    return allowed && !u.username && !u.password && u.origin !== st.url;
+  } catch (_) { return false; }
+}
+
 /** the answer to a button, under the row that button is in */
 function syncMsg(row) {
   if (!XS.msg || XS.msgRow !== row) return '';
@@ -68,7 +83,7 @@ function bindSync() {
   input('sy-url', 'url'); input('sy-key', 'key'); input('sy-join', 'join');
   const on = (id, fn) => { const e = q(id); if (e) e.onclick = fn; };
   on('sy-on', () => act('on', () => window.pf.invoke('sync:set-enabled', !X.sync.enabled)));
-  on('sy-save', () => act('project', async () => {
+  on('sy-save', () => changesProject(q('sy-url').value, X.sync) && !window.confirm(SYNC_CONFIRM.project) ? undefined : act('project', async () => {
     const r = await window.pf.invoke('sync:configure', { url: q('sy-url').value, key: q('sy-key').value });
     if (r && r.ok) XS.url = null;
     XS.key = '';      // saved, or refused: either way a key never stays in the box or in this page's memory
@@ -77,8 +92,8 @@ function bindSync() {
   on('sy-code', () => act('code', async () => { const r = await window.pf.invoke('sync:create-code'); XS.code = r && r.ok ? r : null; return r; }));
   on('sy-join-go', () => act('join', async () => { const r = await window.pf.invoke('sync:join', q('sy-join').value); if (r && (r.ok || r.refused)) XS.join = ''; return r; }, 'Linked.'));
   on('sy-now', () => act('now', () => window.pf.invoke('sync:now')));
-  on('sy-unlink', () => act('now', () => window.pf.invoke('sync:unlink'), 'Unlinked. Your customization stays on this PC.'));
-  on('sy-restore', () => act('backup', () => window.pf.invoke('sync:restore'), 'Backup restored.'));
+  on('sy-unlink', () => { if (window.confirm(SYNC_CONFIRM.unlink)) act('now', () => window.pf.invoke('sync:unlink'), 'Unlinked. Your customization stays on this PC.'); });
+  on('sy-restore', () => { if (window.confirm(SYNC_CONFIRM.restore)) act('backup', () => window.pf.invoke('sync:restore'), 'Backup restored.'); });
 }
 
 async function syncRefresh() {

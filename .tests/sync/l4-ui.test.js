@@ -117,7 +117,9 @@ test('linked: the list shows the other install, Unlink calls unlink; conflicts a
   assert.match(t, /1 linked/);
   assert.match(t, /2 min ago: 3 received/);
   assert.match(t, /tone\.apps/); assert.match(t, /slack/); assert.match(t, /kept the other PC/);
+  page.on('dialog', (d) => d.accept());
   await page.click('#sy-unlink');
+  await page.waitForTimeout(40);
   await page.click('#sy-restore');
   await page.waitForTimeout(60);
   assert.deepStrictEqual((await calls(page)).map((c) => c[0]), ['sync:unlink', 'sync:restore']);

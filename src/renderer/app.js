@@ -218,7 +218,7 @@ function bind() {
   main.querySelectorAll('[data-copy]').forEach((b) => b.onclick = () => { const e = S.history.find((x) => x.id === b.dataset.copy); if (e) window.pf.invoke('history:copy', e.text); b.style.color = 'var(--ok)'; setTimeout(() => { b.style.color = ''; }, 700); });
   const on = (id, fn) => { const el = $('#' + id); if (el) el.onclick = fn; };
   on('hist-on', () => save({ historyEnabled: true }));
-  on('hist-clear', async () => { await window.pf.invoke('history:clear'); S.history = []; render(); });
+  on('hist-clear', async () => { if (!window.confirm('Delete all saved transcripts from this computer? This cannot be undone.')) return; await window.pf.invoke('history:clear'); S.history = []; render(); });
   on('add-go', () => {
     const cfg = S.page === 'dictionary' ? ['dictionary', 'from', 'to'] : ['snippets', 'trigger', 'expansion'];
     const a = $('#add-a').value.trim(), b = $('#add-b').value;
