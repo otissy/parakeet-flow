@@ -36,6 +36,12 @@ function changesProject(raw, st) {
   } catch (_) { return false; }
 }
 
+/** the state in one word, next to the section title */
+function syncBadge(st) {
+  const [text, cls] = !st.enabled ? ['Off', ''] : st.syncing ? ['Syncing', 'warn'] : st.lastError ? (st.offline ? ['Offline', 'warn'] : ['Failed', 'bad']) : ['On', 'ok'];
+  return `<span class="badge ${cls}" id="sy-badge">${text}</span>`;
+}
+
 /** the answer to a button, under the row that button is in */
 function syncMsg(row) {
   if (!XS.msg || XS.msgRow !== row) return '';
@@ -50,7 +56,7 @@ function secSync() {
   const members = st.members.filter((m) => !m.isMe);
   const rows = members.map((m) => `<div class="trow"><div class="a"><div>${L.esc(m.name || m.machine || 'Unnamed install')}</div><div class="note" style="font-family:Consolas,monospace;font-size:11.5px;overflow-wrap:anywhere">${L.esc(m.id)}</div></div><div class="b"><span class="note">${L.esc(m.version)}</span></div></div>`).join('');
   const conflicts = st.conflicts.map((c) => `<div class="trow"><div class="a">${L.esc(c.label)}</div><div class="b"><span class="note">kept ${c.kept === 'this' ? 'this PC' : 'the other PC'} (newer); replaced ${L.esc(c.lost)}</span></div></div>`).join('');
-  return `<h2 id="sec-sync">Sync</h2><div class="card" style="padding:4px 18px" id="sync-card">
+  return `<h2 id="sec-sync">Sync ${syncBadge(st)}</h2><div class="card" style="padding:4px 18px" id="sync-card">
     <div class="srow col"><div class="l"><b>Project</b><div>${st.encryption ? 'Your own Supabase project. The key is stored encrypted with Windows; a secret or service-role key is refused.' : 'Secure storage is not available on this PC, so sync cannot be used.'}</div></div>
       <div class="c"><input type="text" id="sy-url" value="${L.esc(url)}" placeholder="https://your-project.supabase.co" autocomplete="off" ${st.encryption ? '' : 'disabled'}><input type="password" id="sy-key" value="${L.esc(XS.key)}" placeholder="${st.configured ? 'Saved (hidden)' : 'sb_publishable_...'}" autocomplete="off" ${st.encryption ? '' : 'disabled'}><button class="btn primary" id="sy-save" ${st.encryption ? '' : 'disabled'}>Save</button></div>${syncMsg('project')}</div>
     <div class="srow"><div class="l"><b>Sync my customization</b><div>Off by default. While on, this install sends to the Supabase project above: hotkeys; typing and style preferences, with your per-app rows; tone and voice commands; note phrases; translate and cleanup preferences; filler words; your Dictionary rows; your words in My terms with their bias; and which packs are on. It also sends a random install ID, the app version and the name below if you give one, and each request carries the project's publishable key and this install's sign-in token. The server sees your IP address. The data is stored unencrypted: the project's owner can read it, and your linked installs can read and change it. Sync never sends dictated text, transcript history, notes, meetings, audio, snippets, your Notion token or logs. While this is off, sync contacts nothing.</div>${st.encryption && !st.configured ? '<div id="sy-on-why" style="color:var(--text)">Save the project URL and key above first.</div>' : ''}${syncMsg('on')}</div><div class="c">${toggle('sy-on', st.enabled, !st.configured || !st.encryption)}</div></div>

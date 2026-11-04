@@ -20,7 +20,7 @@ const MAX_CONFLICTS = 50;
 const SECRET = 'sync';
 
 const defaultsFlat = A.flatten(normalize(JSON.parse(JSON.stringify(DEFAULTS))));
-const fresh = () => ({ name: '', keys: {}, synced: {}, scope: '', backupScope: '', registered: '', scanned: false, lastSyncAt: 0, lastError: '', pulled: 0, pushed: 0, conflicts: [], backup: '', members: [] });
+const fresh = () => ({ name: '', keys: {}, synced: {}, scope: '', backupScope: '', registered: '', scanned: false, lastSyncAt: 0, lastError: '', offline: false, pulled: 0, pushed: 0, conflicts: [], backup: '', members: [] });
 
 class SyncService {
   constructor({ dir, store, secrets, slang, version = '', log = () => {}, onApplied = () => {}, onStatus = () => {}, isBusy = () => false, fetchImpl, now = () => Date.now(), pollMs = POLL_MS, debounceMs = DEBOUNCE_MS }) {
@@ -85,7 +85,7 @@ class SyncService {
     this.secrets.set(SECRET, JSON.stringify({ url: u.url, key: String(key ?? '').trim() || old.key, session: sameProject ? old.session || {} : {} }));
     this.client = null;
     if (!sameProject) {   // another project: another identity there
-      Object.assign(this.state, { synced: {}, scope: '', backupScope: '', registered: '', members: [], lastError: '' });
+      Object.assign(this.state, { synced: {}, scope: '', backupScope: '', registered: '', members: [], lastError: '', offline: false });
       if (fs.existsSync(this.file)) this._save();
     }
     if (this.enabled()) this._later(0);
@@ -108,7 +108,7 @@ class SyncService {
     if (on && !this.secrets.available()) return { ok: false, error: 'Secure storage is not available on this PC.' };
     if (on) this._firstSeen = this._mtime();      // before this very write moves it
     this.store.set({ sync: { enabled: !!on } });
-    if (on) { this._scan(); this._save(); this.start(); this._later(0); } else { this.stop(); this.state.lastError = ''; this._save(); }
+    if (on) { this._scan(); this._save(); this.start(); this._later(0); } else { this.stop(); this.state.lastError = ''; this.state.offline = false; this._save(); }
     this.onStatus();
     return { ok: true };
   }
@@ -184,7 +184,9 @@ class SyncService {
     this.running = this._cycle().finally(() => {
       this.running = null;
       if (this.again) { this.again = false; this._later(0); }
+      this.onStatus();
     });
+    this.onStatus();
     return this.running;
   }
 
@@ -197,7 +199,7 @@ class SyncService {
       await client.token();
       const out = await this._exchange(client);
       if (!out) { this._later(BUSY_RETRY_MS); return false; }
-      Object.assign(this.state, { lastSyncAt: this.now(), lastError: '', pulled: out.pulled, pushed: out.pushed });
+      Object.assign(this.state, { lastSyncAt: this.now(), lastError: '', offline: false, pulled: out.pulled, pushed: out.pushed });
       this.fails = 0; this.nextRetryAt = 0;
       this._save();
       this.log('info', `sync ok keys=${Object.keys(this.state.keys).length} pulled=${out.pulled} pushed=${out.pushed} conflicts=${out.conflicts} ms=${this.now() - t0}`);
@@ -209,6 +211,7 @@ class SyncService {
       const wait = BACKOFF_MS[Math.min(this.fails, BACKOFF_MS.length - 1)];
       this.fails++; this.nextRetryAt = this.now() + wait;
       this.state.lastError = String(e.message || 'Sync failed').slice(0, 200);
+      this.state.offline = e.code === 'network';
       this._save();
       this.log('error', `sync failed status=${e.status ?? 'none'} retry_ms=${wait}`);
       if (this.enabled()) this._later(wait);
@@ -326,7 +329,7 @@ class SyncService {
       enabled: this.enabled(), configured: !!(c && c.url && c.key), encryption: !!(this.secrets && this.secrets.available()),
       url: c ? c.url : '', installId: c?.session?.installId || '', name: s.name || '',
       linked: s.scope.startsWith('group:'), members: s.members,
-      lastSyncAt: s.lastSyncAt, lastError: s.lastError, nextRetryAt: this.nextRetryAt, pulled: s.pulled, pushed: s.pushed,
+      syncing: !!this.running, offline: !!s.offline, lastSyncAt: s.lastSyncAt, lastError: s.lastError, nextRetryAt: this.nextRetryAt, pulled: s.pulled, pushed: s.pushed,
       waiting: Object.entries(s.keys).filter(([k, e]) => e.t !== s.synced[k] && e.t > 0).length,
       conflicts: s.conflicts.slice(0, 5).map((x) => ({ label: A.keyLabel(x.key), kept: x.kept, lost: JSON.stringify(x.lost ?? null).slice(0, 120), at: x.at })),
       backup: s.backup, notice: this.notice,

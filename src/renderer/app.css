@@ -101,6 +101,8 @@ button.small { padding: 4px 11px; font-size: 12.5px; flex: none; }
 
 .leaves { margin: 0; padding-left: 18px; color: var(--muted); font-size: 12.5px; } .leaves li { margin-top: 4px; } .leaves b { color: var(--text); font-weight: 500; }
 
+h2 .badge { margin-left: 6px; text-transform: none; letter-spacing: 0; font-weight: 500; }
+
 .tryout { padding: 10px 12px; background: #121215; border: 1px solid var(--line); border-radius: 9px; min-height: 40px; overflow-wrap: anywhere; }
 .tryout mark { background: var(--accent-soft); color: #fff; border-radius: 4px; padding: 0 3px; }
 code { font: 12px Consolas, monospace; background: #121215; border: 1px solid var(--line); border-radius: 5px; padding: 1px 5px; }

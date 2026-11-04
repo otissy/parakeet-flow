@@ -476,3 +476,32 @@ test('a name set while sync is off contacts nothing', () => {
   assert.equal(a.sync.status().name, 'Desk PC');
   assert.equal(server.calls.length, 0);
 });
+
+/* ---------- finding 13: the state behind the badge ---------- */
+test('status says syncing during a cycle, offline when the server cannot be reached, not offline when it refuses', async () => {
+  const server = fakeServer();
+  const a = makeInstall({ fetchImpl: server.fetchImpl, url: 'https://x.supabase.co', key: 'sb_publishable_abc', enabled: true });
+  const seen = [];
+  a.sync.onStatus = () => seen.push(a.sync.status().syncing);
+  const run = a.sync.syncNow();
+  assert.equal(a.sync.status().syncing, true);
+  await run;
+  assert.equal(a.sync.status().syncing, false);
+  assert.equal(a.sync.status().offline, false);
+  assert.ok(seen.includes(true) && seen.at(-1) === false, 'the page hears both');
+  a.sync.stop();
+  server.setDown(true);
+  await a.sync.syncNow(); a.sync.stop();
+  assert.equal(a.sync.status().offline, true);
+  server.setDown(false);
+  await a.sync.syncNow(); a.sync.stop();
+  assert.equal(a.sync.status().offline, false);
+  assert.equal(a.sync.status().lastError, '');
+});
+
+test('a refusal by the server is a failure, not offline', async () => {
+  const a = makeInstall({ fetchImpl: async () => ({ ok: false, status: 500, text: async () => '{"message":"boom"}' }), url: 'https://x.supabase.co', key: 'sb_publishable_abc', enabled: true });
+  await a.sync.syncNow(); a.sync.stop();
+  assert.notEqual(a.sync.status().lastError, '');
+  assert.equal(a.sync.status().offline, false);
+});

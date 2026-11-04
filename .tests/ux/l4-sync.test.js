@@ -102,3 +102,13 @@ test('finding 12: a linked install shows its name above the ID; without one it s
   assert.deepStrictEqual(await calls(page), [['sync:set-name', 'Laptop']]);
   await page.close();
 });
+
+for (const [word, cls, state] of [['Off', '', SYNC_OFF], ['On', 'ok', SYNC_ON], ['Syncing', 'warn', { ...SYNC_ON, syncing: true }],
+  ['Offline', 'warn', { ...SYNC_ON, lastError: 'Could not reach the server.', offline: true }], ['Failed', 'bad', { ...SYNC_ON, lastError: 'The server had a problem (error 500).' }]]) {
+  test('finding 13: the badge in the Sync header says ' + word, async () => {
+    const { page } = await open(browser, { goto: 'settings', sync: state });
+    assert.equal(await page.locator('#sec-sync #sy-badge').innerText(), word);
+    if (cls) assert.match(await page.getAttribute('#sy-badge', 'class'), new RegExp(cls));
+    await page.close();
+  });
+}
