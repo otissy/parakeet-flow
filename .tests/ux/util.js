@@ -29,7 +29,7 @@ function bridge({ settings = {}, info = { engine: 'ready', modelsOk: true }, his
     const data = { 'stats:get': ${JSON.stringify(stats)}, 'history:get': ${JSON.stringify(history)},
       'llm:status': { runtime: false, model: 'missing', worker: { state: 'stopped' }, last: null }, 'notion:status': { hasToken: false, encryption: true, counts: {} },
       'notes:list': [], 'mcp:info': { serverPath: 'x', dataDir: 'y', installed: false, statusFile: 'z' },
-      'slang:state': { enabled: true, biasing: { enabled: false, score: 1.5, percent: 50 }, packs: [{ id: 'gaming', name: 'Gaming', builtin: true, enabled: true, count: 3, lang: 'en', category: 'x', description: 'x' }], mine: { count: 0 }, problems: [], active: 3 }, 'slang:terms': { total: 0, items: [] }, 'meetings:list': [], 'meetings:status': { ready: true } };
+      'slang:state': { enabled: true, biasing: { enabled: false, score: 1.5, percent: 50 }, packs: [{ id: 'gaming', name: 'Gaming', description: 'x', language: 'en', builtin: true, editable: false, count: 3, variants: 1, enabled: true, warnings: [] }], mine: { count: 0 }, problems: [], active: 3 }, 'slang:terms': { total: 0, items: [] }, 'slang:preview': { text: '', hits: [] }, 'meetings:list': [], 'meetings:status': { ready: true } };
     window.__calls = [];
     const listeners = {};
     window.__fire = (ch, ...a) => (listeners[ch] || []).forEach((f) => f(...a));

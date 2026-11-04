@@ -12,7 +12,8 @@ html, body { height: 100%; background: var(--bg); color: var(--text); overflow: 
 .brand { display: flex; align-items: center; gap: 9px; font-weight: 600; letter-spacing: .01em; padding: 0 10px 18px; }
 .glyph { width: 22px; height: 22px; fill: none; stroke: var(--accent); stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
 .glyph .dot { fill: var(--accent); stroke: none; }
-.nav { display: flex; align-items: center; gap: 11px; padding: 8px 10px; border-radius: 9px; color: var(--muted); cursor: pointer; user-select: none; }
+.navlist { display: flex; flex-direction: column; gap: 2px; flex: 1; min-height: 0; }
+.nav { display: flex; align-items: center; gap: 11px; width: 100%; padding: 8px 10px; border: 0; border-radius: 9px; background: transparent; color: var(--muted); font: inherit; text-align: left; cursor: pointer; user-select: none; }
 .nav svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
 .nav:hover { background: rgba(255,255,255,.04); color: var(--text); }
 .nav.on { background: var(--accent-soft); color: #fff; }

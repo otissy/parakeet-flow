@@ -317,12 +317,28 @@ function bind() {
 let lastCap = false;
 function notifyCapture() { const on = !!S.capturing; if (on !== lastCap) { lastCap = on; window.pf.send('hotkey:capture', on); } }
 
+function markNav() {
+  document.querySelectorAll('.nav').forEach((n) => {
+    const on = n.dataset.page === S.page;
+    n.classList.toggle('on', on); n.setAttribute('aria-selected', String(on));
+    if (on) main.setAttribute('aria-label', n.textContent.trim());
+  });
+}
+/* every switch is named after the title of its row, so a screen reader says what it switches (badges in the title are left out) */
+function labelSwitches() {
+  main.querySelectorAll('[role=switch]').forEach((sw) => {
+    const b = sw.closest('.srow, .trow') && sw.closest('.srow, .trow').querySelector('b');
+    const name = b ? [...b.childNodes].filter((n) => n.nodeType === 3).map((n) => n.textContent).join('').trim() : '';
+    if (name) sw.setAttribute('aria-label', name);
+  });
+}
+
 function render() {
   const pages = { home, meetings: meetingsPage, dictionary: () => pairsPage({ title: 'Dictionary', blurb: 'Replace a word or name every time it is dictated. Case-insensitive, whole words only.', listKey: 'dictionary', a: 'from', b: 'to', phA: 'Heard as', phB: 'Replace with' }) + slangSection(),
     snippets: () => pairsPage({ title: 'Snippets', blurb: 'Say a short phrase, get a longer text. Say only the phrase to replace the whole line.', listKey: 'snippets', a: 'trigger', b: 'expansion', phA: 'When I say', phB: 'Type this', multi: false }),
     style, settings: settingsPage, notes: notesPage };
   const wait = pageWaiting();
-  if (wait) { main.innerHTML = wait; document.querySelectorAll('.nav').forEach((n) => n.classList.toggle('on', n.dataset.page === S.page)); bindBoot(); return; }
+  if (wait) { main.innerHTML = wait; markNav(); bindBoot(); return; }
   const y = main.scrollTop;
   const act = document.activeElement, keepId = act && main.contains(act) && act.id ? act.id : '', caret = keepId && typeof act.selectionStart === 'number' ? act.selectionStart : null;
   try { main.innerHTML = S.settings ? pages[S.page]() : bootCard(); }
@@ -330,12 +346,20 @@ function render() {
   main.scrollTop = y;
   if (keepId) { const el = document.getElementById(keepId); if (el) { el.focus({ preventScroll: true }); if (caret !== null && typeof el.setSelectionRange === 'function') { try { el.setSelectionRange(caret, caret); } catch (_) { /* not a text field */ } } } }
   notifyCapture();
-  document.querySelectorAll('.nav').forEach((n) => n.classList.toggle('on', n.dataset.page === S.page));
+  markNav();
+  labelSwitches();
   bind();
   bindQuickAdd(S.page);
 }
 
 document.querySelectorAll('.nav').forEach((n) => n.onclick = () => { S.page = n.dataset.page; S.capturing = null; syncMeetingStatusPolling(); render(); if (S.page === 'meetings') loadMeetingsPage(); });
+$('.navlist').addEventListener('keydown', (e) => {   // Tab reaches every page; the arrow keys move between them too, as tabs do
+  if (S.capturing || (e.key !== 'ArrowDown' && e.key !== 'ArrowUp')) return;
+  const all = [...document.querySelectorAll('.nav')], i = all.indexOf(document.activeElement);
+  if (i < 0) return;
+  e.preventDefault();
+  all[(i + (e.key === 'ArrowDown' ? 1 : all.length - 1)) % all.length].focus();
+});
 
 // hotkey capture: collect every key pressed, commit when all are released
 const held = new Set(); let combo = [];
