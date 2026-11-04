@@ -286,13 +286,13 @@ class SyncService {
   }
   async join(raw) {
     const code = normalizeCode(raw);
-    if (!code) return { ok: false, error: 'A link code is 6 letters and digits, like ABC-234.' };
+    if (!code) return { ok: false, refused: true, error: 'A link code is 6 letters and digits, like ABC-234.' };
     const c = this._client();
     if (!c) return { ok: false, error: 'Switch sync on first.' };
     try {
       await this._register(c); this._save();
       const v = await c.rpc('join_with_code', { raw_code: code });
-      if (!v || v.ok !== true) return { ok: false, error: String((v && v.error) || 'Could not join.').slice(0, 200) };
+      if (!v || v.ok !== true) return { ok: false, refused: true, error: String((v && v.error) || 'Could not join.').slice(0, 200) };
       this.fastUntil = this.now() + JOINED_POLL_FOR_MS;
       await this.syncNow();
       return { ok: true };

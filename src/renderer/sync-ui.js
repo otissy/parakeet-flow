@@ -1,6 +1,6 @@
 // Settings > Sync: customization sync between the user's own installs (off by default). Plain functions over the shared state of
 // app.js and settings-extra.js. The main process keeps the key and tokens: a page only ever sees the URL and this install's ID.
-const XS = { url: null, key: '', join: '', code: null, msg: '', err: false, busy: false };
+const XS = { url: null, key: '', join: '', code: null, msg: '', msgRow: '', err: false, busy: false };
 
 const syncAgo = (ms) => {
   const s = Math.max(0, Math.round((Date.now() - ms) / 1000));
@@ -21,6 +21,12 @@ function syncStatusLine(st) {
   return parts.join(' ');
 }
 
+/** the answer to a button, under the row that button is in */
+function syncMsg(row) {
+  if (!XS.msg || XS.msgRow !== row) return '';
+  return `<div id="sy-msg" class="symsg" role="${XS.err ? 'alert' : 'status'}" ${XS.err ? 'style="color:var(--bad)"' : ''}>${L.esc(XS.msg)}</div>`;
+}
+
 function secSync() {
   const st = X.sync;
   if (!st) return `<h2 id="sec-sync">Sync</h2><div class="card" style="padding:4px 18px"><div class="srow"><div class="l"><b>Sync</b><div>The sync status could not be read. Everything else works as usual.</div></div></div></div>`;
@@ -30,15 +36,15 @@ function secSync() {
   const rows = members.map((m) => `<div class="trow"><div class="a" style="font-family:Consolas,monospace;font-size:12.5px">${L.esc(m.id)}</div><div class="b"><span class="note">${L.esc(m.version)}</span></div></div>`).join('');
   const conflicts = st.conflicts.map((c) => `<div class="trow"><div class="a">${L.esc(c.label)}</div><div class="b"><span class="note">kept ${c.kept === 'this' ? 'this PC' : 'the other PC'} (newer); replaced ${L.esc(c.lost)}</span></div></div>`).join('');
   return `<h2 id="sec-sync">Sync</h2><div class="card" style="padding:4px 18px" id="sync-card">
-    <div class="srow"><div class="l"><b>Sync my customization</b><div>Off by default. Sends only your customization to the Supabase project below: tone, voice commands, translate and cleanup preferences, typing preferences, hotkeys, your own words with their bias, and which packs are on. Dictated text, notes, meetings, tokens and logs never leave this PC. While this is off, sync contacts nothing.</div></div><div class="c">${toggle('sy-on', st.enabled, !st.configured || !st.encryption)}</div></div>
     <div class="srow col"><div class="l"><b>Project</b><div>${st.encryption ? 'Your own Supabase project. The key is stored encrypted with Windows; a secret or service-role key is refused.' : 'Secure storage is not available on this PC, so sync cannot be used.'}</div></div>
-      <div class="c"><input type="text" id="sy-url" value="${L.esc(url)}" placeholder="https://your-project.supabase.co" autocomplete="off" ${st.encryption ? '' : 'disabled'}><input type="password" id="sy-key" value="${L.esc(XS.key)}" placeholder="${st.configured ? 'Saved (hidden)' : 'sb_publishable_...'}" autocomplete="off" ${st.encryption ? '' : 'disabled'}><button class="btn primary" id="sy-save" ${st.encryption ? '' : 'disabled'}>Save</button></div></div>
+      <div class="c"><input type="text" id="sy-url" value="${L.esc(url)}" placeholder="https://your-project.supabase.co" autocomplete="off" ${st.encryption ? '' : 'disabled'}><input type="password" id="sy-key" value="${L.esc(XS.key)}" placeholder="${st.configured ? 'Saved (hidden)' : 'sb_publishable_...'}" autocomplete="off" ${st.encryption ? '' : 'disabled'}><button class="btn primary" id="sy-save" ${st.encryption ? '' : 'disabled'}>Save</button></div>${syncMsg('project')}</div>
+    <div class="srow"><div class="l"><b>Sync my customization</b><div>Off by default. Sends only your customization to the Supabase project below: tone, voice commands, translate and cleanup preferences, typing preferences, hotkeys, your own words with their bias, and which packs are on. Dictated text, notes, meetings, tokens and logs never leave this PC. While this is off, sync contacts nothing.</div>${st.encryption && !st.configured ? '<div id="sy-on-why" style="color:var(--text)">Save the project URL and key above first.</div>' : ''}${syncMsg('on')}</div><div class="c">${toggle('sy-on', st.enabled, !st.configured || !st.encryption)}</div></div>
     <div class="srow"><div class="l"><b>This install's ID</b><div style="font-family:Consolas,monospace;overflow-wrap:anywhere">${st.installId ? L.esc(st.installId) : 'Created when sync is first switched on.'}</div></div></div>
-    <div class="srow"><div class="l"><b>Link another PC</b><div>${XS.code ? `Enter <b>${L.esc(XS.code.code)}</b> on the other PC. It works once, for 10 minutes.` : 'Creates a code for one other install. Linked installs share this customization, so link only your own.'}</div></div><div class="c"><button class="btn" id="sy-code" ${off}>Create link code</button></div></div>
-    <div class="srow"><div class="l"><b>Join with a code</b><div>A code from another install. A backup of your customization is saved first.</div></div><div class="c"><input type="text" id="sy-join" value="${L.esc(XS.join)}" placeholder="ABC-234" autocomplete="off" maxlength="12" ${off}><button class="btn" id="sy-join-go" ${off}>Join</button></div></div>
+    <div class="srow"><div class="l"><b>Link another PC</b><div>${XS.code ? `Enter <b>${L.esc(XS.code.code)}</b> on the other PC. It works once, for 10 minutes.` : 'Creates a code for one other install. Linked installs share this customization, so link only your own.'}</div>${syncMsg('code')}</div><div class="c"><button class="btn" id="sy-code" ${off}>Create link code</button></div></div>
+    <div class="srow"><div class="l"><b>Join with a code</b><div>A code from another install. A backup of your customization is saved first.</div>${syncMsg('join')}</div><div class="c"><input type="text" id="sy-join" value="${L.esc(XS.join)}" placeholder="ABC-234" autocomplete="off" maxlength="12" ${off}><button class="btn" id="sy-join-go" ${off}>Join</button></div></div>
     <div class="srow col"><div class="l"><b>Linked installs</b><div>${members.length ? members.length + ' linked.' : 'None. This install syncs only with its own copy.'}</div></div>${rows ? `<div class="c" style="display:block"><div class="card tbl" style="padding:2px 14px">${rows}</div></div>` : ''}</div>
-    <div class="srow"><div class="l"><b>Last sync</b><div id="sy-status" ${st.lastError ? 'style="color:var(--bad)"' : ''}>${L.esc(syncStatusLine(st))}</div>${XS.msg ? `<div ${XS.err ? 'style="color:var(--bad)"' : ''}>${L.esc(XS.msg)}</div>` : ''}</div><div class="c"><button class="btn" id="sy-now" ${off}>Sync now</button>${st.linked ? `<button class="btn danger" id="sy-unlink" ${off}>Unlink</button>` : ''}</div></div>
-    ${st.backup ? '<div class="srow"><div class="l"><b>Backup</b><div>A copy of your customization from before the first pull. Restoring counts as a new edit, so it also reaches your linked installs.</div></div><div class="c"><button class="btn" id="sy-restore">Restore backup</button></div></div>' : ''}
+    <div class="srow"><div class="l"><b>Last sync</b><div id="sy-status" ${st.lastError ? 'style="color:var(--bad)"' : ''}>${L.esc(syncStatusLine(st))}</div>${syncMsg('now')}</div><div class="c"><button class="btn" id="sy-now" ${off}>Sync now</button>${st.linked ? `<button class="btn danger" id="sy-unlink" ${off}>Unlink</button>` : ''}</div></div>
+    ${st.backup ? '<div class="srow"><div class="l"><b>Backup</b><div>A copy of your customization from before the first pull. Restoring counts as a new edit, so it also reaches your linked installs.</div>' + syncMsg('backup') + '</div><div class="c"><button class="btn" id="sy-restore">Restore backup</button></div></div>' : ''}
     ${conflicts ? `<div class="srow col"><div class="l"><b>Changed on two PCs</b><div>The newer value was kept on every PC. What it replaced:</div></div><div class="c" style="display:block"><div class="card tbl" style="padding:2px 14px">${conflicts}</div></div></div>` : ''}
   </div>`;
 }
@@ -46,30 +52,33 @@ function secSync() {
 function bindSync() {
   const q = (id) => document.getElementById(id);
   if (!q('sync-card')) return;
-  const act = async (fn, ok = '') => {
+  const act = async (row, fn, ok = '') => {
     if (XS.busy) return;
-    XS.busy = true; XS.msg = ''; XS.err = false;
+    XS.busy = true; XS.msg = ''; XS.err = false; XS.msgRow = row;
     let r;
     try { r = await fn(); } catch (e) { r = { ok: false, error: String(e && e.message || e) }; }
     XS.busy = false;
     if (r && r.ok === false && r.error) { XS.msg = r.error; XS.err = true; } else XS.msg = ok;
     await syncRefresh();
+    const m = q('sy-msg');
+    if (m) m.scrollIntoView({ block: 'nearest' });
     return r;
   };
   const input = (id, key) => { const e = q(id); if (e) e.oninput = () => { XS[key] = e.value; }; };
   input('sy-url', 'url'); input('sy-key', 'key'); input('sy-join', 'join');
   const on = (id, fn) => { const e = q(id); if (e) e.onclick = fn; };
-  on('sy-on', () => act(() => window.pf.invoke('sync:set-enabled', !X.sync.enabled)));
-  on('sy-save', () => act(async () => {
+  on('sy-on', () => act('on', () => window.pf.invoke('sync:set-enabled', !X.sync.enabled)));
+  on('sy-save', () => act('project', async () => {
     const r = await window.pf.invoke('sync:configure', { url: q('sy-url').value, key: q('sy-key').value });
-    if (r && r.ok) { XS.url = null; XS.key = ''; }
+    if (r && r.ok) XS.url = null;
+    XS.key = '';      // saved, or refused: either way a key never stays in the box or in this page's memory
     return r;
   }, 'Saved. Switch sync on when you are ready.'));
-  on('sy-code', () => act(async () => { const r = await window.pf.invoke('sync:create-code'); XS.code = r && r.ok ? r : null; return r; }));
-  on('sy-join-go', () => act(async () => { const r = await window.pf.invoke('sync:join', q('sy-join').value); if (r && r.ok) XS.join = ''; return r; }, 'Linked.'));
-  on('sy-now', () => act(() => window.pf.invoke('sync:now')));
-  on('sy-unlink', () => act(() => window.pf.invoke('sync:unlink'), 'Unlinked. Your customization stays on this PC.'));
-  on('sy-restore', () => act(() => window.pf.invoke('sync:restore'), 'Backup restored.'));
+  on('sy-code', () => act('code', async () => { const r = await window.pf.invoke('sync:create-code'); XS.code = r && r.ok ? r : null; return r; }));
+  on('sy-join-go', () => act('join', async () => { const r = await window.pf.invoke('sync:join', q('sy-join').value); if (r && (r.ok || r.refused)) XS.join = ''; return r; }, 'Linked.'));
+  on('sy-now', () => act('now', () => window.pf.invoke('sync:now')));
+  on('sy-unlink', () => act('now', () => window.pf.invoke('sync:unlink'), 'Unlinked. Your customization stays on this PC.'));
+  on('sy-restore', () => act('backup', () => window.pf.invoke('sync:restore'), 'Backup restored.'));
 }
 
 async function syncRefresh() {

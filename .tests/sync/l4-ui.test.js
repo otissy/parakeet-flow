@@ -81,13 +81,15 @@ test('the URL and key go to the main process, and the key box is emptied', async
   await page.close();
 });
 
-test('a refused key shows the reason and keeps what was typed', async () => {
+test('a refused key shows the reason, keeps the URL and empties the key box', async () => {
   const { page } = await open(BASE, { 'sync:configure': { ok: false, error: 'That is a SECRET key (sb_secret_...).' } });
   await page.fill('#sy-url', 'https://example.supabase.co');
   await page.fill('#sy-key', 'sb_secret_abc');
   await page.click('#sy-save');
   await page.waitForFunction(() => /SECRET key/.test(document.getElementById('sync-card').innerText));
   assert.equal(await page.inputValue('#sy-url'), 'https://example.supabase.co');
+  assert.equal(await page.inputValue('#sy-key'), '');
+  assert.equal(await page.evaluate(() => XS.key), '');
   await page.close();
 });
 
