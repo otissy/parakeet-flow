@@ -10,7 +10,7 @@ Software shipped inside the installer
 
 | Component | Version | Licence | Status |
 |---|---|---|---|
-| Electron (includes Chromium and Node.js; their notices are in LICENSE.electron.txt and LICENSES.chromium.html in the install folder) | 31.7.7 | MIT | checked (package.json, LICENSE) |
+| Electron (includes Chromium and Node.js; their notices are in LICENSE.electron.txt and LICENSES.chromium.html in the install folder) | 45.2.2 | MIT | checked (package.json, LICENSE) |
 | sherpa-onnx-node (speech engine bindings) | 1.13.8 | Apache-2.0 | checked (package.json) |
 | sherpa-onnx-win-x64 (native libraries; contains ONNX Runtime) | 1.13.8 | Apache-2.0 | checked (package.json); the ONNX Runtime component's own licence (MIT) is not verified locally |
 | node-llama-cpp (local model runtime) | 3.22.1 | MIT | checked (package.json, LICENSE) |
@@ -19,7 +19,7 @@ Software shipped inside the installer
 | zod | 3.25.76 | MIT | checked (package.json, LICENSE) |
 | The npm dependencies of node-llama-cpp and of @modelcontextprotocol/sdk | see each package's package.json under llm-runtime/node_modules and mcp/node_modules | their own | not individually listed here |
 
-Build tooling (not shipped): electron-builder 26.15.3 (MIT, checked), Squirrel.Windows through electron-winstaller 5.4.0.
+Build tooling (not shipped): electron-builder 26.18.0 (MIT, checked), Squirrel.Windows through electron-winstaller 5.4.0.
 
 Software downloaded on first use
 

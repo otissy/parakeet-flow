@@ -17,7 +17,7 @@ test('Squirrel.Windows target, per-user, own icon, nothing published', () => {
   assert.equal(b.squirrelWindows.name, 'parakeet-flow');          // install folder LOCALAPPDATA/parakeet-flow
   assert.ok(!b.publish && !b.win.certificateFile && !b.win.signtoolOptions, 'no publish target, no certificate');
   assert.match(pkg.version, /^\d+\.\d+\.\d+$/);
-  assert.equal(pkg.devDependencies['electron-builder'], '26.15.3');
+  assert.equal(pkg.devDependencies['electron-builder'], '26.18.0');
 });
 test('native code stays on disk (no asar) and the big models are not bundled', () => {
   assert.equal(b.asar, false);
