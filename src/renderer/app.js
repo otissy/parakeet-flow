@@ -12,7 +12,7 @@ const ICON_ADDWORD = '<svg viewBox="0 0 16 16"><path d="M3 3.5h6.5a1.5 1.5 0 011
 async function save(patch) { S.settings = await window.pf.invoke('settings:set', patch); render(); }
 
 function toggle(id, on, disabled) { return `<button class="sw ${on ? 'on' : ''}" id="${id}" role="switch" aria-checked="${on}" ${disabled ? 'disabled' : ''}></button>`; }
-function seg(id, opts, val) { return `<div class="seg" id="${id}">${opts.map(([v, t]) => `<button data-v="${v}" class="${v === val ? 'on' : ''}">${t}</button>`).join('')}</div>`; }
+function seg(id, opts, val, off = []) { return `<div class="seg" id="${id}">${opts.map(([v, t]) => `<button data-v="${v}" class="${v === val ? 'on' : ''}" ${off.includes(v) ? 'disabled' : ''}>${t}</button>`).join('')}</div>`; }
 function keys(vks) { return vks.map((v) => `<kbd>${L.esc(L.vkLabel(v))}</kbd>`).join('<span class="note"> + </span>'); }
 
 /* ---------- pages ---------- */
@@ -82,7 +82,7 @@ function settingsPage() {
   <h2>Speech engine</h2><div class="card" style="padding:4px 18px">
     <div class="srow"><div class="l"><b>Model</b><div>${i.modelsOk ? 'Parakeet TDT 0.6B v3 (int8), checked against its SHA-256.' : 'Parakeet TDT 0.6B v3 (int8), about 670 MB, downloaded once.'}</div>${S.dl ? `<div class="progress"><i style="width:${S.dl.pct}%"></i></div>` : ''}</div>
       <div class="c">${i.modelsOk ? '<span class="chip">Ready</span>' : `<button class="btn primary" id="dl" ${S.dl ? 'disabled' : ''}>${S.dl ? S.dl.pct + '%' : 'Download'}</button>`}</div></div>
-    <div class="srow"><div class="l"><b>Run on</b><div>${gpuOk ? 'GPU shares memory with games and OBS.' : 'This build has no GPU support yet, so GPU falls back to CPU.'}</div></div><div class="c">${seg('prov', [['cpu', 'CPU'], ['cuda', 'GPU']], s.provider)}</div></div>
+    <div class="srow"><div class="l"><b>Run on</b><div>${gpuOk ? 'GPU shares memory with games and OBS.' : 'This build runs on the CPU. It has no GPU support yet.'}</div></div><div class="c">${seg('prov', [['cpu', 'CPU'], ['cuda', 'GPU']], gpuOk ? s.provider : 'cpu', gpuOk ? [] : ['cuda'])}</div></div>
     <div class="srow"><div class="l"><b>CPU threads</b><div>Two is plenty and keeps streams smooth.</div></div><div class="c"><select id="threads">${[1, 2, 3, 4, 6, 8].map((n) => `<option ${n === s.threads ? 'selected' : ''}>${n}</option>`).join('')}</select></div></div>
   </div>
   <h2>Text</h2><div class="card" style="padding:4px 18px">
