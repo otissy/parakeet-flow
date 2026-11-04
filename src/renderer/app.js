@@ -101,6 +101,7 @@ function settingsPage() {
     <div class="srow"><div class="l"><b>Start with Windows</b><div>Off. Turning it on adds a login item for this app.</div></div><div class="c">${toggle('login', s.launchAtLogin)}</div></div>
     <div class="srow"><div class="l"><b>Your name</b><div>Used in the greeting on Home.</div></div><div class="c"><input type="text" id="uname" value="${L.esc(s.userName)}" maxlength="40"></div></div>
   </div>
+  ${secSync()}${secUpdates()}
   <div class="note" style="margin-top:16px">Logs hold timings and counts only, never what you said.</div></div>`;
 }
 

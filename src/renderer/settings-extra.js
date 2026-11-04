@@ -131,7 +131,7 @@ function secTyping() {
   </div>`;
 }
 
-function extraSettings() { return secCommands() + secTone() + secTranslate() + secCleanup() + secNotes() + secRouting() + secMcp() + secExport() + secTyping() + secSync() + secUpdates(); }
+function extraSettings() { return secCommands() + secTone() + secTranslate() + secCleanup() + secNotes() + secRouting() + secMcp() + secExport() + secTyping(); }
 
 function updateLine(u) {
   if (!u.installed) return 'Updates work only in the installed app, so this copy never checks.';

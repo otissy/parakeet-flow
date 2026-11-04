@@ -83,3 +83,11 @@ test('finding 15: faint text reaches at least 4:1 on every background it sits on
   const ratio = (a, b) => { const [x, y] = [lum(a), lum(b)].sort((m, n) => n - m); return (x + 0.05) / (y + 0.05); };
   for (const bg of ['card', 'bg', 'side']) assert.ok(ratio(color('faint'), color(bg)) >= 4, bg + ': ' + ratio(color('faint'), color(bg)).toFixed(2));
 });
+
+test('finding 16: the page runs Privacy, Sync, Updates, after the everyday settings', async () => {
+  const { page } = await settings();
+  const top = (t) => page.evaluate((x) => [...document.querySelectorAll('#main h2')].find((h) => h.textContent.trim().startsWith(x)).getBoundingClientRect().top, t);
+  const [typing, privacy, sync, updates] = [await top('How text gets in'), await top('Privacy'), await top('Sync'), await top('Updates')];
+  assert.ok(typing < privacy && privacy < sync && sync < updates, [typing, privacy, sync, updates].join());
+  await page.close();
+});
