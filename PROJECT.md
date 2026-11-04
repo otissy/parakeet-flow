@@ -167,3 +167,16 @@ Code in `src/sync/`: `allowlist.js` (what may go; the only upload builder), `mer
 | Release asset names | build-installer's `checkReleaseFolder` fails the build if RELEASES and the nupkg disagree; GitHub renames spaces to dots, so the Setup exe's asset gets dots (harmless, the feed never fetches it) |
 | A version must be newer as NuGet sees it | 0.2.62 after 0.2.61; a draft or pre-release is not `latest` |
 | Check request | Squirrel adds `?id=&localVersion=&arch=` (seen in the L4 test); README and Settings say so |
+
+## Added 2026-11-04: UX review fixes (0.2.62, branch claude/verify-deps)
+
+17 findings from `../pf-ux-review/report.md`. Tests: `.tests/ux` (real renderer files, headless Chromium, mocked main process, real key presses), additions in `.tests/sync/l3` and `.tests/app/l3`. Before/after: `../pf-compare/index.html`.
+
+| Limit | What it means |
+|---|---|
+| A test copy of the app hooks the real keyboard | every test that starts it seeds F15, no CapsLock toggle, Ctrl+F15 for notes (`.tests/features-e2e/safe-keys.js`). A new test that starts the app must do the same |
+| Installs table name and machine | exist in the schema and list_group returns them. `machine` stays null; `name` is sent only when the user typed one (Settings > Sync > This PC's name, kept in sync-state.json). README and the switch text say so |
+| The sync switch text is tied to the allowlist | `.tests/ux/l4-privacy` fails on a new `SETTING_PATHS` entry until the text covers it |
+| Confirmations are native window.confirm | the same as deleting a meeting; tests answer them through Playwright's dialog event |
+| Faint text | #7a7a86 is about 4:1 on cards: better, but under the 4.5:1 of WCAG AA for small text |
+| Clean-PATH proof | `.tests/squirrel/l4-imports.test.js` reads the imports of every native file of the built package; the built exe then runs with PATH=System32 only, loads the native addons and boots |

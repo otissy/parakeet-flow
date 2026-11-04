@@ -2,7 +2,16 @@
 
 ## 0.2.62 - unreleased (local test build)
 
-- See below for the UX review fixes.
+Fixes from a UX review of 0.2.61:
+
+- First run: Home has a Download card with progress, and holding the key without a model tells you where to go.
+- Keyboard: every sidebar page and every switch can be reached with Tab, and switches have a name for screen readers.
+- Sync: the Project row comes first and the switch says why it is disabled. Answers appear under the button you pressed. A refused key leaves the box. Server errors read as sentences. A badge in the header says Off, On, Syncing, Offline or Failed. Sync and Updates moved under Privacy.
+- Linked installs can show a name you type per PC, optional and empty by default. The Windows computer name is never sent.
+- Unlink, Restore backup, Clear history and saving a different project URL ask first and say what is lost.
+- What the app says about the network is corrected: Home no longer says nothing is sent, Settings > Privacy lists what can leave the PC, and the sync switch names everything it sends and who can read it.
+- GPU can no longer be chosen (this build runs on the CPU). The dead Language box is gone. Aggressive/Stable moved under "Type while I speak". The CapsLock text names the tray item as it is called.
+- Updates says when automatic checks are off. Faint text has more contrast.
 
 ## 0.2.61 - unreleased (local test build)
 

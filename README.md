@@ -17,7 +17,7 @@ First run:
 1. Open Parakeet Flow from the Start menu. A tray icon appears (hidden icons arrow, bottom right), the main
    window opens, and a small bar sits at the bottom centre of the primary screen. Closing the window keeps it in the
    tray; Quit is in the tray menu.
-2. Settings > Speech engine > Download. About 670 MB from the official model hosts, SHA-256 checked. Until the model
+2. Home > Download (also at Settings > Speech engine). About 670 MB from the official model hosts, SHA-256 checked. Until the model
    is there the engine shows "missing" and nothing is typed. The installer itself is 165 MB and holds no models.
    Models live in `%APPDATA%\parakeet-flow\models`; an existing folder there is picked up as it is.
 3. Windows must allow microphone access for desktop apps (Settings > Privacy > Microphone). Pick the input
