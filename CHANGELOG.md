@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.62 - unreleased (local test build)
+
+- See below for the UX review fixes.
+
 ## 0.2.61 - unreleased (local test build)
 
 - The installer now carries the Visual C++ runtime (msvcp140, vcruntime140, vcruntime140_1) next to the app: the optional local AI model no longer needs the redistributable on the PC.
