@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.2.64
+
+Sync is easier to set up (still off by default, and it only ever syncs customization):
+
+- One **Sync code**: on the first PC, Settings > Sync > Create Sync code gives a single string with the project URL, the publishable key and a link code. Paste it into the box at the top of Settings > Sync on the second PC and press Link this PC: it saves the project, switches sync on and links, in one step. The code works once and expires after 10 minutes; a used, expired, damaged or edited code gets a clear message, and a code with a secret or service-role key is refused. The short link codes remain under Advanced.
+- The Sync section reads as steps: 1 Project, 2 switch on, 3 link another PC. A disabled control says why beside it, answers appear under the button you pressed, and the badge reads Off, Syncing, Up to date, Failed or Offline.
+- Each PC has a name in the linked list. It starts as the Windows computer name (this is new: before, no computer name was sent); change it, or empty it to send no name.
+- Linking with a Sync code asks first and says that a backup is saved and what will be replaced; Unlink, Restore backup and changing the project still ask.
+- The text in the app and the README now agree on what is synced, including the install ID, the app version and the name.
+- No database change: the same two migration files as before.
+
 ## 0.2.63
 
 - Security update: Electron 31.7.7 to 45.2.2 (Chromium 156, Node 24). This clears the known Electron security advisories. Your settings, models, notes and saved tokens carry over.

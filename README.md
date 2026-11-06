@@ -5,9 +5,9 @@ inserted into the focused app once (like Wispr Flow; typing while you speak is a
 via sherpa-onnx). Your words stay here: what can leave the PC is only the optional Notion sync and the optional customization sync below, both off until you switch them on. The installed app also asks GitHub for updates (on by default, see Updates below). A small floating bar shows the level and the live text; a tray icon and a main window hold
 the settings. The design follows the layout and feel of Wispr Flow without using its name or logo.
 
-## Install (Windows installer, 0.2.63)
+## Install (Windows installer, 0.2.64)
 
-Run `Parakeet Flow Setup 0.2.63.exe`. It installs for your user only (no admin prompt) into
+Run `Parakeet Flow Setup 0.2.64.exe`. It installs for your user only (no admin prompt) into
 `%LOCALAPPDATA%\parakeet-flow`, adds a Start-menu shortcut (Start > otissy > Parakeet Flow) and an entry in
 Settings > Apps. It does NOT start with Windows: no startup entry, no scheduled task, no Run key. "Launch at login"
 exists in Settings and is off until you switch it on.
@@ -54,7 +54,7 @@ The installer is not signed. Windows SmartScreen may say "Windows protected your
 Norton may show a reputation warning (for example IDP.Generic) for a new unsigned installer or for the little helper `pf-helper.exe`
 (built from `src/typer/helper/PfHelper.cs`, shipped inside the install with version info and a manifest; it types text and watches the hotkey).
 What it does, how to verify it, how to restore and exclude only that file, and how to report a false positive: `docs/antivirus.md`.
-Helper SHA-256 (0.2.63): `abdcd867e1c7061ad992e70d1753676541df667a5177c998a555837529b1804f`. The app makes no network calls except the model downloads,
+Helper SHA-256 (0.2.64): `0734e652632ddddb4e9bcd0d2a78ba059688b58fccb8ec372fe7401a424c4551`. The app makes no network calls except the model downloads,
 the update check (installed copies, on by default, see below) and Notion and customization sync, only if you turned them on.
 
 ## Updates
@@ -227,12 +227,12 @@ rules: `docs/sync-setup.md`.
 
 | | |
 |---|---|
-| **What goes** | Only settings on an explicit allowlist (`src/sync/allowlist.js`): tone, voice commands and note phrases, translate and cleanup preferences, typing preferences, filler words, hotkeys; your Dictionary rows; your words in My terms with their bias percent; which slang packs are on. Also a random install ID, the app version, the name you typed for this PC under **This PC's name** (nothing if left empty), and, as with any connection, your IP address, which Supabase can see. |
-| **What never goes** | Dictated text, transcript history, notes, meetings, audio, logs, the Notion token and every other secret. Also anything tied to one PC or person: microphone, GPU and threads, whisper mode, file paths, window positions, the Windows computer name, the name in your greeting, snippets, the never-type-into list, Notion settings. A new setting stays local until someone adds it to the allowlist. |
+| **What goes** | Only settings on an explicit allowlist (`src/sync/allowlist.js`): tone, voice commands and note phrases, translate and cleanup preferences, typing preferences, filler words, hotkeys; your Dictionary rows; your words in My terms with their bias percent; which slang packs are on. Also a random install ID, the app version, this PC's name (it starts as the Windows computer name; change it, or empty it under **This PC's name** to send none) and, as with any connection, your IP address, which Supabase can see. |
+| **What never goes** | Dictated text, transcript history, notes, meetings, audio, logs, the Notion token and every other secret. Also anything tied to one PC or person: microphone, GPU and threads, whisper mode, file paths, window positions, the name in your greeting, snippets, the never-type-into list, Notion settings. A new setting stays local until someone adds it to the allowlist. |
 | **Where it goes** | Only to the Supabase project you entered, over HTTPS, in one table row that only this install and the installs you linked can read or change. It is stored there unencrypted (Supabase encrypts its disks, but the project's owner can read the row). |
 | **When** | Never while the switch is off: sync makes no network call at all (the update check above is separate). On: a few seconds after a change and every 5 minutes. Switching off stops the calls; what was already uploaded stays in your project until you delete it there. |
 
-Each install has its own ID. To link two PCs, press **Create link code** on one and enter the code under **Join with a code** on the other (6 characters, single use, 10 minutes).
+Each install has its own ID and a name. **Easiest setup:** on the first PC do steps 1 to 3 in Settings > Sync (save the project URL and publishable key, switch sync on, press **Create Sync code**), copy the one code and paste it into the box at the top of Settings > Sync on the second PC. That PC saves the project, switches sync on and links itself in one step. The Sync code holds the project URL, the publishable key (public by design; a secret or service-role key is refused when making and when reading a code) and a link code that works once and expires after 10 minutes; share it only with your own PC. The older route, a 6-character link code, is under **Advanced: short link codes**.
 **Unlink** keeps everything on the PC and stops sharing. Link only your own installs: linked installs can change each other's customization.
 
 Per key, the newest edit wins, by the PCs' clocks. Before the first pull from a project or group, a copy of your customization is saved in `%APPDATA%\parakeet-flow\sync-backups`

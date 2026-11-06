@@ -96,6 +96,7 @@ test('a refused key shows the reason, keeps the URL and empties the key box', as
 test('on: the ID, a link code and joining work through the right channels', async () => {
   const { page, errors } = await open(ON, { 'sync:create-code': { ok: true, code: 'ABC-234', expiresAt: 'x' } });
   assert.match(await page.locator('#sync-card').innerText(), /11111111-2222-4333-8444-555555555555/);
+  await page.click('#sy-adv summary');
   await page.click('#sy-code');
   await page.waitForFunction(() => /ABC-234/.test(document.getElementById('sync-card').innerText));
   await page.fill('#sy-join', 'xyz-789');
@@ -137,6 +138,7 @@ test('a status update while typing keeps the text in all three boxes', async () 
   const { page } = await open(ON);
   await page.fill('#sy-url', 'https://other.supabase.co');
   await page.fill('#sy-key', 'sb_publishable_typing');
+  await page.click('#sy-adv summary');
   await page.fill('#sy-join', 'abc');
   await page.evaluate(() => window.__fire('sync:changed'));
   await page.waitForTimeout(60);

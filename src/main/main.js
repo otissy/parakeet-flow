@@ -344,7 +344,7 @@ else if (!lock) {
     }
     // customization sync: off by default, and then no timer and no network (src/sync/service.js)
     sync = new SyncService({
-      dir: app.getPath('userData'), store, secrets, slang, version: app.getVersion(), log,
+      dir: app.getPath('userData'), store, secrets, slang, version: app.getVersion(), defaultName: require('os').hostname(), log,
       isBusy: () => !!controller?.session,
       onStatus: () => send(mainWin, 'sync:changed'),
       onApplied: () => {          // the same steps as a change made in Settings

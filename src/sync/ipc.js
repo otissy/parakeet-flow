@@ -13,6 +13,8 @@ function register(ipcMain, { service, isMainWindow }) {
   h('sync:set-enabled', (on) => service.setEnabled(on === true));
   h('sync:now', async () => ({ ok: await service.syncNow() }));
   h('sync:create-code', () => service.createCode());
+  h('sync:create-setup-code', () => service.createSetupCode());
+  h('sync:join-setup', (code) => service.joinSetup(s(code, 1600)));
   h('sync:join', (code) => service.join(s(code, 20)));
   h('sync:unlink', () => service.unlink());
   h('sync:restore', () => service.restoreBackup());

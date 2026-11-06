@@ -37,6 +37,7 @@ test('finding 4: a refused Save answers under the Project row, in view', async (
 
 test('finding 4: a refused code answers under the Join row, whole and in view at the smallest window', async () => {
   const { page } = await open(browser, { goto: 'settings', sync: SYNC_ON, viewport: { width: 820, height: 560 }, answers: { 'sync:join': { ok: false, refused: true, error: 'That code is invalid, used or expired. Create a new code on the other PC.' } } });
+  await page.click('#sy-adv summary');
   await page.fill('#sy-join', 'ZZZ-ZZZ');
   await page.click('#sy-join-go');
   await page.waitForSelector('#sy-msg');
@@ -48,6 +49,7 @@ test('finding 4: a refused code answers under the Join row, whole and in view at
 
 test('finding 4: each button answers in its own row, and the next press clears the old answer', async () => {
   const { page } = await open(browser, { goto: 'settings', sync: SYNC_ON, answers: { 'sync:create-code': { ok: false, error: 'Code failed.' }, 'sync:now': { ok: false, error: 'Now failed.' } } });
+  await page.click('#sy-adv summary');
   await page.click('#sy-code');
   await page.waitForFunction(() => /Code failed/.test(document.getElementById('sy-msg')?.innerText || ''));
   assert.equal(await page.locator('#sy-msg').evaluate((e) => !!e.closest('.srow').querySelector('#sy-code')), true);
@@ -71,12 +73,14 @@ test('finding 11: a refused key is gone from the box and from the page, and is n
 
 test('finding 11: a refused code leaves the Join box; a network failure keeps it so it can be retried', async () => {
   const refused = await open(browser, { goto: 'settings', sync: SYNC_ON, answers: { 'sync:join': { ok: false, refused: true, error: 'No.' } } });
+  await refused.page.click('#sy-adv summary');
   await refused.page.fill('#sy-join', 'ZZZ-ZZZ');
   await refused.page.click('#sy-join-go');
   await refused.page.waitForSelector('#sy-msg');
   assert.equal(await refused.page.inputValue('#sy-join'), '');
   await refused.page.close();
   const net = await open(browser, { goto: 'settings', sync: SYNC_ON, answers: { 'sync:join': { ok: false, error: 'Could not reach the server.' } } });
+  await net.page.click('#sy-adv summary');
   await net.page.fill('#sy-join', 'ABC-234');
   await net.page.click('#sy-join-go');
   await net.page.waitForSelector('#sy-msg');
@@ -95,7 +99,7 @@ test('finding 12: a linked install shows its name above the ID; without one it s
   assert.match(t, /Desk PC\s+bbbbbbbb-0000-4000-8000-000000000001/);
   assert.match(t, /OLD-LAPTOP\s+bbbbbbbb-0000-4000-8000-000000000002/);
   assert.match(t, /Unnamed install\s+bbbbbbbb-0000-4000-8000-000000000003/);
-  assert.match(t, /Left empty, no name is sent/);
+  assert.match(t, /empty it to send no name/);
   await page.fill('#sy-name', 'Laptop');
   await page.locator('#sy-name').blur();
   await page.waitForTimeout(60);
@@ -103,7 +107,7 @@ test('finding 12: a linked install shows its name above the ID; without one it s
   await page.close();
 });
 
-for (const [word, cls, state] of [['Off', '', SYNC_OFF], ['On', 'ok', SYNC_ON], ['Syncing', 'warn', { ...SYNC_ON, syncing: true }],
+for (const [word, cls, state] of [['Off', '', SYNC_OFF], ['Up to date', 'ok', { ...SYNC_ON, lastSyncAt: Date.now() }], ['Syncing', 'warn', { ...SYNC_ON, syncing: true }],
   ['Offline', 'warn', { ...SYNC_ON, lastError: 'Could not reach the server.', offline: true }], ['Failed', 'bad', { ...SYNC_ON, lastError: 'The server had a problem (error 500).' }]]) {
   test('finding 13: the badge in the Sync header says ' + word, async () => {
     const { page } = await open(browser, { goto: 'settings', sync: state });

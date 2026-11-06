@@ -9,6 +9,7 @@ const fs = require('fs');
 const path = require('path');
 const { SupabaseClient, serverWords, syncErrorText, checkPublicKey, checkUrl, normalizeCode, formatCode } = require('./client');
 const A = require('./allowlist');
+const setupCode = require('./setup-code');
 const { merge, sanitizeRemote, differs, same } = require('./merge');
 const { normalize, DEFAULTS } = require('../main/settings');
 
@@ -20,11 +21,11 @@ const MAX_CONFLICTS = 50;
 const SECRET = 'sync';
 
 const defaultsFlat = A.flatten(normalize(JSON.parse(JSON.stringify(DEFAULTS))));
-const fresh = () => ({ name: '', keys: {}, synced: {}, scope: '', backupScope: '', registered: '', scanned: false, lastSyncAt: 0, lastError: '', offline: false, pulled: 0, pushed: 0, conflicts: [], backup: '', members: [] });
+const fresh = () => ({ name: '', nameSet: false, keys: {}, synced: {}, scope: '', backupScope: '', registered: '', scanned: false, lastSyncAt: 0, lastError: '', offline: false, pulled: 0, pushed: 0, conflicts: [], backup: '', members: [] });
 
 class SyncService {
-  constructor({ dir, store, secrets, slang, version = '', log = () => {}, onApplied = () => {}, onStatus = () => {}, isBusy = () => false, fetchImpl, now = () => Date.now(), pollMs = POLL_MS, debounceMs = DEBOUNCE_MS }) {
-    Object.assign(this, { dir, store, secrets, slang, version, log, onApplied, onStatus, isBusy, fetchImpl, now, pollMs, debounceMs });
+  constructor({ dir, store, secrets, slang, version = '', defaultName = '', log = () => {}, onApplied = () => {}, onStatus = () => {}, isBusy = () => false, fetchImpl, now = () => Date.now(), pollMs = POLL_MS, debounceMs = DEBOUNCE_MS }) {
+    Object.assign(this, { dir, store, secrets, slang, version, defaultName: String(defaultName || '').replace(/[\u0000-\u001f\u007f]/g, ' ').trim().slice(0, 40), log, onApplied, onStatus, isBusy, fetchImpl, now, pollMs, debounceMs });
     this.file = path.join(dir, 'sync-state.json');
     this.state = { ...fresh(), ...this._read() };
     this.fails = 0; this.nextRetryAt = 0; this.timer = null; this.poll = null; this.running = null; this.fastUntil = 0; this.waitForJoin = false; this.again = false; this.applying = false; this.notice = '';
@@ -93,8 +94,11 @@ class SyncService {
     return { ok: true };
   }
 
-  /** the name the user typed for this install, shown on their linked installs. Empty = no name is sent. Goes up on the next cycle */
+  /** the name this install shows on the linked installs: what the user chose, else the Windows computer name. Chosen empty = no name is sent */
+  effectiveName() { return this.state.nameSet ? this.state.name : this.defaultName; }
+  /** the user own name for this install. Empty = no name is sent. Goes up on the next cycle */
   setName(raw) {
+    this.state.nameSet = true;
     this.state.name = String(raw ?? '').replace(/[\u0000-\u001f\u007f]/g, ' ').trim().slice(0, 40);
     this.state.registered = '';
     this._save();
@@ -221,10 +225,10 @@ class SyncService {
   }
 
   async _register(client) {
-    const name = this.state.name || null;
+    const name = this.effectiveName() || null;
     const stamp = client.installId + '|' + this.version + (name ? '|' + name : '');
     if (this.state.registered === stamp) return;
-    // the Windows computer name is never sent. A name goes only if the user typed one for this install (setName)
+    // the name is the Windows computer name until the user changes it; emptied by the user, none is sent
     await client.rest('POST', 'installs?on_conflict=id', { body: [{ id: client.installId, name, machine: null, version: ('parakeet-flow ' + this.version).slice(0, 40) }], prefer: 'resolution=merge-duplicates,return=minimal' });
     this.state.registered = stamp;
   }
@@ -298,6 +302,38 @@ class SyncService {
       return { ok: true, code: formatCode(row.code), expiresAt: row.expires_at };
     } catch (e) { return { ok: false, error: syncErrorText(e).slice(0, 200) }; }
   }
+  /** the one-string route: this PC's project URL, key and a fresh link code in one Sync code */
+  async createSetupCode() {
+    const cred = this._cred();
+    const r = await this.createCode();
+    if (!r.ok) return r;
+    const exp = Date.parse(r.expiresAt), expiresAtMs = Number.isFinite(exp) ? exp : this.now() + CODE_LIFE_MS;
+    const e = setupCode.encode({ url: cred.url, key: cred.key, code: r.code, expiresAt: expiresAtMs });
+    if (e.error) return { ok: false, error: e.error };
+    return { ok: true, setupCode: e.code, code: r.code, expiresAtMs };
+  }
+  /** a pasted Sync code: save the project, switch sync on, join with the code inside. If anything fails this PC is put back as it was */
+  async joinSetup(raw) {
+    const d = setupCode.decode(raw, this.now());
+    if (d.error) return { ok: false, refused: true, error: d.error, expired: !!d.expired };
+    if (!this.secrets || !this.secrets.available()) return { ok: false, error: 'Secure storage is not available on this PC, so sync cannot store its keys.' };
+    const was = { cred: this.secrets.has(SECRET) ? this.secrets.get(SECRET) : null, enabled: this.enabled(), state: JSON.stringify(this.state) };
+    const undo = () => {
+      this.stop(); this.client = null;
+      if (was.cred === null) this.secrets.clear(SECRET); else this.secrets.set(SECRET, was.cred);
+      this.state = { ...fresh(), ...JSON.parse(was.state) };
+      if (this.enabled() !== was.enabled) this.store.set({ sync: { enabled: was.enabled } });
+      if (was.enabled) this.start();
+      this._save(); this.onStatus();
+    };
+    const c = this.configure({ url: d.url, key: d.key });
+    if (!c.ok) return c;
+    if (!this.enabled()) { const e = this.setEnabled(true); if (!e.ok) { undo(); return e; } }
+    clearTimeout(this.timer); this.timer = null;        // no cycle of its own before the join: it would put a lone row in the project
+    const j = await this.join(d.code);
+    if (!j.ok) { undo(); return j; }
+    return j;
+  }
   async join(raw) {
     const code = normalizeCode(raw);
     if (!code) return { ok: false, refused: true, error: 'A link code is 6 letters and digits, like ABC-234.' };
@@ -327,7 +363,7 @@ class SyncService {
     const c = this._cred(), s = this.state;
     return {
       enabled: this.enabled(), configured: !!(c && c.url && c.key), encryption: !!(this.secrets && this.secrets.available()),
-      url: c ? c.url : '', installId: c?.session?.installId || '', name: s.name || '',
+      url: c ? c.url : '', installId: c?.session?.installId || '', name: this.effectiveName(), nameIsDefault: !s.nameSet && !!this.defaultName,
       linked: s.scope.startsWith('group:'), members: s.members,
       syncing: !!this.running, offline: !!s.offline, lastSyncAt: s.lastSyncAt, lastError: s.lastError, nextRetryAt: this.nextRetryAt, pulled: s.pulled, pushed: s.pushed,
       waiting: Object.entries(s.keys).filter(([k, e]) => e.t !== s.synced[k] && e.t > 0).length,

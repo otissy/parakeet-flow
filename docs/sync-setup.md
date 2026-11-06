@@ -15,11 +15,11 @@ The app and this repo contain no database address or key.
 
 ## On each PC
 
-Settings > Sync: paste the URL and key, **Save**, switch **Sync my customization** on. The install signs in and gets its ID. The URL, the key and the install's tokens are stored encrypted with Windows in `secrets.json`, never in `settings.json`. If Windows secure storage is not available, sync refuses to run.
+Settings > Sync, first PC: step 1 paste the URL and key and **Save**, step 2 switch **Sync my customization** on, step 3 press **Create Sync code** and copy it. Second PC: paste that one code into the box at the top and press **Link this PC**; it saves the project, switches sync on and links in one step (steps 1 to 3 are not needed there). Each step names what is missing while its control is off. The install signs in and gets its ID. The URL, the key and the install's tokens are stored encrypted with Windows in `secrets.json`, never in `settings.json`. If Windows secure storage is not available, sync refuses to run.
 
 ## Linking
 
-On the first PC press **Create link code**; on the second enter it under **Join with a code**. The code has 6 characters from an alphabet without look-alikes, works once and lasts 10 minutes. An install is in at most one group; joining moves it into the group of the code's creator. **Unlink** leaves the group and keeps everything on the PC; a group left with one member is removed along with its row.
+The **Sync code** (`PFS1-...`) carries the project URL, the publishable key and a fresh link code with its expiry, plus check characters that catch typos and edits; it is not encrypted. It never carries a secret key, tokens or anything else: making and reading it both refuse a secret or service-role key. The old route is under **Advanced: short link codes**: on the first PC press **Create link code**; on the second enter it under **Join with a code**. The code has 6 characters from an alphabet without look-alikes, works once and lasts 10 minutes. An install is in at most one group; joining moves it into the group of the code's creator. **Unlink** leaves the group and keeps everything on the PC; a group left with one member is removed along with its row.
 
 Linked installs can read and change each other's customization, so link only your own. Any install that uses the same project and group can read the row, including a parakeet-check install you linked.
 
@@ -50,7 +50,7 @@ The app only holds the public key, which anyone could extract. That is fine beca
 | Table | Read | Write |
 |---|---|---|
 | `customization` | own row, own group's row | insert and update `doc` of those rows; no delete; the database stamps `version`, `updated_at`, `updated_by` |
-| `installs` | own and linked installs | own row only. The app sends its version and an empty machine. The name is empty unless the user typed one under This PC's name |
+| `installs` | own and linked installs | own row only. The app sends its version, an empty machine and the install's name: the Windows computer name until the user changes or empties it under This PC's name |
 | `groups`, `group_members` | own group only | only through the functions below |
 | `link_codes` | nobody | only through the functions below |
 
