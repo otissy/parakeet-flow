@@ -95,10 +95,45 @@ function main(argv) {
     const p = path.join(sq, f), st = fs.statSync(p);
     log(`${f}  ${st.size} bytes${f.endsWith('.exe') ? '  sha256 ' + sha256(p) : ''}`);
   }
+  const missing = checkPackagedApp(path.join(out, 'win-unpacked'), process.env.PF_REFERENCE_APP);
+  if (missing.length) { log('build failed: the packaged app is missing\n  ' + missing.join('\n  ')); return 1; }
+  log('packaged app check: sherpa platform package and .node, llama addon, helper and VC++ DLLs are present');
   const rel = checkReleaseFolder(sq);
   log(`RELEASES names ${rel.map((x) => x.file).join(', ')}: name, size and SHA1 match. Upload RELEASES, that nupkg and the Setup exe to the release, under these exact names.`);
   log('unsigned: Windows SmartScreen or Norton may warn on first run (see README)');
   return 0;
+}
+
+/** the files without which the installed app cannot start (0.2.64 once shipped without sherpa-onnx-win-x64, which npm lists as "extraneous"
+   when node_modules is a junction, so the packager left it out). Returns what is missing. referenceApp = an installed resources/app folder
+   (read only): every native file (.node, .dll) and the helper it holds must be in the new package too */
+const REQUIRED = [
+  'resources/app/node_modules/sherpa-onnx-node/package.json',
+  'resources/app/node_modules/sherpa-onnx-win-x64/sherpa-onnx.node',
+  'resources/app/node_modules/sherpa-onnx-win-x64/onnxruntime.dll',
+  'resources/app/node_modules/sherpa-onnx-win-x64/sherpa-onnx-c-api.dll',
+  'resources/app/llm-runtime/node_modules/@node-llama-cpp/win-x64/bins/win-x64/llama-addon.node',
+  'resources/app/mcp/node_modules/@modelcontextprotocol/sdk/package.json',
+  'resources/app/src/typer/helper/bin/pf-helper.exe',
+  ...VCRUNTIME,
+];
+function nativeFiles(dir) {
+  const out = [];
+  (function walk(d) {
+    for (const e of fs.readdirSync(d, { withFileTypes: true })) {
+      const p = path.join(d, e.name);
+      if (e.isDirectory()) walk(p); else if (/\.(node|dll)$/i.test(e.name) || e.name === 'pf-helper.exe') out.push(path.relative(dir, p).replace(/\\/g, '/'));
+    }
+  })(dir);
+  return out;
+}
+function checkPackagedApp(unpacked, referenceApp) {
+  const missing = REQUIRED.filter((r) => !fs.existsSync(path.join(unpacked, r)));
+  if (referenceApp && fs.existsSync(referenceApp)) {
+    const have = path.join(unpacked, 'resources', 'app');
+    for (const r of nativeFiles(referenceApp)) if (!fs.existsSync(path.join(have, r))) missing.push('resources/app/' + r + ' (shipped by the reference build)');
+  }
+  return missing;
 }
 
 /** auto-update fetches <feed>/RELEASES, then <feed>/<the name inside it>: that name must be the asset's name. GitHub turns spaces in an asset name into dots, so the name may hold none */
@@ -117,4 +152,4 @@ function checkReleaseFolder(dir) {
 }
 
 if (require.main === module) { try { process.exit(main(process.argv.slice(2))); } catch (e) { log('build-installer: ' + e.message); process.exit(1); } }
-module.exports = { checkReleaseFolder, outputDir, ensure7z, preflight, removeBundledHelper, ensureVcRuntime, VCRUNTIME };
+module.exports = { checkPackagedApp, REQUIRED, checkReleaseFolder, outputDir, ensure7z, preflight, removeBundledHelper, ensureVcRuntime, VCRUNTIME };
