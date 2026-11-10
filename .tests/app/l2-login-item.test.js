@@ -4,7 +4,7 @@ const test = require('node:test');
 const assert = require('node:assert');
 const path = require('path');
 const fs = require('fs');
-const { applyLoginItem, loginSettings, squirrelLauncher, RUN_NAME } = require('../../src/main/login-item.js');
+const { runCommand, applyLoginItem, loginSettings, squirrelLauncher, RUN_NAME } = require('../../src/main/login-item.js');
 
 const ROOT = 'C:\\Users\\x\\AppData\\Local\\parakeet-flow';
 const EXE = path.join(ROOT, 'app-0.2.65', 'Parakeet Flow.exe');
@@ -15,7 +15,7 @@ const fake = () => { const calls = []; return { calls, setLoginItemSettings: (s)
 test('installed: the launcher is Update.exe in the parent of app-<version>, started with --processStart', () => {
   assert.equal(squirrelLauncher(EXE, has(UPDATE)), UPDATE);
   assert.deepStrictEqual(loginSettings(true, { execPath: EXE, exists: has(UPDATE) }),
-    { openAtLogin: true, path: UPDATE, args: ['--processStart', '"Parakeet Flow.exe"'], name: RUN_NAME });
+    { openAtLogin: true, path: UPDATE, args: ['--processStart', 'Parakeet Flow.exe'], name: RUN_NAME });
   assert.equal(RUN_NAME, 'com.squirrel.parakeet-flow.ParakeetFlow', 'the name of the stale entry, so it is overwritten');
   assert.ok(!loginSettings(true, { execPath: EXE, exists: has(UPDATE) }).path.includes('app-'), 'never a versioned folder');
 });
@@ -38,7 +38,7 @@ test('startup, setting on: written again (repairs an entry that points at a remo
 test('startup, setting off, installed: our own entry (and only that name) is removed', () => {
   const a = fake();
   assert.equal(applyLoginItem(a, false, { startup: true, env: {}, execPath: EXE, exists: has(UPDATE) }), 'removed');
-  assert.deepStrictEqual(a.calls, [{ openAtLogin: false, path: UPDATE, args: ['--processStart', '"Parakeet Flow.exe"'], name: RUN_NAME }]);
+  assert.deepStrictEqual(a.calls, [{ openAtLogin: false, path: UPDATE, args: ['--processStart', 'Parakeet Flow.exe'], name: RUN_NAME }]);
 });
 test('startup, setting off, dev run: nothing is touched', () => {
   const a = fake();
@@ -55,4 +55,15 @@ test('main.js uses it for the toggle and at startup, and writes no other login i
   assert.match(src, /applyLoginItem\(app, !!on\)/);
   assert.match(src, /applyLoginItem\(app, store\.get\(\)\.launchAtLogin, \{ startup: true \}\)/);
   assert.equal((src.match(/setLoginItemSettings/g) || []).length, 0);
+});
+test('the final Run value is exactly "<Update.exe>" --processStart "Parakeet Flow.exe" (not double-quoted), and parses back to the plain exe name', () => {
+  const s = loginSettings(true, { execPath: EXE, exists: has(UPDATE) });
+  const cmd = runCommand(s);
+  assert.equal(cmd, '"' + UPDATE + '" --processStart "Parakeet Flow.exe"');
+  assert.ok(!cmd.includes('\\"'), 'no escaped quotes: the name would reach Update.exe with quote characters in it');
+  // what Update.exe sees after Windows splits the line (CommandLineToArgvW rules for this simple case)
+  const argv = cmd.match(/"[^"]*"|\S+/g).map((x) => x.replace(/^"|"$/g, ''));
+  assert.deepStrictEqual(argv, [UPDATE, '--processStart', 'Parakeet Flow.exe']);
+  // the old, broken input shows what the rule does with embedded quotes
+  assert.equal(runCommand({ path: UPDATE, args: ['--processStart', '"Parakeet Flow.exe"'] }), '"' + UPDATE + '" --processStart "\\"Parakeet Flow.exe\\""');
 });

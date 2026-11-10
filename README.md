@@ -54,7 +54,7 @@ The installer is not signed. Windows SmartScreen may say "Windows protected your
 Norton may show a reputation warning (for example IDP.Generic) for a new unsigned installer or for the little helper `pf-helper.exe`
 (built from `src/typer/helper/PfHelper.cs`, shipped inside the install with version info and a manifest; it types text and watches the hotkey).
 What it does, how to verify it, how to restore and exclude only that file, and how to report a false positive: `docs/antivirus.md`.
-Helper SHA-256 (0.2.65): `97124782ae851985884961b3f3789dfbbc291ebf5a6e66e6d07a4e6364425c66`. The app makes no network calls except the model downloads,
+Helper SHA-256 (0.2.65): `72005fd7bee79e5f00c06c98380f32e4f598181e7ee5a39d74d3303b94c7f92d`. The app makes no network calls except the model downloads,
 the update check (installed copies, on by default, see below) and Notion and customization sync, only if you turned them on.
 
 ## Updates

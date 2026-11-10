@@ -24,7 +24,7 @@ SHA-256 of the 0.2.61 helper shipped in `Parakeet Flow Setup 0.2.61.exe`: `0154e
 SHA-256 of that installer: `45bf83a36ea7fdd02a2ede03ebc69528011702d5f01dd6ac579b957c8bc2e969`
 SHA-256 of the 0.2.62 helper shipped in `Parakeet Flow Setup 0.2.62.exe`: `bee97804ddc10ad33425201b1532bdfe7b3a122086f6064459338f5fc7d8f139`
 SHA-256 of that installer: `66194bb9f7ee6f98b56328b69bb374e9d636755c26a99cb8f45f26fe64c18a57`
-SHA-256 of the 0.2.65 helper shipped in `Parakeet Flow Setup 0.2.65.exe`: `97124782ae851985884961b3f3789dfbbc291ebf5a6e66e6d07a4e6364425c66`
+SHA-256 of the 0.2.65 helper shipped in `Parakeet Flow Setup 0.2.65.exe`: `72005fd7bee79e5f00c06c98380f32e4f598181e7ee5a39d74d3303b94c7f92d`
 SHA-256 of that installer: `b0c9afa77ec04be2a780336b1e472a97ec39547313bc38fdbe795c30760ae557`
 (The compiler does not produce identical bytes twice, so every rebuild has its own hash; the hash of the shipped file is
 recorded here and in the README for each release.)
