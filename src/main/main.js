@@ -9,6 +9,7 @@ const argv = process.argv.slice(1);
 const arg = (name) => { const a = argv.find((x) => x.startsWith('--' + name + '=')); return a ? a.slice(name.length + 3) : null; };
 const userDir = arg('user-data') || process.env.PF_USERDATA;
 const squirrel = require('./squirrel');
+const { applyLoginItem } = require('./login-item');
 const singleInstance = require('./single-instance');
 const { mustExit, userDataDir } = squirrel;
 app.setName('parakeet-flow');
@@ -281,7 +282,7 @@ function wireIpc() {
   ipcMain.handle('update:restart', (event) => { fromMain(event); return updater.restartToUpdate(); });
   syncIpc.register(ipcMain, { service: sync, isMainWindow: (event) => event.sender === mainWin?.webContents });
   ipcMain.handle('login:set', (_e, on) => {
-    if (!process.env.PF_NO_LOGIN_ITEM) app.setLoginItemSettings({ openAtLogin: !!on });
+    applyLoginItem(app, !!on);
     return store.set({ launchAtLogin: !!on });
   });
   ipcMain.on('hotkey:capture', (_e, on) => { if (controller) controller.setCapturing(!!on); });   // picker open: pass Ctrl+Space through, never start dictation
@@ -396,6 +397,7 @@ else if (!lock) {
     controller.on('notes', () => send(mainWin, 'notes:changed'));
     send(pillWin, 'pill:flags', controller.flags());
     sync.start();
+    try { applyLoginItem(app, store.get().launchAtLogin, { startup: true }); } catch (e) { log('error', 'login item: ' + String(e.message || e).slice(0, 120)); }   // an update leaves the Run entry pointing at the removed app-<version>: write it again
     updater.start();
     writeMcpStatus(); setInterval(writeMcpStatus, 15000).unref();
     controller.on('result', (r) => { log('info', `dictation done words=${r.words} chars=${r.chars} finals=${r.finals} insertions=${r.insertions} duplicateFinals=${r.duplicateFinals}`); send(mainWin, 'app:stats', store.summary()); });

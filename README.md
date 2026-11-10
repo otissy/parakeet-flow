@@ -5,9 +5,9 @@ inserted into the focused app once (like Wispr Flow; typing while you speak is a
 via sherpa-onnx). Your words stay here: what can leave the PC is only the optional Notion sync and the optional customization sync below, both off until you switch them on. The installed app also asks GitHub for updates (on by default, see Updates below). A small floating bar shows the level and the live text; a tray icon and a main window hold
 the settings. The design follows the layout and feel of Wispr Flow without using its name or logo.
 
-## Install (Windows installer, 0.2.64)
+## Install (Windows installer, 0.2.65)
 
-Run `Parakeet Flow Setup 0.2.64.exe`. It installs for your user only (no admin prompt) into
+Run `Parakeet Flow Setup 0.2.65.exe`. It installs for your user only (no admin prompt) into
 `%LOCALAPPDATA%\parakeet-flow`, adds a Start-menu shortcut (Start > otissy > Parakeet Flow) and an entry in
 Settings > Apps. It does NOT start with Windows: no startup entry, no scheduled task, no Run key. "Launch at login"
 exists in Settings and is off until you switch it on.
@@ -54,7 +54,7 @@ The installer is not signed. Windows SmartScreen may say "Windows protected your
 Norton may show a reputation warning (for example IDP.Generic) for a new unsigned installer or for the little helper `pf-helper.exe`
 (built from `src/typer/helper/PfHelper.cs`, shipped inside the install with version info and a manifest; it types text and watches the hotkey).
 What it does, how to verify it, how to restore and exclude only that file, and how to report a false positive: `docs/antivirus.md`.
-Helper SHA-256 (0.2.64): `9901666974e779993c16769c1d18607cd783f209c1eee9bb1bc975c6aff500d6`. The app makes no network calls except the model downloads,
+Helper SHA-256 (0.2.65): `97124782ae851985884961b3f3789dfbbc291ebf5a6e66e6d07a4e6364425c66`. The app makes no network calls except the model downloads,
 the update check (installed copies, on by default, see below) and Notion and customization sync, only if you turned them on.
 
 ## Updates

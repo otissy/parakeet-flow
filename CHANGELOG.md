@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.65
+
+- Fixed: the app didn't start with Windows after an update. "Start with Windows" used to store the path of the version folder (for example app-0.2.61), which an update deletes. It now registers the installer's stable launcher (Update.exe), and every start rewrites the entry from your setting: on repairs it, off removes the app's own entry. Other programs' entries are never touched.
+
 ## 0.2.64
 
 Sync is easier to set up (still off by default, and it only ever syncs customization):
