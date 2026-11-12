@@ -9,6 +9,7 @@ const { ACTIONS, DEFAULT_COMMANDS, DEFAULT_NOTE_TRIGGERS } = require('../core/co
 const { PROFILES } = require('../core/tone');
 const SN = require('./settings-notes');
 const BIAS = require('../slang/bias');
+const RA = require('../readaloud/settings');
 
 const DEFAULTS = {
   hotkey: { vks: [0x11, 0x20], label: 'Ctrl+Space' },   // HOLD to talk: either Ctrl + Space; the helper releases Ctrl around corrections (see PfHelper.cs)
@@ -43,7 +44,10 @@ const DEFAULTS = {
   // customization sync with the user's own Supabase project (src/sync): off until switched on; URL, key and tokens live in secrets.json
   sync: { enabled: false },
   // ask GitHub for a newer version (src/main/updater.js, installed copies only); Settings says what that request holds
-  updates: { auto: true },
+  // 0.2.66: install a downloaded update by itself at a quiet moment (never while dictating, in a meeting or reading aloud); seen = the version whose "What's new" was last shown
+  updates: { auto: true, installAuto: true, seen: '' },
+  // read the selected text aloud with a local voice (src/readaloud): off until switched on
+  readAloud: RA.DEFAULTS,
 };
 
 const flt = (v, lo, hi, d) => (Number.isFinite(+v) && v !== '' && v !== null ? Math.min(hi, Math.max(lo, +v)) : d);
@@ -87,12 +91,13 @@ function toggleKey(v, d) {
 function normalize(s) {
   const d = DEFAULTS;
   const vks = Array.isArray(s?.hotkey?.vks) ? s.hotkey.vks.map(Number).filter((n) => n > 0 && n < 256).slice(0, 4) : d.hotkey.vks;
+  const note = SN.normNotes(s?.notes, vks), toggle = toggleKey(s?.toggleKey, d.toggleKey);
   return {
     hotkeyV: 2,                  // 2 = Ctrl+Space is the default (1 = the old lone Pause key); see Store
     hotkey: vks.length ? { vks, label: String(s?.hotkey?.label || '').slice(0, 40) || d.hotkey.label } : d.hotkey,
     gestureV: 3,                 // 3 = hold + CapsLock toggle (older files had `mode` and a double-tap); see Store
     toggleOn: s?.toggleOn !== false,
-    toggleKey: toggleKey(s?.toggleKey, d.toggleKey),
+    toggleKey: toggle,
     liveMode: oneOf(s?.liveMode, ['aggressive', 'stable'], d.liveMode),
     provider: oneOf(s?.provider, ['cpu', 'cuda'], d.provider),
     threads: clampInt(s?.threads, 1, 8, d.threads),
@@ -114,12 +119,13 @@ function normalize(s) {
       enabled: s?.notes?.enabled !== false, triggers: strList(s?.notes?.triggers, d.notes.triggers),
       notion: { enabled: !!s?.notes?.notion?.enabled, targetType: oneOf(s?.notes?.notion?.targetType, ['database', 'page'], 'database'),
         targetId: notionId(s?.notes?.notion?.targetId), titleProperty: String(s?.notes?.notion?.titleProperty || 'Name').slice(0, 60) || 'Name' },
-      ...SN.normNotes(s?.notes, vks),
+      ...note,
     },
     mcp: SN.normMcp(s?.mcp),
     typing: SN.normTyping(s?.typing),
     sync: { enabled: s?.sync?.enabled === true },
-    updates: { auto: s?.updates?.auto !== false },
+    updates: { auto: s?.updates?.auto !== false, installAuto: s?.updates?.installAuto !== false, seen: /^\d+\.\d+\.\d+$/.test(String(s?.updates?.seen)) ? String(s.updates.seen) : '' },
+    readAloud: RA.normReadAloud(s?.readAloud, { hold: vks.length ? vks : d.hotkey.vks, note: note.noteHotkey.vks, toggle: toggle.vks[0] }),
   };
 }
 

@@ -46,6 +46,9 @@ class MeetingService {
     }
   }
 
+  /** a recording or a transcription is running (an automatic update must not restart the app now) */
+  busy() { return !!(this.recording || this.processingId || this.pendingStart || this.pendingStop || this.downloading); }
+
   _changed() { this.onChange(); }
 
   _state() {

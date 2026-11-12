@@ -64,7 +64,11 @@ test('installed: version, the switch on by default, Check now, and the truth abo
   assert.deepStrictEqual(await page.evaluate(() => window.__calls), [['update:check']]);
   await page.click('#up-auto');
   await page.waitForFunction(() => document.getElementById('up-auto').getAttribute('aria-checked') === 'false');
-  assert.deepStrictEqual((await page.evaluate(() => window.__calls))[1], ['settings:set', { updates: { auto: false } }]);
+  assert.deepStrictEqual((await page.evaluate(() => window.__calls))[1], ['settings:set', { updates: { auto: false, installAuto: true, seen: '' } }]);
+  assert.equal(await page.getAttribute('#up-install', 'aria-checked'), 'true', 'Install updates automatically is on by default');
+  await page.click('#up-install');
+  await page.waitForFunction(() => document.getElementById('up-install').getAttribute('aria-checked') === 'false');
+  assert.deepStrictEqual((await page.evaluate(() => window.__calls))[2], ['settings:set', { updates: { auto: false, installAuto: false, seen: '' } }]);
   assert.deepStrictEqual(errors, []);
   await page.close();
 });
@@ -81,7 +85,8 @@ test('ready: Restart to update replaces Check now and asks the main process', as
   const { page } = await open({ ...INSTALLED, state: 'ready' });
   await page.waitForSelector('#up-restart');
   assert.equal(await page.locator('#up-check').count(), 0);
-  assert.match(await text(page), /installs the next time you quit/);
+  assert.match(await text(page), /used the next time the app starts/);
+  assert.match(await text(page), /quiet moment/);
   await page.click('#up-restart');
   await page.waitForTimeout(40);
   assert.deepStrictEqual(await page.evaluate(() => window.__calls), [['update:restart']]);

@@ -1,7 +1,7 @@
 'use strict';
 /* parakeet-flow main process: tray, windows, helper, engine, IPC. Dictated text only travels through
    memory and (if the user turned history on) history.json; logs carry counts and timings. */
-const { app, BrowserWindow, Tray, Menu, nativeImage, ipcMain, screen, clipboard, session, dialog, safeStorage, desktopCapturer } = require('electron');
+const { app, BrowserWindow, Tray, Menu, nativeImage, ipcMain, screen, clipboard, session, dialog, safeStorage, desktopCapturer, powerMonitor } = require('electron');
 const fs = require('fs');
 const path = require('path');
 
@@ -15,6 +15,7 @@ const { mustExit, userDataDir } = squirrel;
 app.setName('parakeet-flow');
 // always the parakeet-flow folder under AppData/Roaming (models, settings, notes), installed or not, whatever the product name is
 app.setPath('userData', userDir || userDataDir(app.getPath('appData')));
+if (process.env.PF_MUTE_AUDIO) app.commandLine.appendSwitch('mute-audio');   // tests: the read-aloud voice plays into nothing
 if (process.env.PF_OFFSCREEN) {   // tests: keep rendering windows that sit far off-screen
   app.commandLine.appendSwitch('disable-features', 'CalculateNativeWinOcclusion');
 }
@@ -43,6 +44,8 @@ const { MeetingService } = require('../meetings/service');
 const { SyncService } = require('../sync/service');
 const syncIpc = require('../sync/ipc');
 const { Updater, isInstalled } = require('./updater');
+const whatsnew = require('./whatsnew');
+const readAloudRuntime = require('../readaloud/runtime');
 
 const R = (f) => path.join(__dirname, '..', 'renderer', f);
 const PRELOAD = path.join(__dirname, 'preload.js');
@@ -51,6 +54,7 @@ const OFF = process.env.PF_OFFSCREEN ? -6000 : 0;   // tests: render windows far
 
 let store, typer, controller, asr = null, tray = null, mainWin = null, pillWin = null, capWin = null, meetingCaptureWin = null, mic;
 let outbox, noteService, notion, secrets, slang, llmWorker = null, llmService, llmState = { runtime: false, model: 'unknown', error: '' };
+let readAloud = null, hiddenRelaunch = false, firstInstall = false;
 let meetingStore = null, meetingService = null, sync = null, slangChanged = () => {}, updater = null, trayMenu = null;
 let engine = { state: 'loading', error: '' };
 let quitting = false, modelsDir, modelsOk = false;
@@ -192,6 +196,15 @@ function applyTyperSettings(s) {
   typer.setHotkey(s.hotkey.vks);
   typer.setHotkey2(s.notes.noteHotkey.vks);
   typer.setNewline(s.typing.newline);
+  applyReadHotkey();
+}
+/** the read-aloud chord, or nothing while the feature is off or a hotkey picker is open */
+function applyReadHotkey() { if (typer && readAloud) typer.setHotkey3(readAloud.chord(controller && controller.capturing)); }
+/** why a restart for an update (or a reading) must wait: '' when nothing is going on */
+function busyReason() {
+  if (controller && controller.session) return 'Finish dictating first';
+  if (meetingService && meetingService.busy()) return 'A meeting is being recorded or processed';
+  return '';
 }
 
 /* ---------------- IPC ---------------- */
@@ -206,6 +219,7 @@ function wireIpc() {
     const now = store.set(patch);
     applyTyperSettings(now);
     controller.applySettings();
+    if (readAloud) { readAloud.prepare(); if (!now.readAloud.enabled) readAloud.stop(); }
     writeMcpStatus();
     const engineKeys = ['threads', 'provider', 'partialMs', 'endpointMs'];
     if (engineKeys.some((k) => before[k] !== now[k])) startEngine();
@@ -280,14 +294,16 @@ function wireIpc() {
   ipcMain.handle('update:status', (event) => { fromMain(event); return updater.status(); });
   ipcMain.handle('update:check', (event) => { fromMain(event); return updater.checkNow(); });
   ipcMain.handle('update:restart', (event) => { fromMain(event); return updater.restartToUpdate(); });
+  ipcMain.handle('whatsnew:get', (event) => { fromMain(event); return whatsnew.pending({ version: app.getVersion(), seen: store.get().updates.seen, firstInstall }); });
+  ipcMain.handle('whatsnew:dismiss', (event) => { fromMain(event); store.set({ updates: { ...store.get().updates, seen: app.getVersion() } }); return true; });
   syncIpc.register(ipcMain, { service: sync, isMainWindow: (event) => event.sender === mainWin?.webContents });
   ipcMain.handle('login:set', (_e, on) => {
     applyLoginItem(app, !!on);
     return store.set({ launchAtLogin: !!on });
   });
-  ipcMain.on('hotkey:capture', (_e, on) => { if (controller) controller.setCapturing(!!on); });   // picker open: pass Ctrl+Space through, never start dictation
+  ipcMain.on('hotkey:capture', (_e, on) => { if (controller) controller.setCapturing(!!on); applyReadHotkey(); });   // picker open: pass Ctrl+Space through, never start dictation
   ipcMain.on('pill:mouse', (_e, over) => { if (pillWin) pillWin.setIgnoreMouseEvents(!over, { forward: true }); });
-  ipcMain.on('pill:action', (_e, a) => { if (a === 'cancel') controller.fsm.esc(); else if (a === 'stop') controller.fsm.down(Date.now()); });
+  ipcMain.on('pill:action', (_e, a) => { if (readAloud && readAloud.active()) { readAloud.stop(); return; } if (a === 'cancel') controller.fsm.esc(); else if (a === 'stop') controller.fsm.down(Date.now()); });
 }
 
 /* ---------------- boot ---------------- */
@@ -308,6 +324,8 @@ else if (!lock) {
   }));
   app.whenReady().then(async () => {
     require('./permissions').install(session.defaultSession);
+    firstInstall = !fs.existsSync(path.join(app.getPath('userData'), 'settings.json'));
+    hiddenRelaunch = whatsnew.consumeMarker(app.getPath('userData'));
     store = new Store(app.getPath('userData'));
     modelsDir = process.env.PF_MODELS || path.join(app.getPath('userData'), 'models');
     outbox = new Outbox(path.join(app.getPath('userData'), 'notes.jsonl'));
@@ -361,15 +379,18 @@ else if (!lock) {
     updater = new Updater({
       installed: isInstalled({ isPackaged: app.isPackaged, execPath: process.execPath, exists: fs.existsSync }),
       getAutoUpdater: () => require('electron').autoUpdater,
-      version: app.getVersion(), isAuto: () => store.get().updates.auto, isBusy: () => !!controller?.session, log, firstRun: squirrel.squirrelEvent(argv) === 'firstrun',
+      version: app.getVersion(), isAuto: () => store.get().updates.auto, isInstallAuto: () => store.get().updates.installAuto, isBusy: () => !!busyReason() || !!(readAloud && readAloud.active()),
+      systemIdleSec: () => { try { return powerMonitor.getSystemIdleTime(); } catch (_) { return 0; } }, markRelaunch: () => whatsnew.writeMarker(app.getPath('userData')), log, firstRun: squirrel.squirrelEvent(argv) === 'firstrun',
       beforeQuit: () => { quitting = true; },
       onChange: () => { send(mainWin, 'update:changed'); if (tray && trayMenu) tray.setContextMenu(trayMenu()); },
     });
     store.onSet = () => { sync.notifyLocalChange(); updater.settingsChanged(); };
+    readAloud = readAloudRuntime.install({ BrowserWindow, ipcMain, settings: store, modelsDir, preload: PRELOAD, speakerFile: R('speaker.html'), getMainWin: () => mainWin, offscreen: !!process.env.PF_OFFSCREEN,
+      send, pill: (p) => send(pillWin, 'pill:state', p), log, busy: busyReason, getTyper: () => typer });
     wireIpc();
     createCapture();
     createMeetingCapture();
-    createMain({ show: !argv.includes('--hidden') });
+    createMain({ show: !argv.includes('--hidden') && !hiddenRelaunch });
     createPill();
     createTray();
     startEngine();
@@ -385,11 +406,15 @@ else if (!lock) {
     mic = fake ? new WavMic({ file: fake }) : new RendererMic({ ipcMain, getWindow: () => capWin, getSettings: () => store.get() });
     controller = new Controller({ getAsr: () => (engine.state === 'ready' ? asr : null), engineState: () => engine.state, typer, store, mic, llm: llmService, notes: notesApi, slang });
     controller.attach();
+    typer.on('read', () => readAloud.trigger());                    // the read-aloud chord: read the selection, or stop
+    typer.on('esc', () => readAloud.stop());
+    applyReadHotkey();
+    readAloud.prepare();
     typer.on('refused', () => { if (controller.session) controller.session.live._halt('refused'); });
     typer.on('exit', () => log('error', 'helper exited'));
     typer.on('restarted', () => { log('info', 'helper restarted, keybinds restored'); typer.queryForeground(); });
     typer.on('giveup', () => log('error', 'helper keeps exiting, not restarting it again until the app is restarted'));
-    controller.on('pill', (p) => send(pillWin, 'pill:state', p));
+    controller.on('pill', (p) => { if (p.state === 'listening' || p.state === 'handsfree') readAloud.stop(); send(pillWin, 'pill:state', p); });
     controller.on('note', (n) => send(pillWin, 'pill:state', { state: controller.pillState, text: '', ...n }));
     controller.on('level', (v) => send(pillWin, 'pill:level', v));
     controller.on('history', (h) => { send(mainWin, 'app:history', h); writeMcpStatus(); });
@@ -402,8 +427,8 @@ else if (!lock) {
     writeMcpStatus(); setInterval(writeMcpStatus, 15000).unref();
     controller.on('result', (r) => { log('info', `dictation done words=${r.words} chars=${r.chars} finals=${r.finals} insertions=${r.insertions} duplicateFinals=${r.duplicateFinals}`); send(mainWin, 'app:stats', store.summary()); });
 
-    if (process.env.PF_TEST_HOOK) require(process.env.PF_TEST_HOOK)({ app, get: () => ({ store, typer, controller, mainWin, pillWin, asr: () => asr, mic, engine: () => engine, meetings: meetingService, sync, updater }) });
+    if (process.env.PF_TEST_HOOK) require(process.env.PF_TEST_HOOK)({ app, get: () => ({ store, typer, controller, mainWin, pillWin, asr: () => asr, mic, engine: () => engine, meetings: meetingService, sync, updater, readAloud }) });
   });
-  app.on('before-quit', () => { quitting = true; try { fs.unlinkSync(path.join(app.getPath('userData'), MCP_STATUS_FILE)); } catch (_) { /* none */ } if (meetingService) { try { meetingService.close(); } catch (e) { log('error', 'meeting shutdown failed: ' + String(e.message || e).slice(0, 120)); } } if (typer) typer.close(); if (llmWorker) llmWorker.stop('quit'); if (notion) notion.stop(); if (sync) sync.stop(); if (updater) updater.stop(); });
+  app.on('before-quit', () => { quitting = true; try { fs.unlinkSync(path.join(app.getPath('userData'), MCP_STATUS_FILE)); } catch (_) { /* none */ } if (meetingService) { try { meetingService.close(); } catch (e) { log('error', 'meeting shutdown failed: ' + String(e.message || e).slice(0, 120)); } } if (typer) typer.close(); if (llmWorker) llmWorker.stop('quit'); if (notion) notion.stop(); if (sync) sync.stop(); if (updater) updater.stop(); if (readAloud) readAloud.close(); });
   app.on('window-all-closed', () => { /* stay in the tray */ });
 }

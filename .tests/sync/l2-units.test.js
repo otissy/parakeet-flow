@@ -15,7 +15,7 @@ const jwt = (role) => [Buffer.from('{"alg":"HS256"}').toString('base64url'), Buf
 function leaves(o, pre = '', out = []) {
   for (const [k, v] of Object.entries(o)) {
     const p = pre ? pre + '.' + k : k;
-    if (v && typeof v === 'object' && !Array.isArray(v) && !(p === 'hotkey' || p === 'toggleKey' || p === 'notes.noteHotkey' || p === 'slang.packs')) leaves(v, p, out); else out.push(p);
+    if (v && typeof v === 'object' && !Array.isArray(v) && !(p === 'hotkey' || p === 'toggleKey' || p === 'notes.noteHotkey' || p === 'readAloud.hotkey' || p === 'slang.packs')) leaves(v, p, out); else out.push(p);
   }
   return out;
 }

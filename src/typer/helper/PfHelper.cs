@@ -13,6 +13,14 @@
 //                                be restored exactly: a format that is not plain memory, or it could not be opened): nothing was pasted, type it instead.
 //   CLIPPUT <b64> / CLIPGET      only with --test: set the clipboard to plain text / report it (CLIP <b64>|-)
 //   HOTKEY2 <vk>[+<vk>...]       a second chord ("note mode", Ctrl+Shift+Space): modifiers + exactly one plain key; empty = off
+//   HOTKEY3 <vk>[+<vk>...]       a third chord ("read aloud", Ctrl+Alt+R): modifiers + exactly one plain key; empty = off. One READ line per fresh press
+//                                (no key-up event); the plain key is swallowed while the chord is set, so the app in front never sees it
+//   COPYSEL <id>                 the selection of the foreground window as text: waits until Shift/Alt/Win are physically up, saves the clipboard (every memory
+//                                format), sends Ctrl+C, waits for the clipboard to change (<= 800 ms), reads the text and puts the saved clipboard back, in one
+//                                clipboard session. Answers SEL <id> <base64 UTF-16LE text>, NOSEL <id> (nothing was copied: no selection, the clipboard
+//                                was not touched) or SELFAIL <id> <reason> (the clipboard holds something that cannot be restored exactly: it is left alone)
+//   SELSIM <b64> / CLIPPUTX <b64 text> <b64 bytes> / CLIPGETX / CLIPLOSSY   only with --test: the next COPYSEL does not press Ctrl+C, the "app" puts that text on the clipboard instead /
+//                                set the clipboard to text + one custom format / report text and custom bytes (CLIPX <b64>|- <b64>|-)
 //   BS   <id> <hwnd> <count>
 //   FG                           report the foreground window now
 //   CLAIM 0|1                    1 = swallow the hotkey's non-modifier key while its modifiers are held (Ctrl+Space);
@@ -29,7 +37,7 @@
 //   NORELEASE 0|1                only with --test: do not release modifiers around typing (the control experiment)
 //   DUMP                         only with --test: DUMP hook=<0|1> claim=<0|1> chord=<0|1> released=<n>
 //   QUIT
-// stdout: READY | KEY down|up | KEY2 down|up | TOGGLE | ESC | FG <hwnd> <pid> <proc> <base64 title> <window class> | OK <id> | REFUSED <id> | SENT ... | SIM swallow|pass | DUMP ...
+// stdout: READY | KEY down|up | KEY2 down|up | READ | TOGGLE | ESC | SEL ... | NOSEL ... | SELFAIL ... | FG <hwnd> <pid> <proc> <base64 title> <window class> | OK <id> | REFUSED <id> | SENT ... | SIM swallow|pass | DUMP ...
 //
 // Hotkey = a chord. With a non-modifier key in it (Ctrl+Space) the chord starts only when that key goes down while
 // every modifier is ALREADY down (a lone Ctrl, a lone Space, or Space then Ctrl never start it). It is tracked by a
@@ -95,6 +103,11 @@ static class PfHelper
     static readonly HashSet<int> swallowed2 = new HashSet<int>();
     static int trigger2 = 0;
     static bool chord2Held = false;
+    static volatile int[] hotkey3 = new int[0];                    // third chord (read aloud): edge only, a press is one READ
+    static readonly HashSet<int> swallowed3 = new HashSet<int>();
+    static int trigger3 = 0, read3Pending = 0;
+    static bool chord3Held = false;
+    static string simSel = null;                                   // test: COPYSEL puts this on the clipboard instead of pressing Ctrl+C
     static bool claim = false, chordHeld = false, hookOk = false;
     static int toggleVk = 0, togglePending = 0;                    // toggle key (0 = off); presses not yet reported (the hook never does I/O)
     static bool toggleSw = false;                                  // a CapsLock down was swallowed: swallow its repeats and its up, even if the feature is switched off meanwhile
@@ -131,6 +144,16 @@ static class PfHelper
         foreach (int vk in hotkey2) if (IsModifier(vk) && !IsDownLocked(vk)) return false;
         return true;
     }
+    static bool Mods3DownLocked()
+    {
+        foreach (int vk in hotkey3) if (IsModifier(vk) && !IsDownLocked(vk)) return false;
+        return true;
+    }
+    static bool IsChord3ModifierLocked(int vk)
+    {
+        foreach (int h in hotkey3) if (IsModifier(h) && (h == vk || Array.IndexOf(Specific(h), vk) >= 0)) return true;
+        return false;
+    }
     static bool IsChord2ModifierLocked(int vk)
     {
         foreach (int h in hotkey2) if (IsModifier(h) && (h == vk || Array.IndexOf(Specific(h), vk) >= 0)) return true;
@@ -156,7 +179,25 @@ static class PfHelper
                 if (down && !was) togglePending++;
                 if (vk == 0x14) { if (down) toggleSw = true; return true; }                      // CapsLock: never reaches Windows, state and LED untouched
             }
-            bool sw2 = false;
+            bool sw2 = false, sw3 = false;
+            if (trigger3 != 0)                                         // the read chord first: Ctrl+Alt+R is its own chord, never a part of the others
+            {
+                if (down)
+                {
+                    if (swallowed3.Contains(vk)) return true;
+                    if (vk == trigger3 && !was && !chord3Held && Mods3DownLocked())
+                    {
+                        chord3Held = true; read3Pending++;
+                        swallowed3.Add(vk); return true;
+                    }
+                }
+                else
+                {
+                    if (vk == trigger3) chord3Held = false;
+                    else if (chord3Held && IsChord3ModifierLocked(vk) && !Mods3DownLocked()) chord3Held = false;
+                    sw3 = swallowed3.Remove(vk);
+                }
+            }
             if (trigger2 != 0)                                         // the note chord is checked first: Ctrl+Shift+Space must not also start Ctrl+Space
             {
                 if (down)
@@ -199,7 +240,7 @@ static class PfHelper
                 foreach (int h in hotkey) if (!IsDownLocked(h)) { all = false; break; }
                 chordHeld = all;
             }
-            return ours || sw2;
+            return ours || sw2 || sw3;
         }
     }
 
@@ -420,6 +461,9 @@ static class PfHelper
         bool down = false, esc = false, tglPrev = false, down2 = false;
         while (true)
         {
+            int rp = 0;
+            lock (st) { rp = read3Pending; read3Pending = 0; }
+            for (int i = 0; i < rp; i++) Out("READ");
             int tv = toggleVk, tp = 0;
             if (tv != 0 && !hookOk) { bool t = (GetAsyncKeyState(tv) & 0x8000) != 0; if (t && !tglPrev) lock (st) { togglePending++; } tglPrev = t; }
             lock (st) { tp = togglePending; togglePending = 0; }
@@ -484,6 +528,77 @@ static class PfHelper
         }
     }
 
+    static void SetHotkey3(string spec)
+    {
+        List<int> vks = new List<int>();
+        foreach (string p in spec.Split(new char[] { '+' }, StringSplitOptions.RemoveEmptyEntries))
+        {
+            string t = p.Trim();
+            try { vks.Add(t.StartsWith("0x") ? Convert.ToInt32(t.Substring(2), 16) : Convert.ToInt32(t)); } catch { }
+        }
+        lock (st)
+        {
+            int plain = 0, which = 0, mods = 0;
+            foreach (int v in vks) { if (!IsModifier(v)) { plain++; which = v; } else mods++; }
+            bool ok = plain == 1 && mods >= 1;
+            hotkey3 = ok ? vks.ToArray() : new int[0];
+            trigger3 = ok ? which : 0;
+            chord3Held = false; swallowed3.Clear(); read3Pending = 0;
+        }
+    }
+
+    // ---- selection capture (read aloud) ----
+    static bool NonCtrlModifierDown()
+    {
+        lock (st)
+        {
+            foreach (int m in new int[] { 0x10, 0x12, 0x5B, 0x5C })
+                if (hookOk ? IsDownLocked(m) : (GetAsyncKeyState(m) & 0x8000) != 0) return true;
+        }
+        return false;
+    }
+    static string ReadClipText()          // clipboard already open
+    {
+        IntPtr h = GetClipboardData(CF_UNICODETEXT);
+        if (h == IntPtr.Zero) return null;
+        IntPtr p = GlobalLock(h); if (p == IntPtr.Zero) return null;
+        try { return Marshal.PtrToStringUni(p); } finally { GlobalUnlock(h); }
+    }
+    /// <returns>"SEL" (text set) | "NOSEL" | "SELFAIL reason"</returns>
+    static string CopySelection(out string text)
+    {
+        text = null;
+        List<KeyValuePair<uint, byte[]>> backup;
+        bool lossy;
+        uint seq0;
+        if (!OpenClip()) return "SELFAIL clipboard-busy";
+        try { backup = BackupClip(out lossy); seq0 = GetClipboardSequenceNumber(); } finally { CloseClipboard(); }
+        if (lossy) return "SELFAIL clipboard-not-restorable";            // never touch a clipboard we cannot give back exactly
+        for (int i = 0; i < 100 && NonCtrlModifierDown(); i++) Thread.Sleep(15);   // the read chord's Alt/Shift/Win must be up, or the app gets Ctrl+Alt+C
+        if (NonCtrlModifierDown()) return "SELFAIL keys-held";
+        if (simSel != null)
+        {
+            string fake = simSel; simSel = null;
+            if (OpenClip()) { try { SetClipText(fake); } finally { CloseClipboard(); } }
+        }
+        else
+        {
+            List<INPUT> k = new List<INPUT>();
+            k.Add(Key(0x11, 0, 0)); k.Add(Key(0x43, 0, 0)); k.Add(Key(0x43, 0, KEYEVENTF_KEYUP)); k.Add(Key(0x11, 0, KEYEVENTF_KEYUP));
+            Send(k);
+        }
+        for (int i = 0; i < 54 && GetClipboardSequenceNumber() == seq0; i++) Thread.Sleep(15);
+        if (GetClipboardSequenceNumber() == seq0) return "NOSEL";
+        if (!OpenClip()) return "SELFAIL clipboard-busy";
+        try
+        {
+            text = ReadClipText();
+            RestoreClip(backup);                                         // the exact clipboard from before, in the same session
+        }
+        finally { CloseClipboard(); }
+        return text == null ? "NOSEL" : "SEL";
+    }
+
     static void TestSim(int vk, bool down)
     {
         bool sw = OnKey(vk, down);
@@ -508,6 +623,52 @@ static class PfHelper
                 {
                     case "HOTKEY": SetHotkey(a.Length > 1 ? a[1] : ""); break;
                     case "HOTKEY2": SetHotkey2(a.Length > 1 ? a[1] : ""); break;
+                    case "HOTKEY3": SetHotkey3(a.Length > 1 ? a[1] : ""); break;
+                    case "COPYSEL":
+                    {
+                        string stext; string sres = CopySelection(out stext);
+                        if (sres == "SEL") Out("SEL " + a[1] + " " + Convert.ToBase64String(Encoding.Unicode.GetBytes(stext)));
+                        else Out(sres.Split(' ')[0] + " " + a[1] + (sres.IndexOf(' ') > 0 ? sres.Substring(sres.IndexOf(' ')) : ""));
+                        break;
+                    }
+                    case "SELSIM": if (testMode && a.Length > 1) simSel = Encoding.Unicode.GetString(Convert.FromBase64String(a[1])); break;
+                    case "CLIPPUTX":
+                        if (testMode && a.Length > 2 && OpenClip())
+                        {
+                            try
+                            {
+                                SetClipText(Encoding.Unicode.GetString(Convert.FromBase64String(a[1])));
+                                SetClipboardData(RegisterClipboardFormat("PF.TestFormat"), MakeGlobal(Convert.FromBase64String(a[2])));
+                            }
+                            finally { CloseClipboard(); }
+                            Out("OK clipx");
+                        }
+                        break;
+                    case "CLIPLOSSY":
+                        if (testMode && OpenClip())
+                        {
+                            try { SetClipText("lossy"); SetClipboardData(0x81, MakeGlobal(new byte[] { 1, 2, 3 })); }       // CF_DSPTEXT: an owner format the backup may not copy
+                            finally { CloseClipboard(); }
+                            Out("OK lossy");
+                        }
+                        break;
+                    case "CLIPGETX":
+                        if (testMode)
+                        {
+                            string xt = null, xb = null;
+                            if (OpenClip())
+                            {
+                                try
+                                {
+                                    xt = ReadClipText();
+                                    IntPtr h = GetClipboardData(RegisterClipboardFormat("PF.TestFormat"));
+                                    if (h != IntPtr.Zero) { long n = (long)GlobalSize(h).ToUInt64(); IntPtr p = GlobalLock(h); byte[] b = new byte[n]; Marshal.Copy(p, b, 0, (int)n); GlobalUnlock(h); xb = Convert.ToBase64String(b); }
+                                }
+                                finally { CloseClipboard(); }
+                            }
+                            Out("CLIPX " + (xt == null ? "-" : Convert.ToBase64String(Encoding.UTF8.GetBytes(xt))) + " " + (xb ?? "-"));
+                        }
+                        break;
                     case "FG": Out(FgLine()); break;
                     case "TOGGLE": lock (st) { toggleVk = a.Length > 1 ? int.Parse(a[1]) : 0; if (toggleVk == 0) togglePending = 0; } break;
                     case "CLAIM": lock (st) { claim = a.Length > 1 && a[1] == "1"; if (!claim) { swallowed.Clear(); swallowed2.Clear(); } } break;
@@ -517,7 +678,7 @@ static class PfHelper
                     case "SIMLATE": if (testMode && a.Length > 1) simLate = int.Parse(a[1]); break;
                     case "SIM": if (testMode && a.Length > 2) TestSim(int.Parse(a[1]), a[2] == "down"); break;
                     case "DUMP":
-                        if (testMode) lock (st) { Out("DUMP hook=" + (hookOk ? 1 : 0) + " claim=" + (claim ? 1 : 0) + " chord=" + (chordHeld ? 1 : 0) + " chord2=" + (chord2Held ? 1 : 0) + " released=" + released.Count + " swallowed=" + swallowed.Count + " toggle=" + toggleVk + " tsw=" + (toggleSw ? 1 : 0)); }
+                        if (testMode) lock (st) { Out("DUMP hook=" + (hookOk ? 1 : 0) + " claim=" + (claim ? 1 : 0) + " chord=" + (chordHeld ? 1 : 0) + " chord2=" + (chord2Held ? 1 : 0) + " chord3=" + (chord3Held ? 1 : 0) + " released=" + released.Count + " swallowed=" + swallowed.Count + " toggle=" + toggleVk + " tsw=" + (toggleSw ? 1 : 0)); }
                         break;
                     case "CLIPPUT": if (testMode && a.Length > 1 && OpenClip()) { try { SetClipText(Encoding.Unicode.GetString(Convert.FromBase64String(a[1]))); } finally { CloseClipboard(); } Out("OK clip"); } break;
                     case "CLIPGET": if (testMode) { string ct = GetClipText(); Out("CLIP " + (ct == null ? "-" : Convert.ToBase64String(Encoding.UTF8.GetBytes(ct)))); } break;

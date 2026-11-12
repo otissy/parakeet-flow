@@ -35,6 +35,7 @@ Models (not in the installer; downloaded on first use from the hosts named in th
 | NVIDIA Parakeet TDT 0.6B v3 (int8 sherpa-onnx export by csukuangfj) | CC-BY-4.0. Attribution: "Parakeet TDT 0.6B v3 by NVIDIA, used under CC BY 4.0; converted to ONNX int8 for sherpa-onnx." Source: https://huggingface.co/nvidia/parakeet-tdt-0.6b-v3 | not verified locally (no model card on this PC) |
 | NVIDIA Parakeet TDT 0.6B v3 (Q8_0 GGUF for NeMo-Speech.cpp) | CC-BY-4.0. Attribution: "Parakeet TDT 0.6B v3 by NVIDIA, used under CC BY 4.0." Source: https://huggingface.co/nvidia/parakeet-tdt-0.6b-v3 | model SHA-256 and size are pinned in the NeMo-Speech.cpp 0.2.0 model index |
 | NVIDIA Nemotron-3-Diarization (Q8_0 GGUF) | NVIDIA Open Model License (OpenMDW 1.1) | model SHA-256 and size are pinned in the NeMo-Speech.cpp 0.2.0 model index; licence: https://huggingface.co/nvidia/Nemotron-3-Diarization |
+| Kokoro v1.0 multi-lang pack (kokoro-multi-lang-v1_0.tar.bz2 from the k2-fsa/sherpa-onnx `tts-models` release; Kokoro-82M by hexgrad, read-aloud voice) | Apache-2.0 (the pack ships its LICENSE). espeak-ng phonemizer data inside the pack is GPL-3.0-or-later and is only read as data by the speech runtime | downloaded on first use; archive SHA-256 pinned in `src/readaloud/model-store.js`; licence text checked in the archive |
 | Silero VAD (silero_vad.onnx, from the sherpa-onnx release assets) | MIT (snakers4/silero-vad) | not verified locally |
 | Qwen3-0.6B-Q8_0.gguf (Qwen/Qwen3-0.6B-GGUF, optional AI cleanup) | Apache-2.0 | not verified locally |
 

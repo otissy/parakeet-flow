@@ -115,6 +115,10 @@ const REQUIRED = [
   'resources/app/llm-runtime/node_modules/@node-llama-cpp/win-x64/bins/win-x64/llama-addon.node',
   'resources/app/mcp/node_modules/@modelcontextprotocol/sdk/package.json',
   'resources/app/src/typer/helper/bin/pf-helper.exe',
+  // read aloud: its code and the speaker page ship in the app; the Kokoro voice (350 MB) does NOT, it is downloaded and hash-checked on first use
+  // (src/readaloud/model-store.js), so no model file is listed here. The synthesis runtime is the sherpa-onnx-win-x64 package above.
+  ...['service.js', 'chunker.js', 'voices.js', 'settings.js', 'model-store.js', 'tts-host.js', 'tts-worker.js', 'unpack-worker.js', 'bunzip2.js', 'runtime.js'].map((f) => 'resources/app/src/readaloud/' + f),
+  'resources/app/src/renderer/speaker.html', 'resources/app/src/renderer/speaker.js', 'resources/app/src/renderer/readaloud-ui.js',
   ...VCRUNTIME,
 ];
 function nativeFiles(dir) {

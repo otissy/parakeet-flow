@@ -31,7 +31,8 @@ const LOCAL_ONLY = Object.freeze({
   deny: 'safety list per PC', snippets: 'may hold personal text', userName: 'personal',
   'notes.notion.enabled': 'account', 'notes.notion.targetType': 'account', 'notes.notion.targetId': 'account', 'notes.notion.titleProperty': 'account',
   'notes.export.enabled': 'file path', 'notes.export.folder': 'file path',
-  'sync.enabled': 'sync itself is switched per PC', 'updates.auto': 'network choice per PC',
+  'sync.enabled': 'sync itself is switched per PC', 'updates.auto': 'network choice per PC', 'updates.installAuto': 'restart choice per PC', 'updates.seen': 'which release notes this PC showed',
+  'readAloud.enabled': 'it presses Ctrl+C in apps on this PC and needs the voice downloaded on this PC', 'readAloud.hotkey': 'a key chord is per PC', 'readAloud.voice': 'follows the voice installed on this PC', 'readAloud.speed': 'per PC',
 });
 
 const TERM_FIELDS = Object.freeze(['term', 'variants', 'heard', 'category', 'lang', 'casing', 'matchCase', 'allowCommon', 'bias']);

@@ -12,6 +12,7 @@ async function loadExtra() {
   [X.llm, X.notion, X.notes, X.mcp] = await Promise.all([window.pf.invoke('llm:status'), window.pf.invoke('notion:status'), window.pf.invoke('notes:list'), window.pf.invoke('mcp:info')]);
   X.sync = await window.pf.invoke('sync:status').catch(() => null);
   X.update = await window.pf.invoke('update:status').catch(() => null);
+  await loadReadAloud();
 }
 
 function secCommands() {
@@ -135,7 +136,7 @@ function extraSettings() { return secCommands() + secTone() + secTranslate() + s
 
 function updateLine(u) {
   if (!u.installed) return 'Updates work only in the installed app, so this copy never checks.';
-  if (u.state === 'ready') return 'A new version is ready. It installs the next time you quit, or restart now.';
+  if (u.state === 'ready') return u.installAuto ? 'A new version is ready. It is used the next time the app starts, and the app restarts to it by itself at a quiet moment (no dictation, no meeting, no reading aloud, and you away from the PC for a few minutes). Or restart now.' : 'A new version is ready. It is used the next time the app starts, or restart now.';
   if (u.state === 'downloading') return 'Downloading a new version in the background.';
   if (u.state === 'checking') return 'Checking…';
   const auto = S.settings.updates.auto;
@@ -148,7 +149,8 @@ function secUpdates() {
   const u = X.update;
   if (!u) return '';
   return `<h2 id="sec-updates">Updates</h2><div class="card" style="padding:4px 18px">
-    <div class="srow"><div class="l"><b>Check for updates automatically</b><div>On by default. Shortly after start and every few hours, the app asks github.com for the latest Parakeet Flow release. That is a normal web request holding the app name, its version and the PC type, and GitHub sees your IP address. Nothing you dictated and none of your settings go with it. A new version downloads in the background and installs the next time you quit. This is separate from Sync.</div></div><div class="c">${toggle('up-auto', S.settings.updates.auto)}</div></div>
+    <div class="srow"><div class="l"><b>Check for updates automatically</b><div>On by default. Shortly after start and every few hours, the app asks github.com for the latest Parakeet Flow release. That is a normal web request holding the app name, its version and the PC type, and GitHub sees your IP address. Nothing you dictated and none of your settings go with it. A new version downloads in the background. This is separate from Sync.</div></div><div class="c">${toggle('up-auto', S.settings.updates.auto)}</div></div>
+    <div class="srow"><div class="l"><b>Install updates automatically</b><div>On by default. A downloaded update is used the next time the app starts, and the app also restarts to it by itself at a quiet moment: nothing dictating, no meeting being recorded or processed, no reading aloud, and no keyboard or mouse use for a few minutes. It never restarts in the middle of any of those. Off: the update waits until you restart or quit. Check now works either way, and after an update the Home page says what is new.</div></div><div class="c">${toggle('up-install', S.settings.updates.installAuto)}</div></div>
     <div class="srow"><div class="l"><b>Version ${L.esc(u.version)}</b><div id="up-line">${L.esc(updateLine(u))}</div></div><div class="c">${u.state === 'ready' ? '<button class="btn primary" id="up-restart">Restart to update</button>' : `<button class="btn" id="up-check" ${u.installed ? '' : 'disabled'}>Check now</button>`}</div></div>
   </div>`;
 }
@@ -177,9 +179,11 @@ function notesPage() {
 
 function bindExtra() {
   bindSync();
+  bindReadAloud();
   const q = (id) => document.getElementById(id);
   const on = (id, fn) => { const e = q(id); if (e) e.onclick = fn; };
-  on('up-auto', () => save({ updates: { auto: !S.settings.updates.auto } }));
+  on('up-auto', () => save({ updates: { ...S.settings.updates, auto: !S.settings.updates.auto } }));
+  on('up-install', () => save({ updates: { ...S.settings.updates, installAuto: !S.settings.updates.installAuto } }));
   on('up-check', async () => { X.updateAsked = true; await window.pf.invoke('update:check'); X.update = await window.pf.invoke('update:status'); render(); });
   on('up-restart', () => window.pf.invoke('update:restart'));
   const val = (id, fn) => { const e = q(id); if (e) e.onchange = () => fn(e.value); };

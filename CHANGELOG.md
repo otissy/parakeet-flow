@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.2.66
+
+- New: **Read aloud**. Select text in any app and press Ctrl+Alt+R (changeable) to hear it in a local voice; press it again or Esc to stop. The voice is Kokoro v1.0 running on the speech runtime the app already ships (sherpa-onnx), fully offline. Default voice George (the British male "Bob"), with a voice list and a speed setting. Long text is read sentence by sentence and starts speaking after the first piece. The flow bar shows "Reading..." with a stop button.
+- Read aloud is off until you switch it on in Settings > Read aloud, because it presses Ctrl+C in the app in front and uses the clipboard for a moment (your clipboard is put back exactly, every format; if it holds something that cannot be restored, nothing is read and the clipboard is not touched), and because it needs the voice download. The voice (about 350 MB, from the sherpa-onnx project on GitHub, checked against a fixed SHA-256) is not in the installer: Settings > Read aloud has the Download button.
+- The read hotkey cannot share its key with the dictation, note or toggle hotkeys (Settings refuses it), and it is released while a hotkey picker is open. It never starts while you dictate or record a meeting, and starting a dictation stops a reading.
+- Updates now **install automatically**: Settings > Updates > "Install updates automatically" (on by default). A downloaded update is used the next time the app starts, and the app restarts to it by itself at a quiet moment: nothing busy (no dictation, no meeting being recorded or processed, no reading aloud) for 2 minutes and no keyboard or mouse use for 3 minutes. It comes back in the tray without opening the window. Check now and Restart to update still work.
+- After an update the Home page shows **What's new** once.
+- Under the hood: a small bzip2 and tar reader unpacks the voice pack (Windows tar.exe cannot do bzip2 on its own), and the helper gained a third hotkey chord and a selection capture that keeps and restores the whole clipboard.
+
 ## 0.2.65
 
 - Fixed: the app didn't start with Windows after an update. "Start with Windows" used to store the path of the version folder (for example app-0.2.61), which an update deletes. It now registers the installer's stable launcher (Update.exe), and every start rewrites the entry from your setting: on repairs it, off removes the app's own entry. Other programs' entries are never touched.

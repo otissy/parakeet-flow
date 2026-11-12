@@ -34,7 +34,7 @@ function draw(now) {
   g.clearRect(0, 0, w, h);
   if (!idleish) {
     // shift one bar per frame at ~30 fps, driven by the smoothed level (processing: a slow ripple)
-    if (state === 'processing') target = 0.18 + 0.12 * Math.sin((now - t0) / 140);
+    if (state === 'processing' || state === 'reading') target = 0.18 + 0.12 * Math.sin((now - t0) / 140);
     if (Math.floor(now / 33) !== Math.floor((now - 16) / 33)) { levels.push(Math.min(1, shown)); levels.shift(); }
     const bw = w / BARS;
     g.fillStyle = state === 'handsfree' ? '#9a8dff' : '#eeeef3';
@@ -67,7 +67,7 @@ window.pf.on('pill:level', (v) => { target = v; });
 let over = false;
 document.addEventListener('mousemove', (e) => {
   const el = document.elementFromPoint(e.clientX, e.clientY);
-  const now = !!(el && el.closest && el.closest('.btn') && state === 'handsfree');
+  const now = !!(el && el.closest && el.closest('.btn') && (state === 'handsfree' || state === 'reading'));
   if (now !== over) { over = now; window.pf.send('pill:mouse', over); }
 });
 document.getElementById('cancel').addEventListener('click', () => window.pf.send('pill:action', 'cancel'));

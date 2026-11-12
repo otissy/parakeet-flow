@@ -5,9 +5,9 @@ inserted into the focused app once (like Wispr Flow; typing while you speak is a
 via sherpa-onnx). Your words stay here: what can leave the PC is only the optional Notion sync and the optional customization sync below, both off until you switch them on. The installed app also asks GitHub for updates (on by default, see Updates below). A small floating bar shows the level and the live text; a tray icon and a main window hold
 the settings. The design follows the layout and feel of Wispr Flow without using its name or logo.
 
-## Install (Windows installer, 0.2.65)
+## Install (Windows installer, 0.2.66)
 
-Run `Parakeet Flow Setup 0.2.65.exe`. It installs for your user only (no admin prompt) into
+Run `Parakeet Flow Setup 0.2.66.exe`. It installs for your user only (no admin prompt) into
 `%LOCALAPPDATA%\parakeet-flow`, adds a Start-menu shortcut (Start > otissy > Parakeet Flow) and an entry in
 Settings > Apps. It does NOT start with Windows: no startup entry, no scheduled task, no Run key. "Launch at login"
 exists in Settings and is off until you switch it on.
@@ -54,14 +54,22 @@ The installer is not signed. Windows SmartScreen may say "Windows protected your
 Norton may show a reputation warning (for example IDP.Generic) for a new unsigned installer or for the little helper `pf-helper.exe`
 (built from `src/typer/helper/PfHelper.cs`, shipped inside the install with version info and a manifest; it types text and watches the hotkey).
 What it does, how to verify it, how to restore and exclude only that file, and how to report a false positive: `docs/antivirus.md`.
-Helper SHA-256 (0.2.65): `72005fd7bee79e5f00c06c98380f32e4f598181e7ee5a39d74d3303b94c7f92d`. The app makes no network calls except the model downloads,
+Helper SHA-256 (0.2.66): `b4c41787cd1c986781294582fc2180a1fa50f005cf040876f4d9f1677ff6f760`; installer SHA-256: `2c557967616e46fa2bb793463c6b33442b875a5b5793e9c8f5026c585805eeb8`. The app makes no network calls except the model downloads,
 the update check (installed copies, on by default, see below) and Notion and customization sync, only if you turned them on.
+
+## Read aloud (0.2.66, off by default)
+
+Select text in any app and press **Ctrl+Alt+R**: it is read out loud by a local voice (Kokoro v1.0, on the sherpa-onnx runtime this app already ships). Press the hotkey again or Esc to stop. Settings > Read aloud has the switch, the hotkey (it may not share its key with the dictation, note or toggle hotkeys), the voice (default George, "Bob") and the speed.
+
+- **Why it is off:** it presses Ctrl+C in the app in front and uses the clipboard for a moment. The whole clipboard (every format) is saved first and put back in the same step; if it holds something that cannot be restored exactly, nothing is read and it is not touched. It also needs the voice download.
+- **The voice** is not in the installer (about 350 MB): Settings > Read aloud > Download voice fetches `kokoro-multi-lang-v1_0.tar.bz2` from the k2-fsa/sherpa-onnx `tts-models` release (uploader csukuangfj) and checks it against the pinned SHA-256 `60703707bc05ccd48d60e1eb723f38b07d6e474795a0b6a588d7220400e0f7a4` (GitHub's own asset digest) before unpacking it into `%APPDATA%\parakeet-flow\models	ts`, where each file is checked again. After that it works offline. English voices only: Dutch is not in the pack.
+- Long text is cut at sentence ends and spoken piece by piece while the next piece is made; at most 60,000 characters are read per press. Nothing is logged but counts. No Windows (SAPI) voices are ever used.
 
 ## Updates
 
 From 0.2.61 the installed app updates itself from this repo's latest GitHub release, through Squirrel (Electron's autoUpdater). Earlier versions do not: run the newer Setup once, it replaces the app and keeps your data.
 
-- **When:** one minute after start (10 minutes after a fresh install), then every 4 hours. A new version downloads in the background, then installs the next time you quit; the tray and Settings > Updates offer **Restart to update**. It never restarts by itself and never during a dictation.
+- **When:** one minute after start (10 minutes after a fresh install), then every 4 hours. A new version downloads in the background and is used the next time the app starts. From 0.2.66, with **Install updates automatically** on (default), the app also restarts to it by itself at a quiet moment: no dictation, no meeting being recorded or processed and no reading aloud for 2 minutes in a row, and no keyboard or mouse use for 3 minutes; it then comes back in the tray without opening the window. It never restarts in the middle of any of those. The tray and Settings > Updates also offer **Restart to update**, and after an update Home shows **What's new** once.
 - **What it sends:** normal web requests to github.com (and GitHub's download host) for `RELEASES` and, if newer, the package. Those requests hold the app name, the installed version and the PC type (`?id=...&localVersion=...&arch=...`), and GitHub sees your IP address. Nothing you dictated, no settings, no install ID.
 - **Off:** Settings > Updates > **Check for updates automatically** (default on). Off means no automatic request; **Check now** still works when you press it. This switch has nothing to do with Sync: with Sync off, this request can still happen.
 - **Only installed copies:** `npm start` and a `win-unpacked` folder never check. A failed automatic check shows nothing in the window and goes to `logs\app.log` (no dictated text, as always); after you press **Check now**, Settings says it could not check. With the switch off, Settings says automatic checks are off.

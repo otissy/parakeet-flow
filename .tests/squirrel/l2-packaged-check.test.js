@@ -30,3 +30,11 @@ test('a native file of the reference build that the new package lacks is named',
   const miss = checkPackagedApp(make(), ref);
   assert.deepStrictEqual(miss, ['resources/app/node_modules/other/x.node (shipped by the reference build)']);
 });
+test('read aloud: its code and speaker page are required in the package, the 350 MB voice is not (downloaded on first use), and every named source exists in the repo', () => {
+  const ra = REQUIRED.filter((r) => /readaloud|speaker\./.test(r));
+  assert.ok(ra.some((r) => r.endsWith('src/readaloud/tts-worker.js')) && ra.some((r) => r.endsWith('src/readaloud/bunzip2.js')) && ra.some((r) => r.endsWith('src/renderer/speaker.html')));
+  assert.ok(!REQUIRED.some((r) => /\.onnx|voices\.bin|espeak/.test(r)), 'no model file is expected in the installer');
+  for (const r of ra) assert.ok(fs.existsSync(path.join(__dirname, '..', '..', r.replace(/^resources\/app\//, ''))), r);
+  const skip = ra.filter((r) => r.endsWith('tts-worker.js'));
+  assert.deepStrictEqual(checkPackagedApp(make(skip)), skip, 'a package without the voice worker is named as missing');
+});

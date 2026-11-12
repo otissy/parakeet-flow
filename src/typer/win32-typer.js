@@ -52,7 +52,7 @@ class Win32Typer extends EventEmitter {
     super();
     this.exe = buildHelper(binDir);
     this.test = test; this.restart = restart; this.restartDelayMs = restartDelayMs;
-    this.fg = null; this.nextId = 1; this.buf = ''; this.newline = 'auto'; this.pasting = new Map();
+    this.fg = null; this.nextId = 1; this.buf = ''; this.newline = 'auto'; this.pasting = new Map(); this.selecting = new Map();
     this.cfg = {}; this.closed = false; this.deaths = []; this.restarts = 0; this.timer = null;
     this._spawn();
   }
@@ -83,6 +83,7 @@ class Win32Typer extends EventEmitter {
     const c = this.cfg;
     if (c.hotkey) this._send('HOTKEY ' + c.hotkey.join('+'));
     if (c.hotkey2) this._send('HOTKEY2 ' + c.hotkey2.join('+'));
+    if (c.hotkey3) this._send('HOTKEY3 ' + c.hotkey3.join('+'));
     if (c.claim !== undefined) this._send('CLAIM ' + (c.claim ? 1 : 0));
     if (c.toggle !== undefined) this._send('TOGGLE ' + (c.toggle | 0));
     this._send('FG');
@@ -98,20 +99,43 @@ class Win32Typer extends EventEmitter {
       else if (a[0] === 'TOGGLE') this.emit('toggle', { at: Date.now() });
       else if (a[0] === 'KEY2') this.emit('key2', { down: a[1] === 'down', at: Date.now() });
       else if (a[0] === 'ESC') this.emit('esc');
+      else if (a[0] === 'READ') this.emit('read');
+      else if (a[0] === 'SEL' || a[0] === 'NOSEL' || a[0] === 'SELFAIL') this._selReply(a);
       else if (a[0] === 'FG') {
         this.fg = { hwnd: Number(a[1]), pid: Number(a[2]), proc: (a[3] || '').toLowerCase() + '.exe',
                     title: a[4] ? Buffer.from(a[4], 'base64').toString('utf8') : '', cls: a[5] || '' };
         this.emit('foreground', this.fg);
       } else if (a[0] === 'REFUSED') { this.pasting.delete(a[1]); this.emit('refused', { id: a[1] }); }
       else if (a[0] === 'PASTEFALLBACK') { const t = this.pasting.get(a[1]); this.pasting.delete(a[1]); this.emit('paste-fallback', { id: a[1] }); if (t) this.type(t.text, t.opts); }
-      else if (a[0] === 'CLIP') this.emit('line', a);
+      else if (a[0] === 'CLIP' || a[0] === 'CLIPX' || (a[0] === 'OK' && /^(clip|clipx|lossy)$/.test(a[1] || ''))) this.emit('line', a);   // test-mode replies
       else if (a[0] === 'SENT' || a[0] === 'SIM' || a[0] === 'DUMP') this.emit('line', a);   // test-mode replies
     }
+  }
+  _selReply(a) {
+    const w = this.selecting.get(a[1]);
+    if (!w) return;
+    this.selecting.delete(a[1]); clearTimeout(w.timer);
+    if (a[0] === 'SEL') w.resolve({ ok: true, text: Buffer.from(a[2] || '', 'base64').toString('utf16le') });
+    else w.resolve({ ok: false, reason: a[0] === 'NOSEL' ? 'none' : (a[2] || 'failed') });
   }
   _send(s) { if (this.proc.stdin.writable) this.proc.stdin.write(s + '\n'); }
   setHotkey(vks) { this.cfg.hotkey = vks.slice(); this._send('HOTKEY ' + vks.join('+')); }
   /** the second chord (note mode): modifiers + exactly one plain key; an empty list switches it off */
   setHotkey2(vks) { this.cfg.hotkey2 = (vks || []).slice(); this._send('HOTKEY2 ' + (vks || []).join('+')); }
+  /** the read-aloud chord (modifiers + exactly one plain key): one 'read' event per press, the plain key is swallowed; an empty list switches it off */
+  setHotkey3(vks) { this.cfg.hotkey3 = (vks || []).slice(); this._send('HOTKEY3 ' + (vks || []).join('+')); }
+  /** the text selected in the foreground window, through one Ctrl+C with the clipboard saved and put back exactly (PfHelper.cs COPYSEL).
+      Resolves {ok:true,text} | {ok:false,reason:'none'|'clipboard-not-restorable'|'keys-held'|'clipboard-busy'|'timeout'|'helper-gone'}; never rejects */
+  copySelection({ timeoutMs = 4000 } = {}) {
+    return new Promise((resolve) => {
+      const id = String(this.nextId++);
+      const timer = setTimeout(() => { this.selecting.delete(id); resolve({ ok: false, reason: 'timeout' }); }, timeoutMs);
+      if (timer.unref) timer.unref();
+      this.selecting.set(id, { resolve, timer });
+      if (!this.proc.stdin.writable) { this.selecting.delete(id); clearTimeout(timer); return resolve({ ok: false, reason: 'helper-gone' }); }
+      this._send('COPYSEL ' + id);
+    });
+  }
   /** 'auto' | 'shift-enter' | 'ctrl-j': which key a newline in typed text presses (see newline.js) */
   setNewline(mode) { this.newline = ['shift-enter', 'ctrl-j'].includes(mode) ? mode : 'auto'; }
   /** swallow the chord's non-modifier key (Ctrl+Space) while its modifiers are held; never for a lone-key hotkey */
