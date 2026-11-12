@@ -72,6 +72,22 @@ function removeBundledHelper() {
   fs.rmSync(path.dirname(typer.BUNDLED), { recursive: true, force: true });
 }
 
+/** what 0.2.65 shipped: only the CPU win-x64 llama binary (the cuda, vulkan and arm64 optional packages add 600 MB) */
+const LLAMA_ALLOWED = ['win-x64'];
+const BASELINE_SETUP_BYTES = 213302784;          // Parakeet Flow Setup 0.2.65.exe
+const MAX_GROWTH = 0.15;
+/** @node-llama-cpp/* folders in the packaged app that are not on the allowlist (and the allowlisted ones that are missing), as messages */
+function checkLlamaSet(unpacked, allowed = LLAMA_ALLOWED) {
+  const dir = path.join(unpacked, 'resources', 'app', 'llm-runtime', 'node_modules', '@node-llama-cpp');
+  const have = fs.existsSync(dir) ? fs.readdirSync(dir) : [];
+  return [...have.filter((n) => !allowed.includes(n)).map((n) => `unexpected @node-llama-cpp/${n}`), ...allowed.filter((n) => !have.includes(n)).map((n) => `missing @node-llama-cpp/${n}`)];
+}
+/** '' when the installer is within the allowed growth over 0.2.65, else the message */
+function checkSize(bytes, { baseline = BASELINE_SETUP_BYTES, growth = MAX_GROWTH, override = false } = {}) {
+  const max = Math.round(baseline * (1 + growth));
+  return !override && bytes > max ? `installer is ${bytes} bytes, over 0.2.65 (${baseline}) + ${growth * 100}% = ${max}; pass --allow-size if that is intended` : '';
+}
+
 function main(argv) {
   const suffix = (argv.find((a) => a.startsWith('--suffix=')) || '').slice(9);
   const version = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8')).version;
@@ -98,6 +114,11 @@ function main(argv) {
   const missing = checkPackagedApp(path.join(out, 'win-unpacked'), process.env.PF_REFERENCE_APP);
   if (missing.length) { log('build failed: the packaged app is missing\n  ' + missing.join('\n  ')); return 1; }
   log('packaged app check: sherpa platform package and .node, llama addon, helper and VC++ DLLs are present');
+  const llama = checkLlamaSet(path.join(out, 'win-unpacked'));
+  if (llama.length) { log('build failed: the packaged llama binaries differ from the allowlist (win-x64 only)\n  ' + llama.join('\n  ')); return 1; }
+  const setup = fs.readdirSync(sq).find((f) => /^Parakeet Flow Setup .*\.exe$/.test(f));
+  const big = setup ? checkSize(fs.statSync(path.join(sq, setup)).size, { override: argv.includes('--allow-size') }) : 'no Setup exe found';
+  if (big) { log('build failed: ' + big); return 1; }
   const rel = checkReleaseFolder(sq);
   log(`RELEASES names ${rel.map((x) => x.file).join(', ')}: name, size and SHA1 match. Upload RELEASES, that nupkg and the Setup exe to the release, under these exact names.`);
   log('unsigned: Windows SmartScreen or Norton may warn on first run (see README)');
@@ -156,4 +177,4 @@ function checkReleaseFolder(dir) {
 }
 
 if (require.main === module) { try { process.exit(main(process.argv.slice(2))); } catch (e) { log('build-installer: ' + e.message); process.exit(1); } }
-module.exports = { checkPackagedApp, REQUIRED, checkReleaseFolder, outputDir, ensure7z, preflight, removeBundledHelper, ensureVcRuntime, VCRUNTIME };
+module.exports = { checkLlamaSet, checkSize, LLAMA_ALLOWED, BASELINE_SETUP_BYTES, checkPackagedApp, REQUIRED, checkReleaseFolder, outputDir, ensure7z, preflight, removeBundledHelper, ensureVcRuntime, VCRUNTIME };

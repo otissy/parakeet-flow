@@ -38,3 +38,16 @@ test('read aloud: its code and speaker page are required in the package, the 350
   const skip = ra.filter((r) => r.endsWith('tts-worker.js'));
   assert.deepStrictEqual(checkPackagedApp(make(skip)), skip, 'a package without the voice worker is named as missing');
 });
+test('the packaged llama binaries must be exactly win-x64; the installer may not grow more than 15% over 0.2.65 without the override', () => {
+  const B = require('../../scripts/build-installer.js');
+  const mk = (names) => { const d = fs.mkdtempSync(path.join(os.tmpdir(), 'pf-ll-')); for (const n of names) fs.mkdirSync(path.join(d, 'resources/app/llm-runtime/node_modules/@node-llama-cpp', n), { recursive: true }); return d; };
+  assert.deepStrictEqual(B.checkLlamaSet(mk(['win-x64'])), []);
+  assert.deepStrictEqual(B.checkLlamaSet(mk(['win-x64', 'win-x64-cuda', 'win-arm64'])), ['unexpected @node-llama-cpp/win-arm64', 'unexpected @node-llama-cpp/win-x64-cuda']);
+  assert.deepStrictEqual(B.checkLlamaSet(mk([])), ['missing @node-llama-cpp/win-x64']);
+  assert.equal(B.checkSize(213302784 + 1000), '');
+  assert.match(B.checkSize(547366912), /over 0\.2\.65/);
+  assert.equal(B.checkSize(547366912, { override: true }), '');
+  assert.ok(B.checkSize(Math.round(213302784 * 1.16)) !== '' && B.checkSize(Math.round(213302784 * 1.14)) === '');
+  const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, '..', '..', 'package.json'), 'utf8'));
+  for (const n of ['win-arm64', 'win-x64-cuda', 'win-x64-cuda-ext', 'win-x64-vulkan']) assert.ok(pkg.build.files.some((f) => f.startsWith('!') && f.includes(n)), n + ' is excluded from packaging');
+});

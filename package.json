@@ -35,6 +35,7 @@
       "assets/icon.ico",
       "llm-runtime/package.json",
       "llm-runtime/node_modules/**/*",
+      "!llm-runtime/node_modules/@node-llama-cpp/{win-arm64,win-x64-cuda,win-x64-cuda-ext,win-x64-vulkan}/**",
       "mcp/package.json",
       "mcp/server.js",
       "mcp/node_modules/**/*",
